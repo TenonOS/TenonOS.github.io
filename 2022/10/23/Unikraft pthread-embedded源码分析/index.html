@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>Unikraft pthread-embedded源码分析 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="文件结构123456789101112131415161718192021222324252627282930313233lib-pthread-embedded&#x2F;├── attributes.c├── CODING_STYLE.md├── Config.uk├── CONTRIBUTING.md├── COPYING.md├── include│   ├── pte_osal.h│   ├──">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unikraft pthread-embedded源码分析">
+<meta property="og:url" content="http://example.com/2022/10/23/Unikraft%20pthread-embedded%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="文件结构123456789101112131415161718192021222324252627282930313233lib-pthread-embedded&#x2F;├── attributes.c├── CODING_STYLE.md├── Config.uk├── CONTRIBUTING.md├── COPYING.md├── include│   ├── pte_osal.h│   ├──">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-10-23T14:47:06.348Z">
+<meta property="article:modified_time" content="2022-10-23T14:46:06.546Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-线程管理">
+<meta name="twitter:card" content="summary">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/23/Unikraft%20pthread-embedded%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 14px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 13px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13px;">unikraft-线程管理</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">8</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-thread/">unikraft-thread</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/Unikraft%20pthread-embedded%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" class="title">Unikraft pthread-embedded源码分析</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T14:47:06.348Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-thread/">unikraft-thread</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/Linux%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" class="title">Linux线程模型</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T14:47:06.345Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/vfscore/" class="title">vfscore源码以及相关函数</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T09:15:04.593Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/vfscore%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" class="title">vfscore核心数据结构</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T08:50:30.518Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="title">内存相关基础知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T06:59:15.833Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84"><span class="toc-number">1.</span> <span class="toc-text">文件结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E6%9E%84"><span class="toc-number">2.</span> <span class="toc-text">结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">3.</span> <span class="toc-text">数据结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">4.</span> <span class="toc-text">初始化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%A1%E5%8F%B7%E5%A4%84%E7%90%86"><span class="toc-number">5.</span> <span class="toc-text">信号处理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B"><span class="toc-number">6.</span> <span class="toc-text">线程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E5%88%9B%E5%BB%BA"><span class="toc-number">6.1.</span> <span class="toc-text">线程创建</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E5%90%AF%E5%8A%A8"><span class="toc-number">7.</span> <span class="toc-text">线程启动</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AF%B9%E4%BA%8E%E9%80%9A%E8%BF%87uksched-API%E5%88%9B%E5%BB%BA%E7%9A%84%E7%BA%BF%E7%A8%8B"><span class="toc-number">7.0.1.</span> <span class="toc-text">对于通过uksched API创建的线程</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AF%B9%E4%BA%8E%E4%B8%8D%E9%80%9A%E8%BF%87uksched-API%E5%88%9B%E5%BB%BA%E7%9A%84%E7%BA%BF%E7%A8%8B"><span class="toc-number">7.0.2.</span> <span class="toc-text">对于不通过uksched API创建的线程</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%94%81%E4%B8%8E%E4%BF%A1%E5%8F%B7%E9%87%8F"><span class="toc-number">8.</span> <span class="toc-text">锁与信号量</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">9.</span> <span class="toc-text">总结</span></a></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-Unikraft pthread-embedded源码分析" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Unikraft pthread-embedded源码分析
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/23/Unikraft%20pthread-embedded%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" class="article-date">
+	  <time datetime="2022-10-23T14:47:06.348Z" itemprop="datePublished">2022-10-23</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-thread/">unikraft-thread</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/23/Unikraft%20pthread-embedded%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h2 id="文件结构"><a href="#文件结构" class="headerlink" title="文件结构"></a>文件结构</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">lib-pthread-embedded/</span><br><span class="line">├── attributes.c</span><br><span class="line">├── CODING_STYLE.md</span><br><span class="line">├── Config.uk</span><br><span class="line">├── CONTRIBUTING.md</span><br><span class="line">├── COPYING.md</span><br><span class="line">├── include</span><br><span class="line">│   ├── pte_osal.h</span><br><span class="line">│   ├── pte_types.h</span><br><span class="line">│   ├── pthread.h</span><br><span class="line">│   ├── sched.h</span><br><span class="line">│   └── sys</span><br><span class="line">│       └── _pthreadtypes.h</span><br><span class="line">├── MAINTAINERS.md</span><br><span class="line">├── Makefile.uk</span><br><span class="line">├── patches</span><br><span class="line">│   ├── <span class="number">0001</span>-tests-bugfix-Set-type-size-of-result-used-in-pthread.patch</span><br><span class="line">│   ├── <span class="number">0002</span>-tests-bugfix-Pass-right-arguments-on-tests-exit4-and.patch</span><br><span class="line">│   ├── <span class="number">0003</span>-tests-bugfix-Fix-macro-definitions-<span class="keyword">for</span>-tests-once3-a.patch</span><br><span class="line">│   ├── <span class="number">0004</span>-tests-Disable-priority-tests-until-we-add-preemptive.patch</span><br><span class="line">│   ├── <span class="number">0005</span>-Use-Unikraft-yield-function.patch</span><br><span class="line">│   ├── <span class="number">0006</span>-Separate-header-inclusions-<span class="keyword">for</span>-functions-from-header.patch</span><br><span class="line">│   ├── <span class="number">0007</span>-Use-atomic-operations-as-macros.patch</span><br><span class="line">│   ├── <span class="number">0008</span>-bugfix-Fix-atomic-operations-on-semaphore.patch</span><br><span class="line">│   ├── <span class="number">0009</span>-Make-pte_handle-a-C-structure.patch</span><br><span class="line">│   ├── <span class="number">0010</span>-Added-operator-<span class="keyword">for</span>-<span class="type">pte_handle_t</span>.patch</span><br><span class="line">│   ├── <span class="number">0011</span>-Add-<span class="type">clockid_t</span>-field-to-pthread_condattr_t_.patch</span><br><span class="line">│   └── <span class="number">0012</span>-Add_pthread_kill_when_uk_signals_are_enabled.patch</span><br><span class="line">├── pte_osal.c</span><br><span class="line">├── pthread_atfork.c</span><br><span class="line">├── pthread_condattr.c</span><br><span class="line">├── pthread_sigmask.c</span><br><span class="line">└── README.md</span><br></pre></td></tr></table></figure>
+<h2 id="结构"><a href="#结构" class="headerlink" title="结构"></a>结构</h2><p>主要引用unikraft中的uksched、uklock、uksignal几个库在封装，形成了pthread-embedded。<br>其中可以看到几个头文件与uksched中的同名，例如sched.h，pthread.h等。解决同名问题，遂采用了#include_next&lt;&gt;来引入头文件。</p>
+<p>但看pthread-embedded和unikraft的工程文件，会发现pthread-embedded中很多函数都找不到声明。此时查看makefile.uk文件可以看到，似乎是引入了<a target="_blank" rel="noopener" href="https://github.com/RWTH-OS/pthread-embedded">RWTH-OS/pthread-embedded</a><br>中的一些文件。</p>
+<p>因此pthread-embedded是基于unikraft提供的一些接口以及RWTH-OS/pthread-embedded这两个库实现的一个线程库。</p>
+<h2 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h2><p>这部分介绍了pthread-embedded中比较重要的数据结构。其中pte_thread_data的数据注释是比较清晰的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">pte_thread_data</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* thread routine */</span></span><br><span class="line"></span><br><span class="line">    pte_osThreadEntryPoint entry_point;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* thread routine arguments */</span></span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *argv;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Unikraft thread */</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_thread</span> *<span class="title">uk_thread</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* TLS */</span></span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *tls;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Semaphore for triggering thread start */</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_semaphore</span> <span class="title">start_sem</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Semaphore for cancellation */</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_semaphore</span> <span class="title">cancel_sem</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Is non-zero if thread exited */</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> done;</span><br><span class="line"></span><br><span class="line">&#125; <span class="type">pte_thread_data_t</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>entry_point : 函数的入口，线程主体运行的入口。</li>
+<li>argv : 传递给entry_point的参数</li>
+<li>uk_thread : unikraft中与之11对应的线程</li>
+<li>tls : 线程局部存储</li>
+<li>start_sem : 线程启动的信号量</li>
+<li>cancel_sem : 线程取消的信号量</li>
+<li>done : 标记线程状态，非0代表线程为退出态</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="type">void</span> *PTE_CAPSULE_MAGIC = &amp;PTE_CAPSULE_MAGIC;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pte_entry_capsule</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    pte_osThreadEntryPoint entry_point;</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *argv;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>PTE_CAPSULE_MAGIC是一个指向自身的Magic Number。<br>&amp;PTE_CAPSULE_MAGIC是一个指向PTE_CAPSULE_MAGIC的指针，是一个内存地址。因此这是一个指向自身的指针。<br>pet_entry_capsule主要用于封装程序入口，以及要传递的参数。<br>以上具体的作用将在后面提到。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">pte_thread_data</span> *<span class="title">pte_osThreadHandle</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">uk_semaphore</span> *<span class="title">pte_osSemaphoreHandle</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">uk_mutex</span> *<span class="title">pte_osMutexHandle</span>;</span></span><br></pre></td></tr></table></figure>
+<p>这三个作为处理器，在thread-embedded中一般作为参数传递使用，且传进去以后也强制类型转化成原类型。</p>
+<h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><p>pte_osInit主要对一些全局的变量进行声明，其中的一些函数在<a target="_blank" rel="noopener" href="https://github.com/RWTH-OS/pthread-embedded">RWTH-OS/pthread-embedded</a>中被实现，并且通过makefile链接进来。查阅后发现主要是对锁、内存等变量的声明、分配。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line">pte_osResult <span class="title function_">pte_osInit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    pte_osResult result = PTE_OS_OK;</span><br><span class="line"></span><br><span class="line">    <span class="type">pte_thread_data_t</span> *ptd;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_thread</span> *<span class="title">crnt</span>;</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Allocate and initialize TLS support */</span></span><br><span class="line"></span><br><span class="line">    result = pteTlsGlobalInit(CONFIG_LIBPTHREAD_EMBEDDED_MAX_TLS);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (result != PTE_OS_OK) &#123;</span><br><span class="line"></span><br><span class="line">        uk_pr_err(<span class="string">&quot;Could not init global TLS&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Create a ptd for initializing thread. */</span></span><br><span class="line"></span><br><span class="line">    ptd = <span class="built_in">calloc</span>(<span class="number">1</span>, <span class="keyword">sizeof</span>(<span class="type">pte_thread_data_t</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (ptd == <span class="literal">NULL</span>) &#123;</span><br><span class="line"></span><br><span class="line">        result = PTE_OS_NO_RESOURCES;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    ptd-&gt;tls = pteTlsThreadInit();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (ptd-&gt;tls == <span class="literal">NULL</span>) &#123;</span><br><span class="line"></span><br><span class="line">        uk_pr_err(<span class="string">&quot;Could not init TLS&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="built_in">free</span>(ptd);</span><br><span class="line"></span><br><span class="line">        result = PTE_OS_NO_RESOURCES;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    crnt = uk_thread_current();</span><br><span class="line"></span><br><span class="line">    crnt-&gt;prv = ptd;</span><br><span class="line"></span><br><span class="line">    ptd-&gt;uk_thread = crnt;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">out:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="信号处理"><a href="#信号处理" class="headerlink" title="信号处理"></a>信号处理</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKSIGNAL</span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">pte_kill</span><span class="params">(pte_osThreadHandle threadId, <span class="type">int</span> sig)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> uk_sig_thread_kill(threadId-&gt;uk_thread, sig);</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>kill在linux中默认用作终止进程，但是也可以用作向某一进程发送信号量。在pthread-embedded中直接调用了uksignal中的接口。在这pthread-embedded非常常见，可以说pthread就是基于unikraft提供的接口才实现的。</p>
+<h2 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h2><h3 id="线程创建"><a href="#线程创建" class="headerlink" title="线程创建"></a>线程创建</h3><p>pte_osThreadCreate调用了Unikraft中的uksched API创建了线程，</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line">pte_osResult <span class="title function_">pte_osThreadCreate</span><span class="params">(pte_osThreadEntryPoint entry_point,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">    <span class="type">int</span> stack_size, <span class="type">int</span> initial_prio, <span class="type">void</span> *argv,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">    pte_osThreadHandle *ph)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pte_entry_capsule</span> <span class="title">capsule</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_thread</span> *<span class="title">th</span>;</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    capsule.entry_point = entry_point;</span><br><span class="line"></span><br><span class="line">    capsule.argv        = argv;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Create the Unikraft thread. This will cause that</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * pte_osInitThread() is called.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    th = uk_thread_create_attr(<span class="literal">NULL</span>, <span class="literal">NULL</span>,</span><br><span class="line"></span><br><span class="line">                   PTE_CAPSULE_MAGIC, &amp;capsule);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!th)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> PTE_OS_NO_RESOURCES;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* pte_osInitThread() should have setup a newly created</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * pte_thread_data_t which should be stored on th-&gt;prv</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    UK_ASSERT(th-&gt;prv != <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Return the thread handle */</span></span><br><span class="line"></span><br><span class="line">    *ph = th-&gt;prv;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> PTE_OS_OK;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中将函数的入口(entry_point)和函数参数(argv)使用结构体pte_entry_capsule封装，该结构体在创建线程时，与unikraft中的uk_thread的参数arg进行绑定。而pte_osThreadHandle则是uk_thread中的prv参数。<br>除了传入pte_entry_capsule，还传入了PTE_CAPSULE_MAGIC。此时，如果是通过pte_osThreadCreate函数创建的线程，那么此时在uk_thread中的func参数与之对应的是PTE_CAPSULE_MAGIC，也就是函数自身。<br>回到uk_thread_create_attr这个函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> uk_thread_create_attr(name, attr, function, data) \</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line">    uk_sched_thread_create(uk_sched_get_default(), \</span><br><span class="line"></span><br><span class="line">            name, attr, function, data)</span><br><span class="line">         </span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> uk_thread *<span class="title function_">uk_sched_thread_create</span><span class="params">(<span class="keyword">struct</span> uk_sched *sched,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="type">const</span> <span class="type">char</span> *name, <span class="type">const</span> <span class="type">uk_thread_attr_t</span> *attr,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="type">void</span> (*function)(<span class="type">void</span> *), <span class="type">void</span> *arg)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// start:申请空间</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_thread</span> *<span class="title">thread</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *<span class="built_in">stack</span> = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *tls = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    thread = uk_malloc(sched-&gt;allocator, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> uk_thread));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (thread == <span class="literal">NULL</span>) &#123;</span><br><span class="line"></span><br><span class="line">        uk_pr_err(<span class="string">&quot;Failed to allocate thread\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> err;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* We can&#x27;t use lazy allocation here</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * since the trap handler runs on the stack</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">stack</span> = create_stack(sched-&gt;allocator);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">stack</span> == <span class="literal">NULL</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> err;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (have_tls_area() &amp;&amp; !(tls = uk_thread_tls_create(sched-&gt;allocator)))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> err;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// end 申请</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 先create thread 再 init thread</span></span><br><span class="line"></span><br><span class="line">    rc = uk_thread_init(thread,</span><br><span class="line"></span><br><span class="line">            &amp;sched-&gt;plat_ctx_cbs, sched-&gt;allocator,</span><br><span class="line"></span><br><span class="line">            name, <span class="built_in">stack</span>, tls, function, arg);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (rc)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> err;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    rc = uk_sched_thread_add(sched, thread, attr);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (rc)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> err_add;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> thread;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">err_add:</span><br><span class="line"></span><br><span class="line">    uk_thread_fini(thread, sched-&gt;allocator);</span><br><span class="line"></span><br><span class="line">err:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (tls)</span><br><span class="line"></span><br><span class="line">        uk_free(sched-&gt;allocator, tls);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">stack</span>)</span><br><span class="line"></span><br><span class="line">        uk_free(sched-&gt;allocator, <span class="built_in">stack</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (thread)</span><br><span class="line"></span><br><span class="line">        uk_free(sched-&gt;allocator, thread);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_thread_init</span><span class="params">(<span class="keyword">struct</span> uk_thread *thread,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="keyword">struct</span> ukplat_ctx_callbacks *cbs, <span class="keyword">struct</span> uk_alloc *allocator,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="type">const</span> <span class="type">char</span> *name, <span class="type">void</span> *<span class="built_in">stack</span>, <span class="type">void</span> *tls,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="type">void</span> (*function)(<span class="type">void</span> *), <span class="type">void</span> *arg)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> sp;</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *ctx;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_thread_inittab_entry</span> *<span class="title">itr</span>;</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    UK_ASSERT(thread != <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    UK_ASSERT(<span class="built_in">stack</span> != <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    UK_ASSERT(!have_tls_area() || tls != <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Save pointer to the thread on the stack to get current thread */</span></span><br><span class="line"></span><br><span class="line">    *((<span class="type">unsigned</span> <span class="type">long</span> *) <span class="built_in">stack</span>) = (<span class="type">unsigned</span> <span class="type">long</span>) thread;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Allocate thread context */</span></span><br><span class="line"></span><br><span class="line">    ctx = uk_zalloc(allocator, ukplat_thread_ctx_size(cbs));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!ctx) &#123;</span><br><span class="line"></span><br><span class="line">        ret = <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> err_out;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(thread, <span class="number">0</span>, <span class="keyword">sizeof</span>(*thread));</span><br><span class="line"></span><br><span class="line">    thread-&gt;ctx = ctx;</span><br><span class="line"></span><br><span class="line">    thread-&gt;name = name;</span><br><span class="line"></span><br><span class="line">    thread-&gt;<span class="built_in">stack</span> = <span class="built_in">stack</span>;</span><br><span class="line"></span><br><span class="line">    thread-&gt;tls = tls;</span><br><span class="line"></span><br><span class="line">    thread-&gt;entry = function;</span><br><span class="line"></span><br><span class="line">    thread-&gt;arg = arg;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Not runnable, not exited, not sleeping */</span></span><br><span class="line"></span><br><span class="line">    thread-&gt;flags = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    thread-&gt;wakeup_time = <span class="number">0LL</span>;</span><br><span class="line"></span><br><span class="line">    thread-&gt;detached = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">    uk_waitq_init(&amp;thread-&gt;waiting_threads);</span><br><span class="line"></span><br><span class="line">    thread-&gt;sched = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    thread-&gt;prv = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* <span class="doctag">TODO:</span> Move newlibc reent initialization to newlib as</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     *       thread initialization function</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LIBNEWLIBC</span></span><br><span class="line"></span><br><span class="line">    reent_init(&amp;thread-&gt;reent);</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Iterate over registered thread initialization functions */</span></span><br><span class="line"></span><br><span class="line">    uk_thread_inittab_foreach(itr) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (unlikely(!itr-&gt;init))</span><br><span class="line"></span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        uk_pr_debug(<span class="string">&quot;New thread %p: Call thread initialization function %p...\n&quot;</span>,</span><br><span class="line"></span><br><span class="line">                thread, *itr-&gt;init);</span><br><span class="line"></span><br><span class="line">        ret = (itr-&gt;init)(thread);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (ret &lt; <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">goto</span> err_fini;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Prepare stack and TLS</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * <span class="doctag">NOTE:</span> In case the function pointer was changed by a thread init</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     *       function (e.g., encapsulation), we prepare the stack here</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     *       with the final setup</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    init_sp(&amp;sp, <span class="built_in">stack</span>, thread-&gt;entry, thread-&gt;arg);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Platform specific context initialization */</span></span><br><span class="line"></span><br><span class="line">    ukplat_thread_ctx_init(cbs, thread-&gt;ctx, sp,</span><br><span class="line"></span><br><span class="line">                   (<span class="type">uintptr_t</span>) ukarch_tls_pointer(tls));</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    uk_pr_info(<span class="string">&quot;Thread \&quot;%s\&quot;: pointer: %p, stack: %p, tls: %p\n&quot;</span>,</span><br><span class="line"></span><br><span class="line">           name, thread, thread-&gt;<span class="built_in">stack</span>, thread-&gt;tls);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">err_fini:</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Run fini functions starting from one level before the failed one</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * because we expect that the failed one cleaned up.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    uk_thread_inittab_foreach_reverse2(itr, itr - <span class="number">2</span>) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (unlikely(!itr-&gt;fini))</span><br><span class="line"></span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">        (itr-&gt;fini)(thread);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    uk_free(allocator, thread-&gt;ctx);</span><br><span class="line"></span><br><span class="line">err_out:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>两个线程结构体的参数间的对应关系如下表(可能存在错误)所示。</p>
+<table>
+<thead>
+<tr>
+<th align="center">pthread-embedded</th>
+<th align="center">在函数中传递时</th>
+<th align="center">uksched</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">argv</td>
+<td align="center">不确定是否被封装进capsule中</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">entry_point</td>
+<td align="center">不确定是否被封装进capsule中</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">capsule</td>
+<td align="center">data</td>
+<td align="center">arg</td>
+</tr>
+<tr>
+<td align="center">ptd结构体</td>
+<td align="center">无</td>
+<td align="center">prv</td>
+</tr>
+<tr>
+<td align="center">uk_thread</td>
+<td align="center">无</td>
+<td align="center">uk_thread结构体</td>
+</tr>
+<tr>
+<td align="center">PTE_CAPSULE_MAGIC</td>
+<td align="center">function</td>
+<td align="center">entry</td>
+</tr>
+</tbody></table>
+<h2 id="线程启动"><a href="#线程启动" class="headerlink" title="线程启动"></a>线程启动</h2><p>申请线程启动信号量,以下函数应该是作为通用的线程函数入口。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">uk_stub_thread_entry</span><span class="params">(<span class="type">void</span> *argv)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">pte_thread_data_t</span> *ptd = (<span class="type">pte_thread_data_t</span> *) argv;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* wait for the resume command */</span></span><br><span class="line"></span><br><span class="line">    uk_semaphore_down(&amp;ptd-&gt;start_sem);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    ptd-&gt;entry_point(ptd-&gt;argv);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 通过uksched API 创建一个线程。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 通过此方法创建的线程 func是自己 arg是capsule</span></span><br><span class="line"></span><br><span class="line">pte_osResult <span class="title function_">pte_osThreadCreate</span><span class="params">(pte_osThreadEntryPoint entry_point,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">    <span class="type">int</span> stack_size, <span class="type">int</span> initial_prio, <span class="type">void</span> *argv,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">    pte_osThreadHandle *ph)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pte_entry_capsule</span> <span class="title">capsule</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_thread</span> *<span class="title">th</span>;</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    capsule.entry_point = entry_point;</span><br><span class="line"></span><br><span class="line">    capsule.argv        = argv;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Create the Unikraft thread. This will cause that</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * pte_osInitThread() is called.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    th = uk_thread_create_attr(<span class="literal">NULL</span>, <span class="literal">NULL</span>,</span><br><span class="line"></span><br><span class="line">                   PTE_CAPSULE_MAGIC, &amp;capsule);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!th)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> PTE_OS_NO_RESOURCES;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 调用完以上后 th-&gt;prv应该是NULL</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 感觉少了一步</span></span><br><span class="line">	<span class="comment">// 根据注释</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Create the Unikraft thread. This will cause that</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * pte_osInitThread() is called.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">	<span class="comment">// 应是调用完后会自行调用pte_osInitThread</span></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* pte_osInitThread() should have setup a newly created</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * pte_thread_data_t which should be stored on th-&gt;prv</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    UK_ASSERT(th-&gt;prv != <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// <span class="doctag">TODO:</span>th-&gt;prv是什么时候存入的？</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Return the thread handle */</span></span><br><span class="line"></span><br><span class="line">    *ph = th-&gt;prv;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> PTE_OS_OK;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">pte_osInitThread</span><span class="params">(<span class="keyword">struct</span> uk_thread *th)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">pte_thread_data_t</span> *ptd;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pte_entry_capsule</span> *<span class="title">capsule</span>;</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* <span class="doctag">NOTE:</span> We reserve th-&gt;prv for our exclusive use,</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     *       so it should be NULL when entering here</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    UK_ASSERT(th-&gt;prv == <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Initialize pte with first thread creation */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (unlikely(!initialized)) &#123;</span><br><span class="line"></span><br><span class="line">        uk_pr_warn(<span class="string">&quot;Thread %p created without &quot;</span> STRINGIFY(__LIBNAME__)</span><br><span class="line"></span><br><span class="line">               <span class="string">&quot; initialized. Utilizing the pthread API from this context may lead to memory leaks.\n&quot;</span>,</span><br><span class="line"></span><br><span class="line">               th);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    ptd = <span class="built_in">calloc</span>(<span class="number">1</span>, <span class="keyword">sizeof</span>(<span class="type">pte_thread_data_t</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!ptd)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> err_out;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Allocate TLS structure for this thread. */</span></span><br><span class="line"></span><br><span class="line">    ptd-&gt;tls = pteTlsThreadInit();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (ptd-&gt;tls == <span class="literal">NULL</span>) &#123;</span><br><span class="line"></span><br><span class="line">        uk_pr_err(<span class="string">&quot;Could not allocate TLS\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> err_free_ptd;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* How did we enter this function? */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 区分线程是通过哪个API创建的 */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (th-&gt;entry == PTE_CAPSULE_MAGIC) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* This thread got created by pte_osThreadCreate()!</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">         * Lets have a look into the capsule.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line"></span><br><span class="line">        UK_ASSERT(th-&gt;arg);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        capsule = (<span class="keyword">struct</span> pte_entry_capsule *) th-&gt;arg;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        ptd-&gt;entry_point = capsule-&gt;entry_point;</span><br><span class="line"></span><br><span class="line">        ptd-&gt;argv        = capsule-&gt;argv;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="comment">/* this thread has to wait for further setup */</span></span><br><span class="line"></span><br><span class="line">        uk_semaphore_init(&amp;ptd-&gt;start_sem, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* We will encapsulate our thread entry point,</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">         * we have to move our actual entry to ptd</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line"></span><br><span class="line">        ptd-&gt;entry_point = (pte_osThreadEntryPoint) th-&gt;entry;</span><br><span class="line"></span><br><span class="line">        ptd-&gt;argv        = th-&gt;arg;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="comment">/* uksched threads need to start automatically */</span></span><br><span class="line"></span><br><span class="line">        uk_semaphore_init(&amp;ptd-&gt;start_sem, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Setup encapsulated entry point */</span></span><br><span class="line"></span><br><span class="line">    th-&gt;entry = uk_stub_thread_entry;</span><br><span class="line"></span><br><span class="line">    th-&gt;arg   = ptd;</span><br><span class="line"></span><br><span class="line">    uk_semaphore_init(&amp;ptd-&gt;cancel_sem, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    ptd-&gt;done = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Store cross references (uk_thread &lt;-&gt; pte_thread_data_t) */</span></span><br><span class="line"></span><br><span class="line">    th-&gt;prv = ptd;</span><br><span class="line"></span><br><span class="line">    ptd-&gt;uk_thread = th;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKSIGNAL</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* inherit signal mask */</span></span><br><span class="line"></span><br><span class="line">    ptd-&gt;uk_thread-&gt;signals_container.mask =</span><br><span class="line"></span><br><span class="line">        uk_thread_current()-&gt;signals_container.mask;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">err_free_ptd:</span><br><span class="line"></span><br><span class="line">    <span class="built_in">free</span>(ptd);</span><br><span class="line"></span><br><span class="line">err_out:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在前面我们知道，如果是通过pte_osThreadCreate创建的函数，此时func应是PTE_CAPSULE_MAGIC;<br>arg是前面封装好的capsule。如果不是通过pte_osThreadCreate创建的函数(这里没看到具体的常见，猜测应是系统内部自带的线程，也需要统一纳入到pthread-embedded进行管理)，则不是这样。因此就产生了以下分歧。</p>
+<table>
+<thead>
+<tr>
+<th align="center">在uk_thread中的参数说明</th>
+<th align="center">不通过uksched API创建的线程</th>
+<th align="center">通过uksched API创建的线程</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">prv</td>
+<td align="center">pte_osThreadEntryPoint</td>
+<td align="center">pte_osThreadEntryPoint</td>
+</tr>
+<tr>
+<td align="center">arg</td>
+<td align="center">应传入函数的参数</td>
+<td align="center">pte_entry_capsule</td>
+</tr>
+<tr>
+<td align="center">entry</td>
+<td align="center">函数入口</td>
+<td align="center">无实际意义</td>
+</tr>
+</tbody></table>
+<p>以上函数则希望完成对二者的兼容，统一纳入管理。<br>函数入口的统一模板如下所示。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">uk_stub_thread_entry</span><span class="params">(<span class="type">void</span> *argv)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">pte_thread_data_t</span> *ptd = (<span class="type">pte_thread_data_t</span> *) argv;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* wait for the resume command */</span></span><br><span class="line"></span><br><span class="line">    uk_semaphore_down(&amp;ptd-&gt;start_sem);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    ptd-&gt;entry_point(ptd-&gt;argv);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="对于通过uksched-API创建的线程"><a href="#对于通过uksched-API创建的线程" class="headerlink" title="对于通过uksched API创建的线程"></a>对于通过uksched API创建的线程</h4><p>主要就是拿到pte_entry_capsule封装的函数指针和函数参数，从uk_thread中放到pte中，同时将uk_thread中的函数入口改为uk_stub_thread_entry。</p>
+<h4 id="对于不通过uksched-API创建的线程"><a href="#对于不通过uksched-API创建的线程" class="headerlink" title="对于不通过uksched API创建的线程"></a>对于不通过uksched API创建的线程</h4><p>直接取到uk_thread中的函数入口指针和参数，装入pte中，同时将uk_thread中的函数入口改为uk_stub_thread_entry。<br>二者的主要区别就是通过不同方式创建的线程，在内核中uk_thread中一些属性代表的值会有所区别。</p>
+<h2 id="锁与信号量"><a href="#锁与信号量" class="headerlink" title="锁与信号量"></a>锁与信号量</h2><p>与kill函数类似，这部分就是对unikraft相关接口的再封装。这部分的相关函数，同质化比较严重，也比较简单，就不展开细讲。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">pte_osResult <span class="title function_">pte_osMutexLock</span><span class="params">(pte_osMutexHandle h)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!h)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> PTE_OS_INVALID_PARAM;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    uk_mutex_lock(h);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> PTE_OS_OK;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>pthread-embedded是一个非常简洁的线程实现。它主要基于unikraft提供的接口和一个来自github上的库，构建了一套属于自己的线程管理逻辑。这种设计方式，和linux内核中的nptl之于pthread的关系非常相似。</p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/23/Unikraft%20pthread-embedded%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" title="Unikraft pthread-embedded源码分析" target="_blank" rel="external">http://example.com/2022/10/23/Unikraft pthread-embedded源码分析/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    
+    <li class="next">
+      <a href="/2022/10/23/Linux%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" title="Linux线程模型"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

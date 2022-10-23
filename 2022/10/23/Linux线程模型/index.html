@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>Linux线程模型 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="Linux线程模型Linux线程的发展多线程最早由LinuxThreads带入Linux，但是LinuxThread不符合POSIX的的标准，因此NPTL(Native POSIX Thread Library)产生。NPTL采用了一对一的线程模型，符合了POSIX多线程标准，在稳定性和性能方面都有了很大的提升。NPTL在Linux 2.6版本中被引入。在Linux中可以使用以下命令查看 线程库的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux线程模型">
+<meta property="og:url" content="http://example.com/2022/10/23/Linux%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Linux线程模型Linux线程的发展多线程最早由LinuxThreads带入Linux，但是LinuxThread不符合POSIX的的标准，因此NPTL(Native POSIX Thread Library)产生。NPTL采用了一对一的线程模型，符合了POSIX多线程标准，在稳定性和性能方面都有了很大的提升。NPTL在Linux 2.6版本中被引入。在Linux中可以使用以下命令查看 线程库的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft_pthread-embedded/%E7%BA%BF%E7%A8%8B%E5%AE%9E%E7%8E%B0%E5%AF%B9%E6%AF%94.png">
+<meta property="article:published_time" content="2022-10-23T14:47:06.345Z">
+<meta property="article:modified_time" content="2022-10-23T14:46:06.545Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-线程管理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft_pthread-embedded/%E7%BA%BF%E7%A8%8B%E5%AE%9E%E7%8E%B0%E5%AF%B9%E6%AF%94.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/23/Linux%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 14px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 13px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13px;">unikraft-线程管理</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">8</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-thread/">unikraft-thread</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/Unikraft%20pthread-embedded%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" class="title">Unikraft pthread-embedded源码分析</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T14:47:06.348Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-thread/">unikraft-thread</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/Linux%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" class="title">Linux线程模型</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T14:47:06.345Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/vfscore/" class="title">vfscore源码以及相关函数</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T09:15:04.593Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/vfscore%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" class="title">vfscore核心数据结构</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T08:50:30.518Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="title">内存相关基础知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T06:59:15.833Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Linux%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B"><span class="toc-number">1.</span> <span class="toc-text">Linux线程模型</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Linux%E7%BA%BF%E7%A8%8B%E7%9A%84%E5%8F%91%E5%B1%95"><span class="toc-number">1.1.</span> <span class="toc-text">Linux线程的发展</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#NPTL%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.2.</span> <span class="toc-text">NPTL的实现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Linux%E7%BA%BF%E7%A8%8B%E7%9A%84%E5%AE%9A%E4%B9%89"><span class="toc-number">1.3.</span> <span class="toc-text">Linux线程的定义</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E4%B8%8E%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B"><span class="toc-number">1.4.</span> <span class="toc-text">线程与进程的创建过程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6"><span class="toc-number">1.5.</span> <span class="toc-text">线程调度</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8Eunikraft%E5%AF%B9%E6%AF%94"><span class="toc-number">1.6.</span> <span class="toc-text">与unikraft对比</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-Linux线程模型" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Linux线程模型
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/23/Linux%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" class="article-date">
+	  <time datetime="2022-10-23T14:47:06.345Z" itemprop="datePublished">2022-10-23</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-thread/">unikraft-thread</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/23/Linux%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="Linux线程模型"><a href="#Linux线程模型" class="headerlink" title="Linux线程模型"></a>Linux线程模型</h1><h2 id="Linux线程的发展"><a href="#Linux线程的发展" class="headerlink" title="Linux线程的发展"></a>Linux线程的发展</h2><p>多线程最早由LinuxThreads带入Linux，但是LinuxThread不符合POSIX的的标准，因此NPTL(Native POSIX Thread Library)产生。NPTL采用了一对一的线程模型，符合了POSIX多线程标准，在稳定性和性能方面都有了很大的提升。NPTL在Linux 2.6版本中被引入。<br>在Linux中可以使用以下命令查看 线程库的实现方式</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">libos@ubuntu:~$ getconf GNU_LIBPTHREAD_VERSION</span><br><span class="line">NPTL 2.27</span><br></pre></td></tr></table></figure>
+<h2 id="NPTL的实现"><a href="#NPTL的实现" class="headerlink" title="NPTL的实现"></a>NPTL的实现</h2><p>NPTL的解决方法与LinuxThread类似，内核看到的首要抽象依旧是一个进程，新线程是通过引入Clone()系统调用产生的，clone是Linux独有的，任何其他UNIX系统的版本中都没有CLone函数。clone()的引入了模糊了线程与进程的区别。clone()的函数原型如下所示。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">clone</span><span class="params">(<span class="type">int</span> (*fn)(<span class="type">void</span> *), <span class="type">void</span> *child_stack, <span class="type">int</span> flags, <span class="type">void</span> *arg)</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>fn: fn是对于的函数指针，创建的线程的函数入口</li>
+<li>child_stack: 线程的堆栈中指针</li>
+<li>flags: 创建线程的标志</li>
+<li>arg： 传递给子线程的参数</li>
+</ul>
+<p>调用该函数可以在当前进程或者新的进程中创建一个线程，具体依赖于参数flags。如果在当前进程中创建新线程，新创建的线程将与其他存在的线程共享地址空间，任何一个线程对于地址空间做出修改对于同一进程中的其他线程都是可见的。<br>flags是一个位图，每一位可以单独设置，决定了新创建的线程与父线程共享的内容。</p>
+<table>
+<thead>
+<tr>
+<th align="center">标志</th>
+<th align="center">置位时的含义</th>
+<th align="center">清除时的含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">CLONE_VM</td>
+<td align="center">创建一个新线程</td>
+<td align="center">创建一个新进程</td>
+</tr>
+<tr>
+<td align="center">CLONE_FS</td>
+<td align="center">共享umask、根目录和工作目录，调用进程或者子进程对chroot、chdir、umask的调用会影响其他进程</td>
+<td align="center">不共享</td>
+</tr>
+<tr>
+<td align="center">CLONE_FILES</td>
+<td align="center">共享文件描述符</td>
+<td align="center">复制文件描述符</td>
+</tr>
+<tr>
+<td align="center">CLONE_SIGHAND</td>
+<td align="center">共享信号处理程序表</td>
+<td align="center">复制该表</td>
+</tr>
+<tr>
+<td align="center">CLONE_PARENT</td>
+<td align="center">新线程与调用者有相同的父亲</td>
+<td align="center">新线程的父亲是调用者</td>
+</tr>
+</tbody></table>
+<p>更多细节可以参考以下<a target="_blank" rel="noopener" href="https://linux.die.net/man/2/clone">Linux Clone</a><br>pthread是POSIX Threads的一套API协议，而NPTL是该协议的具体实现。NPTL采用1:1的线程模型，每一个用户态的线程在内核都有与之对应的内核级线程。</p>
+<h2 id="Linux线程的定义"><a href="#Linux线程的定义" class="headerlink" title="Linux线程的定义"></a>Linux线程的定义</h2><p>在Linux中，用一个叫做task_struct(/usr/src/linux…/linux/sched.h)的数据结构表示所有执行的上下文。不会在内核中具体区分线程还是进程。因此线程在Linux中又被叫做轻量级进程。<br>在task_struct中，定义了Pid进行区分不同的进程，每一个进程或者线程都拥有自己的pid，同时pid也是task_struct结构体的唯一标志。同时对于一个进程下的几个线程，尽管它们拥有不同的pid，到但是它们的tgid都是一样的，指向自己所属进程的pid。<br>可以理解成在Linux中，线程使用进程模拟出来的。</p>
+<h2 id="线程与进程的创建过程"><a href="#线程与进程的创建过程" class="headerlink" title="线程与进程的创建过程"></a>线程与进程的创建过程</h2><p>如果Linux采用进程模拟线程的方法，那么我们就需要关注一下二者创建的过程。<br>在linux内核版本6.0.1中，fork系统调用最终返回的是kernel_clone的结果</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">SYSCALL_DEFINE0(fork)</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_MMU</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">kernel_clone_args</span> <span class="title">args</span> =</span> &#123;</span><br><span class="line"></span><br><span class="line">        .exit_signal = SIGCHLD,</span><br><span class="line"></span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> kernel_clone(&amp;args);</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* can not support in nommu mode */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> -EINVAL;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>在kernel_clone中，一个比较关键的函数是copy_process。在该函数中会实现各类资源的初始化，通过传递过来的参数选择是共享还是重新分配。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">pid_t</span> <span class="title function_">kernel_clone</span><span class="params">(<span class="keyword">struct</span> kernel_clone_args *args)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    u64 clone_flags = args-&gt;flags;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">completion</span> <span class="title">vfork</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pid</span> *<span class="title">pid</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">p</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> trace = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">pid_t</span> nr;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * For legacy clone() calls, CLONE_PIDFD uses the parent_tid argument</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * to return the pidfd. Hence, CLONE_PIDFD and CLONE_PARENT_SETTID are</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * mutually exclusive. With clone3() CLONE_PIDFD has grown a separate</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * field in struct clone_args and it still doesn&#x27;t make sense to have</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * them both point at the same memory location. Performing this check</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * here has the advantage that we don&#x27;t need to have a separate helper</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * to check for legacy clone().</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((args-&gt;flags &amp; CLONE_PIDFD) &amp;&amp;</span><br><span class="line"></span><br><span class="line">        (args-&gt;flags &amp; CLONE_PARENT_SETTID) &amp;&amp;</span><br><span class="line"></span><br><span class="line">        (args-&gt;pidfd == args-&gt;parent_tid))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * Determine whether and which event to report to ptracer.  When</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * called from kernel_thread or CLONE_UNTRACED is explicitly</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * requested, no event is reported; otherwise, report if the event</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * for the type of forking is enabled.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!(clone_flags &amp; CLONE_UNTRACED)) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (clone_flags &amp; CLONE_VFORK)</span><br><span class="line"></span><br><span class="line">            trace = PTRACE_EVENT_VFORK;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (args-&gt;exit_signal != SIGCHLD)</span><br><span class="line"></span><br><span class="line">            trace = PTRACE_EVENT_CLONE;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line"></span><br><span class="line">            trace = PTRACE_EVENT_FORK;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (likely(!ptrace_event_enabled(current, trace)))</span><br><span class="line"></span><br><span class="line">            trace = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    p = copy_process(<span class="literal">NULL</span>, trace, NUMA_NO_NODE, args);</span><br><span class="line"></span><br><span class="line">    add_latent_entropy();</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (IS_ERR(p))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(p);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * Do this prior waking up the new thread - the thread pointer</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * might get invalid after that point, if the thread exits quickly.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    trace_sched_process_fork(current, p);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    pid = get_task_pid(p, PIDTYPE_PID);</span><br><span class="line"></span><br><span class="line">    nr = pid_vnr(pid);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (clone_flags &amp; CLONE_PARENT_SETTID)</span><br><span class="line"></span><br><span class="line">        put_user(nr, args-&gt;parent_tid);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (clone_flags &amp; CLONE_VFORK) &#123;</span><br><span class="line"></span><br><span class="line">        p-&gt;vfork_done = &amp;vfork;</span><br><span class="line"></span><br><span class="line">        init_completion(&amp;vfork);</span><br><span class="line"></span><br><span class="line">        get_task_struct(p);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    wake_up_new_task(p);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* forking complete and child started to run, tell ptracer */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (unlikely(trace))</span><br><span class="line"></span><br><span class="line">        ptrace_event_pid(trace, pid);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (clone_flags &amp; CLONE_VFORK) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!wait_for_vfork_done(p, &amp;vfork))</span><br><span class="line"></span><br><span class="line">            ptrace_event_pid(PTRACE_EVENT_VFORK_DONE, pid);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    put_pid(pid);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> nr;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此时我们测试一个案例，使用strace跟踪其系统调用过程。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">clone(child_stack=<span class="literal">NULL</span>, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=<span class="number">0x7f930b5af790</span>) = <span class="number">1081</span></span><br></pre></td></tr></table></figure>
+<p>可以看到，fork函数最终也会调用到clone函数。<br>回到线程，查看pthread中关于pthread_create的源码，使用strace跟踪可以看到，pthread_create使用的系统调用也是clone函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">clone(child_stack=<span class="number">0x7fcce4369fb0</span>, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=<span class="number">0x7fcce436a9d0</span>, tls=<span class="number">0x7fcce436a700</span>, child_tidptr=<span class="number">0x7fcce436a9d0</span>) = <span class="number">31082</span></span><br></pre></td></tr></table></figure>
+<p>检查clone系统调用可以看到，clone和fork最终都是调用kernel_clone实现的</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">SYSCALL_DEFINE5(clone, <span class="type">unsigned</span> <span class="type">long</span>, clone_flags, <span class="type">unsigned</span> <span class="type">long</span>, newsp,</span><br><span class="line"></span><br><span class="line">         <span class="type">int</span> __user *, parent_tidptr,</span><br><span class="line"></span><br><span class="line">         <span class="type">int</span> __user *, child_tidptr,</span><br><span class="line"></span><br><span class="line">         <span class="type">unsigned</span> <span class="type">long</span>, tls)</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">kernel_clone_args</span> <span class="title">args</span> =</span> &#123;</span><br><span class="line"></span><br><span class="line">        .flags      = (lower_32_bits(clone_flags) &amp; ~CSIGNAL),</span><br><span class="line"></span><br><span class="line">        .pidfd      = parent_tidptr,</span><br><span class="line"></span><br><span class="line">        .child_tid  = child_tidptr,</span><br><span class="line"></span><br><span class="line">        .parent_tid = parent_tidptr,</span><br><span class="line"></span><br><span class="line">        .exit_signal    = (lower_32_bits(clone_flags) &amp; CSIGNAL),</span><br><span class="line"></span><br><span class="line">        .<span class="built_in">stack</span>      = newsp,</span><br><span class="line"></span><br><span class="line">        .tls        = tls,</span><br><span class="line"></span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> kernel_clone(&amp;args);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以上说明，对于Linux而言，线程与进程在内核中是没有很大的区别的。线程与进程在内核里均用task_struct表示。<br>二者的具体区别通过跟踪可以看到，仅仅是传入clone系统调用的参数不同。</p>
+<table>
+<thead>
+<tr>
+<th align="center">线程创建时的参数</th>
+<th align="center">含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">CLONE_VM</td>
+<td align="center">创建一个线程</td>
+</tr>
+<tr>
+<td align="center">CLONE_FS</td>
+<td align="center">共享umask、根目录和工作目录</td>
+</tr>
+<tr>
+<td align="center">CLONE_FILES</td>
+<td align="center">共享文件描述符</td>
+</tr>
+<tr>
+<td align="center">CLONE_SIGHAND</td>
+<td align="center">共享信号处理程序表</td>
+</tr>
+<tr>
+<td align="center">CLONE_THREAD</td>
+<td align="center">单元格</td>
+</tr>
+<tr>
+<td align="center">CLONE_SYSVSEM</td>
+<td align="center">共享System V信号量</td>
+</tr>
+<tr>
+<td align="center">CLONE_SETTLS</td>
+<td align="center">创建TLS</td>
+</tr>
+<tr>
+<td align="center">CLONE_PARENT_SETTID</td>
+<td align="center">在父进程中保存子进程的ID</td>
+</tr>
+<tr>
+<td align="center">CLONE_CHILD_CLEARTID</td>
+<td align="center">子进程终止时，清空保存的ID</td>
+</tr>
+</tbody></table>
+<h2 id="线程调度"><a href="#线程调度" class="headerlink" title="线程调度"></a>线程调度</h2><p>Linux的调度是基于内核线程的。Linux目前采用的调度器为CFS(Complete Fair Scheduler)，提出该调度器是为了解决先前O1调度器存在的问题。<br>CFS的主要思想是采用一颗红黑树作为调度队列的数据结构，根据task在CPU上运行时间的长短而有序排列，这种时间被称为虚拟运行时间(vruntime)。vruntime根据一定的公式计算而出。运行时间更短的会分布在树的左侧，左侧的任务会优先被调度。CFS算法的基本原理就是，优先调度使用CPU时间少的任务，同时增加虚拟运行时间。<br>同时考虑到任务存在优先级，CFS会根据对应任务的优先级，改变其虚拟运行时间流逝的速度。优先级越低，时间流逝速度越快，因此虚拟时间增加的越快。因此优先级较高的任务，虚拟运行时间提升较慢，反而更加容易被调度。<br>一旦vruntime的次序发生变化，则系统会开始尝试进行调度。但是如果队列中的大部分任务的vruntime的时间都非常接近，此时进行调度，则调度频率会非常高。解决这个问题，又引入了一个阈值，如果前后两个线程的vruntime保持在阈值内，则不会触发调度。<br>但是CFS只考虑可运行的任务，对于阻塞中的任务，会存放于等待队列中。<br>更加具体的内容可以参考<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/56430999">Linux CFS调度器</a></p>
+<h2 id="与unikraft对比"><a href="#与unikraft对比" class="headerlink" title="与unikraft对比"></a>与unikraft对比</h2><p>由于unikraft是一个单进程的操作系统，与Linux相比，精简了很多。但是在对线程的生命周期管理上的一些操作是非常相似的。<br>其次，unikraft也算是内核级线程，通过pthread-embedded创建的线程在内核中会有一个uk_thread与之对应，这点也与Linux相似。<br>但是unikraft明确定义了线程结构体，而Linux是统一使用了一个叫做task_struct的结构体，模糊了线程和进程的区别。二者在细节上有所不同，但是结构上非常类似。<br>我认为unikraft的线程模型或多或少都有借鉴Linux线程模型。同时Linux的线程调度这段会比unikraft更加复杂，unikraft就是简单的FIFO调度算法。<br><img src="/images/unikraft_pthread-embedded/%E7%BA%BF%E7%A8%8B%E5%AE%9E%E7%8E%B0%E5%AF%B9%E6%AF%94.png" alt="线程实现对比"></p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/23/Linux%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" title="Linux线程模型" target="_blank" rel="external">http://example.com/2022/10/23/Linux线程模型/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/10/23/Unikraft%20pthread-embedded%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" title="Unikraft pthread-embedded源码分析"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/10/23/vfscore/" title="vfscore源码以及相关函数"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>
