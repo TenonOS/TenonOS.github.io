@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>ukallocbbuddy | TenonOS-unikraft-learning</title>
+  <meta name="description" content="bbuddy.c （伙伴算法）源码解读基础数据结构chunk_head_st 12345struct chunk_head_st &amp;#123;	chunk_head_t *next;  &#x2F;* 指向下一个链表节点 *&#x2F;	chunk_head_t **pprev;  &#x2F;* 指向当前空闲内存链表的链表头 *&#x2F;	unsigned int level;  &#x2F;* 当前链表的等级，即存储的每个内存块大小为2^l">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ukallocbbuddy">
+<meta property="og:url" content="http://example.com/2022/10/23/ukallocbbuddy/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="bbuddy.c （伙伴算法）源码解读基础数据结构chunk_head_st 12345struct chunk_head_st &amp;#123;	chunk_head_t *next;  &#x2F;* 指向下一个链表节点 *&#x2F;	chunk_head_t **pprev;  &#x2F;* 指向当前空闲内存链表的链表头 *&#x2F;	unsigned int level;  &#x2F;* 当前链表的等级，即存储的每个内存块大小为2^l">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft-memory/%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98%E5%88%86%E9%A1%B5.jpg">
+<meta property="og:image" content="http://example.com/images/unikraft-memory/map_alloc_1.jpg">
+<meta property="og:image" content="d:/Learning/研究生/操作系统/学习笔记/unikraft-souce-code/images/map_alloc_2.jpg">
+<meta property="og:image" content="http://example.com/images/unikraft-memory/%E5%86%85%E5%AD%98%E5%88%86%E5%B8%83%E5%9B%BE.png">
+<meta property="article:published_time" content="2022-10-23T06:59:15.831Z">
+<meta property="article:modified_time" content="2022-10-23T07:22:05.167Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-内存管理">
+<meta property="article:tag" content="ukalloc">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft-memory/%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98%E5%88%86%E9%A1%B5.jpg">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/23/ukallocbbuddy/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs/">unikraft-libs</a><span class="category-list-count">4</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ukalloc/" rel="tag">ukalloc</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">4</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/ukalloc/" style="font-size: 13px;">ukalloc</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 13px;">unikraft-内存管理</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">4</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs/">unikraft-libs</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="title">内存相关基础知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T06:59:15.833Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs/">unikraft-libs</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/ukallocbbuddy/" class="title">ukallocbbuddy</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T06:59:15.831Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs/">unikraft-libs</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%AF%BC%E8%A7%88/" class="title">内存管理导览</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T06:59:15.823Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs/">unikraft-libs</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/17/ukalloc/" class="title">ukalloc</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-17T14:41:34.708Z" itemprop="datePublished">2022-10-17</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#bbuddy-c-%EF%BC%88%E4%BC%99%E4%BC%B4%E7%AE%97%E6%B3%95%EF%BC%89"><span class="toc-number">1.</span> <span class="toc-text">bbuddy.c （伙伴算法）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB"><span class="toc-number">1.1.</span> <span class="toc-text">源码解读</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9F%BA%E7%A1%80%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">1.1.1.</span> <span class="toc-text">基础数据结构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%BD%E6%95%B0%E8%A7%A3%E6%9E%90"><span class="toc-number">1.1.2.</span> <span class="toc-text">函数解析</span></a></li></ol></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-ukallocbbuddy" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      ukallocbbuddy
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/23/ukallocbbuddy/" class="article-date">
+	  <time datetime="2022-10-23T06:59:15.831Z" itemprop="datePublished">2022-10-23</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-libs/">unikraft-libs</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/ukalloc/" rel="tag">ukalloc</a>, <a class="article-tag-link-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/23/ukallocbbuddy/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="bbuddy-c-（伙伴算法）"><a href="#bbuddy-c-（伙伴算法）" class="headerlink" title="bbuddy.c （伙伴算法）"></a>bbuddy.c （伙伴算法）</h1><h2 id="源码解读"><a href="#源码解读" class="headerlink" title="源码解读"></a>源码解读</h2><h3 id="基础数据结构"><a href="#基础数据结构" class="headerlink" title="基础数据结构"></a>基础数据结构</h3><p>chunk_head_st</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">chunk_head_st</span> &#123;</span></span><br><span class="line">	<span class="type">chunk_head_t</span> *next;  <span class="comment">/* 指向下一个链表节点 */</span></span><br><span class="line">	<span class="type">chunk_head_t</span> **pprev;  <span class="comment">/* 指向当前空闲内存链表的链表头 */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> level;  <span class="comment">/* 当前链表的等级，即存储的每个内存块大小为2^level个页 */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>chunk_tail_st</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">chunk_tail_st</span> &#123;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> level;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>uk_bbpalloc_memr</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 为每个内存区域分别保留位图 </span></span><br><span class="line"><span class="comment">   memr：memory region</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc_memr</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc_memr</span> *<span class="title">next</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> first_page;  <span class="comment">/*区块所对应的第一个页面的地址*/</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_pages;   <span class="comment">/*该内存区块中管理的页面数量*/</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> mm_alloc_bitmap_size;  <span class="comment">/* 该内存区块的位图所占的地址区域大小 */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> *mm_alloc_bitmap;  <span class="comment">//伙伴位图</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>uk_bbpalloc</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc</span> &#123;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> nr_free_pages;</span><br><span class="line">    <span class="comment">/* 伙伴算法中空闲内存链表组成的数组，下标为i的链表存储的每个内存块大小为2^i个页 */</span></span><br><span class="line">	<span class="type">chunk_head_t</span> *free_head[FREELIST_SIZE];  </span><br><span class="line">    <span class="comment">/* 上述链表的链表头指针初始指向的区域，因为不是指针变量，所以一开始就有分配内存，起到链表的第一个节点的作用 */</span></span><br><span class="line">	<span class="type">chunk_head_t</span> free_tail[FREELIST_SIZE];  </span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc_memr</span> *<span class="title">memr_head</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="函数解析"><a href="#函数解析" class="headerlink" title="函数解析"></a>函数解析</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 给定当前页面的虚拟地址page_va，查找该页面在那一块内存块中，查找成功返回该内存块，否则返回NULL */</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="keyword">struct</span> uk_bbpalloc_memr *<span class="title function_">map_get_memr</span><span class="params">(<span class="keyword">struct</span> uk_bbpalloc *b,</span></span><br><span class="line"><span class="params">						    <span class="type">unsigned</span> <span class="type">long</span> page_va)</span>  </span><br><span class="line">    <span class="comment">/* page_va: 页面虚拟地址(va virtual address) */</span></span><br><span class="line">&#123;							</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc_memr</span> *<span class="title">memr</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Find bitmap of according memory region  查找相应内存区域的位图</span></span><br><span class="line"><span class="comment">	 * This is a linear search but it is expected that we have only a few</span></span><br><span class="line"><span class="comment">	 * of them. It should be just one region in most cases</span></span><br><span class="line"><span class="comment">	 * 线性搜索。在大多数情况下，它应该只是一个区域</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">for</span> (memr = b-&gt;memr_head; memr != <span class="literal">NULL</span>; memr = memr-&gt;next) &#123;</span><br><span class="line">		<span class="keyword">if</span> ((page_va &gt;= memr-&gt;first_page)</span><br><span class="line">		    &amp;&amp; (page_va &lt; (memr-&gt;first_page +</span><br><span class="line">		    (memr-&gt;nr_pages &lt;&lt; __PAGE_SHIFT))))</span><br><span class="line">			<span class="keyword">return</span> memr;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * No region found</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/unikraft-memory/%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98%E5%88%86%E9%A1%B5.jpg" alt="虚拟内存分页"></p>
+<p>如图所示，每个页的大小为2^12，所以每隔一个页的开头实际地址就是当前编号向左移12位，而当前页向后数nr_pages所计算出的地址则为<code>page_first + nr_pages &lt;&lt; __PAGE_SHIFT</code>（也就是12）。该内存块的起始地址为first_page，终止地址为<code>page_first + nr_pages &lt;&lt; __PAGE_SHIFT</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 查看page_va在bitmap中的状态 */</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">allocated_in_map</span><span class="params">(<span class="keyword">struct</span> uk_bbpalloc *b,</span></span><br><span class="line"><span class="params">				   <span class="type">unsigned</span> <span class="type">long</span> page_va)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc_memr</span> *<span class="title">memr</span> =</span> map_get_memr(b, page_va);</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> page_idx;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> bm_idx, bm_off;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* treat pages outside of region as allocated */</span></span><br><span class="line">	<span class="keyword">if</span> (!memr)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">	page_idx = (page_va - memr-&gt;first_page) &gt;&gt; __PAGE_SHIFT;</span><br><span class="line">    <span class="comment">/* 取该页在bitmap中的下标 */</span></span><br><span class="line">	bm_idx = page_idx / PAGES_PER_MAPWORD;  </span><br><span class="line">    <span class="comment">/* idx &amp; 11111，只取低5位，也就是求偏移量 */</span></span><br><span class="line">	bm_off = page_idx &amp; (PAGES_PER_MAPWORD - <span class="number">1</span>);  </span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> ((memr)-&gt;mm_alloc_bitmap[bm_idx] &amp; (<span class="number">1UL</span> &lt;&lt; bm_off)); </span><br><span class="line">    <span class="comment">/* 查询bitmap中下标为bm_idx的第bm_off位的状态 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 将从first_page开始到first_page + nr_pages - 1的所有页映射进bitmap中 */</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">map_alloc</span><span class="params">(<span class="keyword">struct</span> uk_bbpalloc *b, <span class="type">uintptr_t</span> first_page,</span></span><br><span class="line"><span class="params">		      <span class="type">unsigned</span> <span class="type">long</span> nr_pages)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc_memr</span> *<span class="title">memr</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> first_page_idx, end_page_idx;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> start_off, end_off, curr_idx, end_idx;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * In case there was no memory region found, the allocator</span></span><br><span class="line"><span class="comment">	 * is in a really bad state. It means that the specified page</span></span><br><span class="line"><span class="comment">	 * region is not covered by our allocator.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	memr = map_get_memr(b, first_page);</span><br><span class="line">	UK_ASSERT(memr != <span class="literal">NULL</span>);</span><br><span class="line">	UK_ASSERT((first_page + (nr_pages &lt;&lt; __PAGE_SHIFT))</span><br><span class="line">		  &lt;= (memr-&gt;first_page + (memr-&gt;nr_pages &lt;&lt; __PAGE_SHIFT)));</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 计算起始page在bitmap中的idx与偏移量以及终止page在bitmap中的idx以及偏移量 */</span></span><br><span class="line">	first_page -= memr-&gt;first_page;</span><br><span class="line">	first_page_idx = first_page &gt;&gt; __PAGE_SHIFT;</span><br><span class="line">	curr_idx = first_page_idx / PAGES_PER_MAPWORD;</span><br><span class="line">	start_off = first_page_idx &amp; (PAGES_PER_MAPWORD - <span class="number">1</span>);</span><br><span class="line">	end_page_idx = first_page_idx + nr_pages;</span><br><span class="line">	end_idx = end_page_idx / PAGES_PER_MAPWORD;</span><br><span class="line">	end_off = end_page_idx &amp; (PAGES_PER_MAPWORD - <span class="number">1</span>);</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 分类讨论，讨论该次分配的所有页是否在一个mapword中 */</span></span><br><span class="line">	<span class="keyword">if</span> (curr_idx == end_idx) &#123;</span><br><span class="line">        <span class="comment">/* 如果在同一个mapword中，则将该mapword的[start_off, end_off)位 置1 */</span></span><br><span class="line">		memr-&gt;mm_alloc_bitmap[curr_idx] |=</span><br><span class="line">		    ((<span class="number">1UL</span> &lt;&lt; end_off) - <span class="number">1</span>) &amp; -(<span class="number">1UL</span> &lt;&lt; start_off);</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">/* 如果不在同一个mapword中，则先将curr_idx所在的mapword从start_off开始到最高位填充完毕，再将curr_idx到end_idx中所有的mapword填充完毕，最后将end_idx所在的低end_off位填充完毕 */</span></span><br><span class="line">		memr-&gt;mm_alloc_bitmap[curr_idx] |= -(<span class="number">1UL</span> &lt;&lt; start_off);</span><br><span class="line">		<span class="keyword">while</span> (++curr_idx &lt; end_idx)</span><br><span class="line">			memr-&gt;mm_alloc_bitmap[curr_idx] = ~<span class="number">0UL</span>;</span><br><span class="line">		memr-&gt;mm_alloc_bitmap[curr_idx] |= (<span class="number">1UL</span> &lt;&lt; end_off) - <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	b-&gt;nr_free_pages -= nr_pages; <span class="comment">/* 更新可分配的页面数 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p><img src="/images/unikraft-memory/map_alloc_1.jpg" alt="map_alloc_1"></p>
+<p><img src="D:\Learning\研究生\操作系统\学习笔记\unikraft-souce-code\images\map_alloc_2.jpg" alt="map_alloc_2"></p>
+<p>如图所示，两个图分别演示了分类讨论中的两种情况，分别为curr_idx与end_idx在同一mapword中与curr_idex与end_idx在不同mapword中的位填充示意图。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 同上map_alloc，map_alloc为置1操作，而map_free为置零操作 */</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">map_free</span><span class="params">(<span class="keyword">struct</span> uk_bbpalloc *b, <span class="type">uintptr_t</span> first_page,</span></span><br><span class="line"><span class="params">		     <span class="type">unsigned</span> <span class="type">long</span> nr_pages)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc_memr</span> *<span class="title">memr</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> first_page_idx, end_page_idx;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> start_off, end_off, curr_idx, end_idx;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * In case there was no memory region found, the allocator</span></span><br><span class="line"><span class="comment">	 * is in a really bad state. It means that the specified page</span></span><br><span class="line"><span class="comment">	 * region is not covered by our allocator.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	memr = map_get_memr(b, first_page);</span><br><span class="line">	UK_ASSERT(memr != <span class="literal">NULL</span>);</span><br><span class="line">	UK_ASSERT((first_page + (nr_pages &lt;&lt; __PAGE_SHIFT))</span><br><span class="line">		  &lt;= (memr-&gt;first_page + (memr-&gt;nr_pages &lt;&lt; __PAGE_SHIFT)));</span><br><span class="line"></span><br><span class="line">	first_page -= memr-&gt;first_page;</span><br><span class="line">	first_page_idx = first_page &gt;&gt; __PAGE_SHIFT;</span><br><span class="line">	curr_idx = first_page_idx / PAGES_PER_MAPWORD;</span><br><span class="line">	start_off = first_page_idx &amp; (PAGES_PER_MAPWORD - <span class="number">1</span>);</span><br><span class="line">	end_page_idx = first_page_idx + nr_pages;</span><br><span class="line">	end_idx = end_page_idx / PAGES_PER_MAPWORD;</span><br><span class="line">	end_off = end_page_idx &amp; (PAGES_PER_MAPWORD - <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (curr_idx == end_idx) &#123;</span><br><span class="line">		memr-&gt;mm_alloc_bitmap[curr_idx] &amp;=</span><br><span class="line">		    -(<span class="number">1UL</span> &lt;&lt; end_off) | ((<span class="number">1UL</span> &lt;&lt; start_off) - <span class="number">1</span>);</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		memr-&gt;mm_alloc_bitmap[curr_idx] &amp;= (<span class="number">1UL</span> &lt;&lt; start_off) - <span class="number">1</span>;</span><br><span class="line">		<span class="keyword">while</span> (++curr_idx != end_idx)</span><br><span class="line">			memr-&gt;mm_alloc_bitmap[curr_idx] = <span class="number">0</span>;</span><br><span class="line">		memr-&gt;mm_alloc_bitmap[curr_idx] &amp;= -(<span class="number">1UL</span> &lt;&lt; end_off);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	b-&gt;nr_free_pages += nr_pages;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 计算特定值的函数， 返回传入数的下一个2次幂的对数，如6的下一个2次幂就是8，8的对数为3 */</span></span><br><span class="line"><span class="comment">/* return log of the next power of two of passed number */</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">num_pages_to_order</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> num_pages)</span></span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(num_pages != <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* ukarch_flsl has undefined behavior when called with zero */</span></span><br><span class="line">	<span class="keyword">if</span> (num_pages == <span class="number">1</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* ukarch_flsl(num_pages - 1) returns log of the previous power of two</span></span><br><span class="line"><span class="comment">	 * of num_pages. ukarch_flsl is called with `num_pages - 1` and not</span></span><br><span class="line"><span class="comment">	 * `num_pages` to handle the case where num_pages is already a power</span></span><br><span class="line"><span class="comment">	 * of two.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">return</span> ukarch_flsl(num_pages - <span class="number">1</span>) + <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*  伙伴算法分配内存页 */</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> *<span class="title function_">bbuddy_palloc</span><span class="params">(<span class="keyword">struct</span> uk_alloc *a, <span class="type">unsigned</span> <span class="type">long</span> num_pages)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc</span> *<span class="title">b</span>;</span></span><br><span class="line">	<span class="type">size_t</span> i;</span><br><span class="line">	<span class="type">chunk_head_t</span> *alloc_ch, *spare_ch;</span><br><span class="line">	<span class="type">chunk_tail_t</span> *spare_ct;</span><br><span class="line">	</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">    	alloc_ch: 需要分配的空间的chunk_head</span></span><br><span class="line"><span class="comment">    	spare_ch: 空闲空间的chunk_head</span></span><br><span class="line"><span class="comment">    	spare_ct: 空间空间的chunk_tail</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">    </span><br><span class="line">	UK_ASSERT(a != <span class="literal">NULL</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/* 将a的priv数组转化为uk_bbpalloc(因为priv数组的作用就是用来存放已经被初始化好的uk_bbpalloc，所以每次从priv中转化出来就相当于一直在操作同一个内存分配器) */</span></span><br><span class="line">	b = (<span class="keyword">struct</span> uk_bbpalloc *)&amp;a-&gt;priv;  </span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 找到要分配的页面数的下一个2次幂的对数 */</span></span><br><span class="line">	<span class="type">size_t</span> order = (<span class="type">size_t</span>)num_pages_to_order(num_pages);  </span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Find smallest order which can satisfy the request. 即找到最小的可用块*/</span></span><br><span class="line">	<span class="keyword">for</span> (i = order; i &lt; FREELIST_SIZE; i++) &#123;</span><br><span class="line">		<span class="keyword">if</span> (!FREELIST_EMPTY(b-&gt;free_head[i]))</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (i == FREELIST_SIZE)</span><br><span class="line">		<span class="keyword">goto</span> no_memory;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Unlink a chunk. </span></span><br><span class="line"><span class="comment">		将该块从链表中摘下</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line">	alloc_ch = b-&gt;free_head[i];</span><br><span class="line">	b-&gt;free_head[i] = alloc_ch-&gt;next;</span><br><span class="line">	alloc_ch-&gt;next-&gt;pprev = alloc_ch-&gt;pprev;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* We may have to break the chunk a number of times. */</span></span><br><span class="line">    <span class="comment">/* 折半查找合适的可分配地址空间，并将空闲块重新挂回链表上 */</span></span><br><span class="line">	<span class="keyword">while</span> (i != order) &#123;</span><br><span class="line">		<span class="comment">/* Split into two equal parts. */</span></span><br><span class="line">        <span class="comment">/*  将当前的i，也就是次幂减一，以便后续操作 */</span></span><br><span class="line">		i--;</span><br><span class="line">        </span><br><span class="line">        </span><br><span class="line">		spare_ch = (<span class="type">chunk_head_t</span> *)((<span class="type">char</span> *)alloc_ch</span><br><span class="line">					    + (<span class="number">1UL</span> &lt;&lt; (i + __PAGE_SHIFT)));</span><br><span class="line">		spare_ct = (<span class="type">chunk_tail_t</span> *)((<span class="type">char</span> *)spare_ch</span><br><span class="line">					    + (<span class="number">1UL</span> &lt;&lt; (i + __PAGE_SHIFT))) - <span class="number">1</span>;</span><br><span class="line">		</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">        </span></span><br><span class="line"><span class="comment">   spare_ch = (chunk_head_t *)((char *)alloc_ch + (1UL &lt;&lt; (i + __PAGE_SHIFT)));</span></span><br><span class="line"><span class="comment">   tips: </span></span><br><span class="line"><span class="comment">      int a[] = &#123;1,2,3,4,5&#125;;</span></span><br><span class="line"><span class="comment">      int *p = a;</span></span><br><span class="line"><span class="comment">      printf(&quot;%d\n&quot;, *p); 此时*p的值为1，也就是p[0]</span></span><br><span class="line"><span class="comment">      p += 1;</span></span><br><span class="line"><span class="comment">      printf(&quot;%d\n&quot;, *p); 此时*p的值为2，也就是p[1]</span></span><br><span class="line"><span class="comment">      这说明了一件事，当在给指针做加减操作的时候移动的字节数与指针所指向的类型相关</span></span><br><span class="line"><span class="comment">      如果是p指向的是char类型，那么p+1只会向后移动一个字节</span></span><br><span class="line"><span class="comment">        		</span></span><br><span class="line"><span class="comment">        	-------------------------------------------------</span></span><br><span class="line"><span class="comment">           |                      2^i个page                  |</span></span><br><span class="line"><span class="comment">        	-------------------------------------------------</span></span><br><span class="line"><span class="comment">        	^                       ^</span></span><br><span class="line"><span class="comment">        	alloc_ch   (char *)alloc_ch + (1UL &lt;&lt; (i + __PAGE_SHIFT)) (也就是2^(i-1)个page位置处)</span></span><br><span class="line"><span class="comment">        	</span></span><br><span class="line"><span class="comment">      对于该行代码，(char *)强转操作是为了将alloc_ch暂时指向char类型，所以后面加上2^i页个字节的大小</span></span><br><span class="line"><span class="comment">      由于之前i已经减一了，所以加上2^i之后相当于跳到了原本地址块的一半位置，即伙伴算法中折半找适配块的流程</span></span><br><span class="line"><span class="comment">        	</span></span><br><span class="line"><span class="comment">        	-------------------------------------------------</span></span><br><span class="line"><span class="comment">           |                        |                        |</span></span><br><span class="line"><span class="comment">        	-------------------------------------------------</span></span><br><span class="line"><span class="comment">        	           ^						 ^</span></span><br><span class="line"><span class="comment">        	    前2^(i-1)继续查找	   后2^(i-1)作为空闲区挂载回链表</span></span><br><span class="line"><span class="comment">        </span></span><br><span class="line"><span class="comment">      下一轮：先执行i--，然后流程同上，直到找到合适的内存区域位置(按buddy算法的描述，即alloc_occupy &gt;= 1/2*memr)</span></span><br><span class="line"><span class="comment">        	-------------------------</span></span><br><span class="line"><span class="comment">           |            |            | </span></span><br><span class="line"><span class="comment">        	-------------------------</span></span><br><span class="line"><span class="comment">        	^           ^</span></span><br><span class="line"><span class="comment">        	alloc_ch   (char *)alloc_ch + (1UL &lt;&lt; (i + __PAGE_SHIFT))</span></span><br><span class="line"><span class="comment">        */</span>												</span><br><span class="line">		<span class="comment">/* Create new header for spare chunk. */</span></span><br><span class="line">		spare_ch-&gt;level = i;</span><br><span class="line">		spare_ch-&gt;next = b-&gt;free_head[i];</span><br><span class="line">		spare_ch-&gt;pprev = &amp;b-&gt;free_head[i];</span><br><span class="line">		spare_ct-&gt;level = i;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* Link in the spare chunk. */</span></span><br><span class="line">		spare_ch-&gt;next-&gt;pprev = &amp;spare_ch-&gt;next;</span><br><span class="line">		b-&gt;free_head[i] = spare_ch;</span><br><span class="line">        <span class="comment">/* 将地址块的后半段作为空闲区域挂载在free_head[i]链表上 */</span></span><br><span class="line">	&#125;</span><br><span class="line">	map_alloc(b, (<span class="type">uintptr_t</span>)alloc_ch, <span class="number">1UL</span> &lt;&lt; order); <span class="comment">/* 将分配出去的所有页在bitmap中置1 */</span></span><br><span class="line"></span><br><span class="line">	uk_alloc_stats_count_palloc(a, (<span class="type">void</span> *) alloc_ch, num_pages);  <span class="comment">/* 统计分配的页面数量 */</span></span><br><span class="line">	<span class="keyword">return</span> ((<span class="type">void</span> *)alloc_ch);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 报错处理，打印报错信息，并记录错误 */</span></span><br><span class="line">no_memory:</span><br><span class="line">	uk_pr_warn(<span class="string">&quot;%&quot;</span>__PRIuptr<span class="string">&quot;: Cannot handle palloc request of order %&quot;</span>__PRIsz<span class="string">&quot;: Out of memory\n&quot;</span>,</span><br><span class="line">		   (<span class="type">uintptr_t</span>)a, order);</span><br><span class="line"></span><br><span class="line">	uk_alloc_stats_count_penomem(a, num_pages);</span><br><span class="line">	errno = ENOMEM;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 伙伴算法释放内存页 */</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">bbuddy_pfree</span><span class="params">(<span class="keyword">struct</span> uk_alloc *a, <span class="type">void</span> *obj, <span class="type">unsigned</span> <span class="type">long</span> num_pages)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc</span> *<span class="title">b</span>;</span></span><br><span class="line">	<span class="type">chunk_head_t</span> *freed_ch, *to_merge_ch;</span><br><span class="line">	<span class="type">chunk_tail_t</span> *freed_ct;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> mask;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(a != <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">	uk_alloc_stats_count_pfree(a, obj, num_pages);</span><br><span class="line">	b = (<span class="keyword">struct</span> uk_bbpalloc *)&amp;a-&gt;priv;</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 获取需要释放的最小内存的页数的对数 */</span></span><br><span class="line">	<span class="type">size_t</span> order = (<span class="type">size_t</span>)num_pages_to_order(num_pages);  </span><br><span class="line"></span><br><span class="line">	<span class="comment">/* if the object is not page aligned it was clearly not from us */</span></span><br><span class="line">	UK_ASSERT((((<span class="type">uintptr_t</span>)obj) &amp; (__PAGE_SIZE - <span class="number">1</span>)) == <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* First free the chunk  将这些内存页在bitmap中置零*/</span></span><br><span class="line">	map_free(b, (<span class="type">uintptr_t</span>)obj, <span class="number">1UL</span> &lt;&lt; order);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Create free chunk   创建空闲内存块*/</span></span><br><span class="line">	freed_ch = (<span class="type">chunk_head_t</span> *)obj;</span><br><span class="line">	freed_ct = (<span class="type">chunk_tail_t</span> *)((<span class="type">char</span> *)obj</span><br><span class="line">				    + (<span class="number">1UL</span> &lt;&lt; (order + __PAGE_SHIFT))) - <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Now, possibly we can conseal chunks together   合并内存块操作*/</span></span><br><span class="line">    <span class="comment">/* while循环的作用是从低到高查询是否有可以合并的内存块 */</span></span><br><span class="line">	<span class="keyword">while</span> (order &lt; FREELIST_SIZE) &#123;</span><br><span class="line">		mask = <span class="number">1UL</span> &lt;&lt; (order + __PAGE_SHIFT);</span><br><span class="line">		<span class="keyword">if</span> ((<span class="type">unsigned</span> <span class="type">long</span>)freed_ch &amp; mask) &#123;</span><br><span class="line">			to_merge_ch = (<span class="type">chunk_head_t</span> *)((<span class="type">char</span> *)freed_ch - mask);</span><br><span class="line">            <span class="comment">/* 如果该块已经被分配了或者该块和当前内存块不是一个大小(level)，说明该块不满足伙伴块的定义，直接退出循环 */</span></span><br><span class="line">			<span class="keyword">if</span> (allocated_in_map(b, (<span class="type">uintptr_t</span>)to_merge_ch)</span><br><span class="line">			    || to_merge_ch-&gt;level != order)</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">			<span class="comment">/* Merge with predecessor */</span></span><br><span class="line">			freed_ch = to_merge_ch;</span><br><span class="line">            </span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">            伙伴块</span></span><br><span class="line"><span class="comment">            </span></span><br><span class="line"><span class="comment">            -----------------------------------------------------</span></span><br><span class="line"><span class="comment">           |                        |                            |</span></span><br><span class="line"><span class="comment">            -----------------------------------------------------</span></span><br><span class="line"><span class="comment">           ^                        ^                            ^</span></span><br><span class="line"><span class="comment">           to_merge_ch           freed_ch                     freed_ct</span></span><br><span class="line"><span class="comment">           </span></span><br><span class="line"><span class="comment">    如果当前块的首地址(unsigned long)freed_ch的第(order + __PAGE_SHIFT)位存在，则说明当前块的伙伴块中地址较大的那一个，被合并的伙伴块则是伙伴块中地址较小的那一个(即to_merge_ch = (chunk_head_t *)((char *)freed_ch - mask);)，所以块合并的时候是将地址较大的伙伴块的首地址指针(freed_ch)移动到地址较小的伙伴块的首地址(to_merge_ch)，且尾地址指针(freed_ct)不变</span></span><br><span class="line"><span class="comment">            */</span></span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			to_merge_ch = (<span class="type">chunk_head_t</span> *)((<span class="type">char</span> *)freed_ch + mask);</span><br><span class="line">            <span class="comment">/* 如果该块已经被分配了或者该块和当前内存块不是一个大小(level)，说明该块不满足伙伴块的定义，直接退出循环 */</span></span><br><span class="line">			<span class="keyword">if</span> (allocated_in_map(b, (<span class="type">uintptr_t</span>)to_merge_ch)</span><br><span class="line">			    || to_merge_ch-&gt;level != order)</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">			<span class="comment">/* Merge with successor */</span></span><br><span class="line">			freed_ct =</span><br><span class="line">			    (<span class="type">chunk_tail_t</span> *)((<span class="type">char</span> *)to_merge_ch + mask) - <span class="number">1</span>;</span><br><span class="line">            </span><br><span class="line">            <span class="comment">/* </span></span><br><span class="line"><span class="comment">                               to_merge_ch       </span></span><br><span class="line"><span class="comment">                                    ^</span></span><br><span class="line"><span class="comment">                                    |</span></span><br><span class="line"><span class="comment">            -----------------------------------------------------</span></span><br><span class="line"><span class="comment">           |                        |                            |</span></span><br><span class="line"><span class="comment">            -----------------------------------------------------</span></span><br><span class="line"><span class="comment">           ^                       ^                            ^</span></span><br><span class="line"><span class="comment">         freed_ch              freed_ct          (chunk_tail_t *)((char *)to_merge_ch + mask) - 1</span></span><br><span class="line"><span class="comment">            </span></span><br><span class="line"><span class="comment">     如果当前块的首地址(unsigned long)freed_ch的第(order + __PAGE_SHIFT)位不存在，则说明当前块的伙伴块中地址较小的那一个，被合并的伙伴块则是伙伴块中地址较大的那一个(即to_merge_ch = (chunk_head_t *)((char *)freed_ch + mask);)，所以块合并的时候是将地址较小的伙伴块的尾指针(freed_ct)移动到地址较大的伙伴块的尾地址((chunk_tail_t *)((char *)to_merge_ch + mask) - 1)，且首地址指针不变</span></span><br><span class="line"><span class="comment">            </span></span><br><span class="line"><span class="comment">            */</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* We are commited to merging, unlink the chunk  为了方便下一步的合并操作，所以需要将该块从原链表摘下 */</span></span><br><span class="line">		*(to_merge_ch-&gt;pprev) = to_merge_ch-&gt;next;</span><br><span class="line">		to_merge_ch-&gt;next-&gt;pprev = to_merge_ch-&gt;pprev;</span><br><span class="line"></span><br><span class="line">		order++;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Link the new chunk   将我们合并好的大的内存块重新放回空闲内存块链表*/</span></span><br><span class="line">	freed_ch-&gt;level = order;</span><br><span class="line">	freed_ch-&gt;next = b-&gt;free_head[order];</span><br><span class="line">	freed_ch-&gt;pprev = &amp;b-&gt;free_head[order];</span><br><span class="line">	freed_ct-&gt;level = order;</span><br><span class="line"></span><br><span class="line">	freed_ch-&gt;next-&gt;pprev = &amp;freed_ch-&gt;next;</span><br><span class="line">	b-&gt;free_head[order] = freed_ch;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 很简单的功能，查找并返回最大可用页的数量 */</span></span><br><span class="line"><span class="type">static</span> <span class="type">long</span> <span class="title function_">bbuddy_pmaxalloc</span><span class="params">(<span class="keyword">struct</span> uk_alloc *a)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc</span> *<span class="title">b</span>;</span></span><br><span class="line">	<span class="type">size_t</span> i, order;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(a != <span class="literal">NULL</span>);</span><br><span class="line">	b = (<span class="keyword">struct</span> uk_bbpalloc *)&amp;a-&gt;priv;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Find biggest order that has still elements available */</span></span><br><span class="line">	order = FREELIST_SIZE;</span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; FREELIST_SIZE; i++) &#123;</span><br><span class="line">		<span class="keyword">if</span> (!FREELIST_EMPTY(b-&gt;free_head[i]))</span><br><span class="line">			order = i;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (order == FREELIST_SIZE)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>; <span class="comment">/* no memory left */</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> (<span class="type">long</span>) (<span class="number">1</span> &lt;&lt; order);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 返回当前伙伴算法可用内存页的总数 */</span></span><br><span class="line"><span class="type">static</span> <span class="type">long</span> <span class="title function_">bbuddy_pavailmem</span><span class="params">(<span class="keyword">struct</span> uk_alloc *a)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc</span> *<span class="title">b</span>;</span></span><br><span class="line"></span><br><span class="line">	UK_ASSERT(a != <span class="literal">NULL</span>);</span><br><span class="line">	b = (<span class="keyword">struct</span> uk_bbpalloc *)&amp;a-&gt;priv;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> (<span class="type">long</span>) b-&gt;nr_free_pages;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 其实就是一个对内存区域初始化的操作 */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">bbuddy_addmem</span><span class="params">(<span class="keyword">struct</span> uk_alloc *a, <span class="type">void</span> *base, <span class="type">size_t</span> len)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc</span> *<span class="title">b</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc_memr</span> *<span class="title">memr</span>;</span></span><br><span class="line">	<span class="type">size_t</span> memr_size;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> count, i;</span><br><span class="line">	<span class="type">chunk_head_t</span> *ch;</span><br><span class="line">	<span class="type">chunk_tail_t</span> *ct;</span><br><span class="line">	<span class="type">uintptr_t</span> min, max, range;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(a != <span class="literal">NULL</span>);</span><br><span class="line">	UK_ASSERT(base != <span class="literal">NULL</span>);</span><br><span class="line">	b = (<span class="keyword">struct</span> uk_bbpalloc *)&amp;a-&gt;priv;</span><br><span class="line"></span><br><span class="line">	min = round_pgup((<span class="type">uintptr_t</span>)base);  <span class="comment">/* 将基址与页地址向上对齐 */</span></span><br><span class="line">	max = round_pgdown((<span class="type">uintptr_t</span>)base + (<span class="type">uintptr_t</span>)len); <span class="comment">/* 将要分配的地址末尾与页地址向下对齐 */</span></span><br><span class="line">	<span class="keyword">if</span> (max &lt; min) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;%&quot;</span>__PRIuptr<span class="string">&quot;: Failed to add memory region %&quot;</span>__PRIuptr<span class="string">&quot;-%&quot;</span>__PRIuptr<span class="string">&quot;: Invalid range after applying page alignments\n&quot;</span>,</span><br><span class="line">			  (<span class="type">uintptr_t</span>) a, (<span class="type">uintptr_t</span>) base,</span><br><span class="line">			  (<span class="type">uintptr_t</span>) base + (<span class="type">uintptr_t</span>) len);</span><br><span class="line">		<span class="keyword">return</span> -EINVAL;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	range = max - min;  </span><br><span class="line">    <span class="comment">/* </span></span><br><span class="line"><span class="comment">    </span></span><br><span class="line"><span class="comment">    能分配的地址范围，range被分为了三个部分，一个是memr内存区块管理占用空间，一个是bitmap位图占用空间，以及实际要分配出去的内存页的占用空间 </span></span><br><span class="line"><span class="comment">	</span></span><br><span class="line"><span class="comment">	min &lt;--------------------------range-------------------------&gt;max</span></span><br><span class="line"><span class="comment">	 ---------------------------------------------------------------</span></span><br><span class="line"><span class="comment">	|        |           |                                          |</span></span><br><span class="line"><span class="comment">	 ---------------------------------------------------------------</span></span><br><span class="line"><span class="comment">	    ^          ^                         ^</span></span><br><span class="line"><span class="comment">	   memr   bitmap位图实际存储            实际可分配内存页</span></span><br><span class="line"><span class="comment">	</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* We should have at least one page for bitmap tracking</span></span><br><span class="line"><span class="comment">	 * and one page for data.</span></span><br><span class="line"><span class="comment">	 * 如果除了memr内存区域和一个mapword以外，一个内存页的空间都没有的话，说明内存不够，无法分配</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (range &lt; round_pgup(<span class="keyword">sizeof</span>(*memr) + BYTES_PER_MAPWORD) +</span><br><span class="line">			__PAGE_SIZE) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;%&quot;</span>__PRIuptr<span class="string">&quot;: Failed to add memory region %&quot;</span>__PRIuptr<span class="string">&quot;-%&quot;</span>__PRIuptr<span class="string">&quot;: Not enough space after applying page alignments\n&quot;</span>,</span><br><span class="line">			  (<span class="type">uintptr_t</span>) a, (<span class="type">uintptr_t</span>) base,</span><br><span class="line">			  (<span class="type">uintptr_t</span>) base + (<span class="type">uintptr_t</span>) len);</span><br><span class="line">		<span class="keyword">return</span> -EINVAL;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	memr = (<span class="keyword">struct</span> uk_bbpalloc_memr *)min;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * The number of pages is found by solving the inequality:</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * sizeof(*memr) + bitmap_size + page_num * page_size &lt;= range</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * where: bitmap_size = page_num / BITS_PER_BYTE</span></span><br><span class="line"><span class="comment">	 </span></span><br><span class="line"><span class="comment">	 memr-&gt;nr_pages: 用于存储实际的可分配页数。计算公式为：总比特数/一个内存页所占的比特数+1</span></span><br><span class="line"><span class="comment">	 后面的+1是为了为bitmap让出空间，因为一个页需要一个位用来记录分配情况</span></span><br><span class="line"><span class="comment">	 	</span></span><br><span class="line"><span class="comment">	 memr-&gt;mm_alloc_bitmap: 用于指向bitmap实际占用的地址的首地址，具体地址为min(基址) + sizeof(*memr)(内存管理块的大小)</span></span><br><span class="line"><span class="comment">	 memr_size: 用于计算memr和bitmap占用的总地址空间(同时与内存页地址向上对齐)	 </span></span><br><span class="line"><span class="comment">		</span></span><br><span class="line"><span class="comment">	 memr-&gt;mm_alloc_bitmap_size: bitmap实际占用的地址大小，用memr_size减去memr占用的空间即可</span></span><br><span class="line"><span class="comment">	 </span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	memr-&gt;nr_pages =</span><br><span class="line">		BITS_PER_BYTE * (range - <span class="keyword">sizeof</span>(*memr)) /</span><br><span class="line">		(BITS_PER_BYTE * __PAGE_SIZE + <span class="number">1</span>);</span><br><span class="line">	memr-&gt;mm_alloc_bitmap = (<span class="type">unsigned</span> <span class="type">long</span> *) (min + <span class="keyword">sizeof</span>(*memr));</span><br><span class="line">	memr_size = round_pgup(<span class="keyword">sizeof</span>(*memr) +</span><br><span class="line">		DIV_ROUND_UP(memr-&gt;nr_pages, BITS_PER_BYTE));</span><br><span class="line">	memr-&gt;mm_alloc_bitmap_size = memr_size - <span class="keyword">sizeof</span>(*memr);</span><br><span class="line"></span><br><span class="line">	min += memr_size;  <span class="comment">/* 基址移动到可分配页的首地址 */</span></span><br><span class="line">	range -= memr_size; <span class="comment">/* 更新可分配页的总地址空间 */</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Initialize region&#x27;s bitmap</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	memr-&gt;first_page = min;</span><br><span class="line">	<span class="comment">/* add to list */</span></span><br><span class="line">	memr-&gt;next = b-&gt;memr_head;</span><br><span class="line">	b-&gt;memr_head = memr;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* All allocated by default. */</span></span><br><span class="line">	<span class="built_in">memset</span>(memr-&gt;mm_alloc_bitmap, (<span class="type">unsigned</span> <span class="type">char</span>) ~<span class="number">0</span>,</span><br><span class="line">			memr-&gt;mm_alloc_bitmap_size);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* free up the memory we&#x27;ve been given to play with */</span></span><br><span class="line">	map_free(b, min, memr-&gt;nr_pages);</span><br><span class="line"></span><br><span class="line">	count = <span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     下面的这个while循环有点类似于一个数分解成各个二次幂数的过程</span></span><br><span class="line"><span class="comment">     例如 100 = 64 + 32 +4，先找100的最高位次幂，即64，然后剩下100-64 = 36</span></span><br><span class="line"><span class="comment">     再从36里头找最高位次幂，即32，然后剩下36-32 = 4，4正好是最高位次幂，所以将100划分成了64 + 32 + 4三个数字</span></span><br><span class="line"><span class="comment">        </span></span><br><span class="line"><span class="comment">     下面的循环内依次找到了当前可分配内存大小的最高位次幂，并将其创建一个新的空闲内存块，加入链表对应的位置中。</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">	<span class="keyword">while</span> (range != <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Next chunk is limited by alignment of min, but also</span></span><br><span class="line"><span class="comment">		 * must not be bigger than remaining range.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="keyword">for</span> (i = __PAGE_SHIFT; (<span class="number">1UL</span> &lt;&lt; (i + <span class="number">1</span>)) &lt;= range; i++)</span><br><span class="line">			<span class="keyword">if</span> (min &amp; (<span class="number">1UL</span> &lt;&lt; i))</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">		uk_pr_debug(<span class="string">&quot;%&quot;</span>__PRIuptr<span class="string">&quot;: Add allocate unit %&quot;</span>__PRIuptr<span class="string">&quot; - %&quot;</span>__PRIuptr<span class="string">&quot; (order %lu)\n&quot;</span>,</span><br><span class="line">			    (<span class="type">uintptr_t</span>)a, min, (<span class="type">uintptr_t</span>)(min + (<span class="number">1UL</span> &lt;&lt; i)),</span><br><span class="line">			    (i - __PAGE_SHIFT));</span><br><span class="line"></span><br><span class="line">		ch = (<span class="type">chunk_head_t</span> *)min;</span><br><span class="line">		min += <span class="number">1UL</span> &lt;&lt; i;</span><br><span class="line">		range -= <span class="number">1UL</span> &lt;&lt; i;</span><br><span class="line">		ct = (<span class="type">chunk_tail_t</span> *)min - <span class="number">1</span>;</span><br><span class="line">		i -= __PAGE_SHIFT;</span><br><span class="line">		ch-&gt;level = i;</span><br><span class="line">		ch-&gt;next = b-&gt;free_head[i];</span><br><span class="line">		ch-&gt;pprev = &amp;b-&gt;free_head[i];</span><br><span class="line">		ch-&gt;next-&gt;pprev = &amp;ch-&gt;next;</span><br><span class="line">		b-&gt;free_head[i] = ch;</span><br><span class="line">		ct-&gt;level = i;</span><br><span class="line">		count++;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 整个伙伴算法数据结构+内存空间的初始化 */</span></span><br><span class="line"><span class="keyword">struct</span> uk_alloc *<span class="title function_">uk_allocbbuddy_init</span><span class="params">(<span class="type">void</span> *base, <span class="type">size_t</span> len)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_alloc</span> *<span class="title">a</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc</span> *<span class="title">b</span>;</span></span><br><span class="line">	<span class="type">size_t</span> metalen;</span><br><span class="line">	<span class="type">uintptr_t</span> min, max;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> i;</span><br><span class="line"></span><br><span class="line">	min = round_pgup((<span class="type">uintptr_t</span>)base);  <span class="comment">/* 内存区域的基址 */</span></span><br><span class="line">	max = round_pgdown((<span class="type">uintptr_t</span>)base + (<span class="type">uintptr_t</span>)len);  <span class="comment">/* 内存区域的末尾地址 */</span></span><br><span class="line">	UK_ASSERT(max &gt; min);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Allocate space for allocator descriptor  为内存分配器分配地址 */</span></span><br><span class="line">	metalen = round_pgup(<span class="keyword">sizeof</span>(*a) + <span class="keyword">sizeof</span>(*b));</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* enough space for allocator available?  判断是否足够为内存分配器分配空间*/</span></span><br><span class="line">	<span class="keyword">if</span> (min + metalen &gt; max) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;Not enough space for allocator: %&quot;</span>__PRIsz<span class="string">&quot; B required but only %&quot;</span>__PRIuptr<span class="string">&quot; B usable\n&quot;</span>,</span><br><span class="line">			  metalen, (max - min));</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	a = (<span class="keyword">struct</span> uk_alloc *)min;  <span class="comment">/* 将内存分配器指向基址 */</span></span><br><span class="line">	uk_pr_info(<span class="string">&quot;Initialize binary buddy allocator %&quot;</span>__PRIuptr<span class="string">&quot;\n&quot;</span>,</span><br><span class="line">		   (<span class="type">uintptr_t</span>)a);</span><br><span class="line">	min += metalen;  <span class="comment">/* 基址跳过内存分配器的占用空间 */</span></span><br><span class="line">	<span class="built_in">memset</span>(a, <span class="number">0</span>, metalen);    <span class="comment">/* 内存分配器初始化 */</span></span><br><span class="line">	b = (<span class="keyword">struct</span> uk_bbpalloc *)&amp;a-&gt;priv;</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 初始化伙伴算法空闲内存数组，将每个链表的free_head[i]指向free_tail[i] */</span></span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; FREELIST_SIZE; i++) &#123;</span><br><span class="line">		b-&gt;free_head[i] = &amp;b-&gt;free_tail[i];</span><br><span class="line">		b-&gt;free_tail[i].pprev = &amp;b-&gt;free_head[i];</span><br><span class="line">		b-&gt;free_tail[i].next = <span class="literal">NULL</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	b-&gt;memr_head = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* initialize and register allocator interface   </span></span><br><span class="line"><span class="comment">	   将伙伴算法的各个函数注册到uk_alloc中的接口中去</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line">	uk_alloc_init_palloc(a, bbuddy_palloc, bbuddy_pfree,</span><br><span class="line">			     bbuddy_pmaxalloc, bbuddy_pavailmem,</span><br><span class="line">			     bbuddy_addmem);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (max &gt; min + metalen) &#123;</span><br><span class="line">		<span class="comment">/* add left memory - ignore return value */</span></span><br><span class="line">        <span class="comment">/* 除去内存分配器以外的剩下的区域用来初始化内存分配 */</span></span><br><span class="line">		bbuddy_addmem(a, (<span class="type">void</span> *)(min + metalen),</span><br><span class="line">				 (<span class="type">size_t</span>)(max - min - metalen));</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> a;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>结合分析上述函数流程，内存区域分布图如图所示：</p>
+<p><img src="/images/unikraft-memory/%E5%86%85%E5%AD%98%E5%88%86%E5%B8%83%E5%9B%BE.png" alt="image-20221015123303381"></p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/23/ukallocbbuddy/" title="ukallocbbuddy" target="_blank" rel="external">http://example.com/2022/10/23/ukallocbbuddy/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/10/23/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" title="内存相关基础知识"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/10/23/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%AF%BC%E8%A7%88/" title="内存管理导览"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

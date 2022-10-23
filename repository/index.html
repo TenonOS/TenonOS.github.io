@@ -17,16 +17,18 @@
   <meta http-equiv="window-target" content="_top" />
   
   
-  <title>归档: 2022 | TenonOS-unikraft-learning</title>
+  <title>Repositories | TenonOS-unikraft-learning</title>
   <meta property="og:type" content="website">
-<meta property="og:title" content="Hexo">
-<meta property="og:url" content="http://example.com/archives/2022/index.html">
+<meta property="og:title" content="Repositories">
+<meta property="og:url" content="http://example.com/repository/index.html">
 <meta property="og:site_name" content="Hexo">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-10-23T07:25:42.459Z">
+<meta property="article:modified_time" content="2022-10-23T06:20:36.679Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
   <!-- Canonical links -->
-  <link rel="canonical" href="http://example.com/archives/2022/index.html">
+  <link rel="canonical" href="http://example.com/repository/index.html">
   
     <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
   
@@ -43,7 +45,7 @@
 <meta name="generator" content="Hexo 5.4.2"></head>
 
 
-<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+<body class="main-center no-sidebar" itemscope itemtype="http://schema.org/WebPage">
   <header class="header" itemscope itemtype="http://schema.org/WPHeader">
   <div class="slimContent">
     <div class="navbar-header">
@@ -325,80 +327,48 @@
 </aside>
 
   
-  
-<main class="main" role="main">
-  	<article class="content article article-archives article-type-list" itemscope="">
-	    <header class="article-header">
-	      <h1 itemprop="title">归档: 2022</h1>
-	      <p class="text-muted">共 4 篇文章</p>
-	    </header>
-	    <div class="article-body">
-	      
-  
-  
-    
-    
-      
-      
-      <section class="panel panel-default b-no">
-        <div class="panel-heading" role="tab">
-          <h3 class="panel-title">
-            <a data-toggle="collapse" href="#collapse2022" aria-expanded="true">
-              <i class="icon icon-calendar-plus text-active"></i><i class="icon icon-calendar-minus text"></i>
-              2022
-            </a>
-            <!-- <a href="/archives/2022" class="archive-year">2022</a> -->
-          </h3>
-        </div>
-        <div id="collapse2022" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="heading2022">
-        <div class="panel-body">
-          <div class="collection">
-    
-    
-<a href="/2022/10/23/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="collection-item"   itemprop="url">
-  <time datetime="2022-10-23T06:59:15.833Z" itemprop="datePublished">2022-10-23</time>
-  <span>&nbsp;&nbsp;&nbsp;</span> 内存相关基础知识
-</a>
+  <main class="main" role="main">
+  <article class="article article-repository article-type-list" itemscope="">
+  <header class="article-header">
+    <h1 itemprop="title">Repositories</h1>
+    <p class="text-muted">I have <span id="repo-count">0</span> projects on <span id="repo-platform">Github</span></p>
+  </header>
+  <div class="article-body">
+    <div class="repo-content">
+      <div class="blankslate">
+        <p>正在加载...</p>
+      </div>
+    </div>
+  </div>
+</article>
 
 
   
-    
-    
-    
-<a href="/2022/10/23/ukallocbbuddy/" class="collection-item"   itemprop="url">
-  <time datetime="2022-10-23T06:59:15.831Z" itemprop="datePublished">2022-10-23</time>
-  <span>&nbsp;&nbsp;&nbsp;</span> ukallocbbuddy
-</a>
 
 
-  
-    
-    
-    
-<a href="/2022/10/23/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%AF%BC%E8%A7%88/" class="collection-item"   itemprop="url">
-  <time datetime="2022-10-23T06:59:15.823Z" itemprop="datePublished">2022-10-23</time>
-  <span>&nbsp;&nbsp;&nbsp;</span> 内存管理导览
-</a>
 
+<!--项模版-->
+<script type="text/template" id="list-template">
+  <li class="col-sm-6 col-md-6 col-lg-4">
+    <div class="repo hover-shadow hover-grow">
+      <div class="repo-image geopattern" data-pattern-id="{%=name%}"></div>
+      <h3 class="repo-title"><a href="{%=clone_url%}" target="_blank" rel="external nofollow noopener noreferrer">{%=full_name%}</a></h3>
+      <p class="repo-body">{%=description%}</p>
+      <div class="repo-meta">
+        <span class="meta meta-type pull-left" aria-label="{%=language%} project">{%=language%}</span>
+        <span class="meta meta-star" aria-label="{%=stargazers_count%} stars"><i class="icon icon-star-fill"></i> {%=stargazers_count%}</span>
+        <span class="meta meta-fork" aria-label="{%=forks_count%} forks"><i class="icon icon-code-fork"></i> {%=forks_count%}</span>
+        <span class="meta meta-last-updated" aria-label="最后更新时间：{%=updated_at%}">
+        <i class="icon icon-clock"></i> <time datetime="{%=updated_at%}">{%=updated_at%}</time></span>
+      </div>
+    </div>
+  </li>
+</script>
 
-  
-    
-    
-    
-<a href="/2022/10/17/ukalloc/" class="collection-item"   itemprop="url">
-  <time datetime="2022-10-17T14:41:34.708Z" itemprop="datePublished">2022-10-17</time>
-  <span>&nbsp;&nbsp;&nbsp;</span> ukalloc
-</a>
-
-
-  
-  
-    </div></div></div></section>
-  
-
-	    </div>
-  	</article>
-  	 	
+<!--获取失败模版-->
+<script type="text/template" id="error-template">
+  <h3>加载失败</h3><p>请刷新或稍后再试...</p>
+</script>
 </main>
 
   <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
@@ -456,6 +426,72 @@ window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
 <script src="/js/insight.js"></script>
 
 
+
+
+   
+  
+    
+  <script type="text/javascript">
+    var open = function () {
+      var baiduTpl = new Object();
+      var handleTpl = function () {
+        baiduTpl.list = baidu.template("list-template");
+        baiduTpl.error = baidu.template("error-template");
+      };
+
+      var handleRepo = function () {
+        var repoContainer = $('.repo-content');
+        var errorContainer = repoContainer.find(".blankslate");
+        var countContainer = $("#repo-count");
+        var platformContainer = $("#repo-platform");
+
+        platformContainer.text("Github");
+
+        url = "https://api.github.com/users/TenonOS/repos";
+
+        $.get(url, function (result) {
+          if (result) {
+            errorContainer.remove();
+            countContainer.text(result.length);
+            var ul = $("<ul class='repo-list row clearfix'></ul>");
+            result.sort(function (a, b) {
+              return new Date(b.updated_at) - new Date(a.updated_at);
+            }).sort(function (a, b) {
+              var a_start = a.stargazers_count;
+              var b_start = b.stargazers_count;
+              if (a.fork) a_start * 0.5;
+              if (b.fork) b_start * 0.5;
+              return b_start - a_start;
+            }).map(function (repo) {
+              if (!repo.description) {
+                repo.description = "";
+              }
+              repo.updated_at = repo.updated_at.substring(0, repo.updated_at.lastIndexOf("T"));
+              var html = baiduTpl.list(repo);
+              ul.append(html);
+            });
+
+            repoContainer.append(ul);
+            $(".geopattern").each(function () {
+              $(this).geopattern($(this).data('pattern-id'));
+            });
+          } else {
+            errorContainer.append(baiduTpl.error());
+          }
+        });
+      };
+
+      return {
+        init: function () {
+          handleTpl();
+          handleRepo();
+        }
+      }
+    };
+    $(open().init);
+  </script>
+
+  
 
 
 

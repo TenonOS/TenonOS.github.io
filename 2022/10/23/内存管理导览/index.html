@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>内存管理导览 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="unikraft内存管理导览unikraft内存管理调用层次内存分配管理在unikraft中的层次： 1234567unikraft memory allocation systemPOSIX Compliant external API | plat    nolibc&#x2F;newlib&#x2F;musl  |  linuxxu,xen,kvm--------------------------------">
+<meta property="og:type" content="article">
+<meta property="og:title" content="内存管理导览">
+<meta property="og:url" content="http://example.com/2022/10/23/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%AF%BC%E8%A7%88/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="unikraft内存管理导览unikraft内存管理调用层次内存分配管理在unikraft中的层次： 1234567unikraft memory allocation systemPOSIX Compliant external API | plat    nolibc&#x2F;newlib&#x2F;musl  |  linuxxu,xen,kvm--------------------------------">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft-memory/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E8%B0%83%E7%94%A8%E5%9B%BE.jpg">
+<meta property="article:published_time" content="2022-10-23T06:59:15.823Z">
+<meta property="article:modified_time" content="2022-10-23T07:14:35.671Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-内存管理">
+<meta property="article:tag" content="ukalloc">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft-memory/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E8%B0%83%E7%94%A8%E5%9B%BE.jpg">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/23/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%AF%BC%E8%A7%88/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs/">unikraft-libs</a><span class="category-list-count">4</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ukalloc/" rel="tag">ukalloc</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">4</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/ukalloc/" style="font-size: 13px;">ukalloc</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 13px;">unikraft-内存管理</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">4</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs/">unikraft-libs</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="title">内存相关基础知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T06:59:15.833Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs/">unikraft-libs</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/ukallocbbuddy/" class="title">ukallocbbuddy</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T06:59:15.831Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs/">unikraft-libs</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%AF%BC%E8%A7%88/" class="title">内存管理导览</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T06:59:15.823Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs/">unikraft-libs</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/17/ukalloc/" class="title">ukalloc</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-17T14:41:34.708Z" itemprop="datePublished">2022-10-17</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#unikraft%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%AF%BC%E8%A7%88"><span class="toc-number">1.</span> <span class="toc-text">unikraft内存管理导览</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#unikraft%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E8%B0%83%E7%94%A8%E5%B1%82%E6%AC%A1"><span class="toc-number">1.1.</span> <span class="toc-text">unikraft内存管理调用层次</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#unikraft%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E8%B0%83%E7%94%A8%E5%9B%BE"><span class="toc-number">1.2.</span> <span class="toc-text">unikraft内存管理调用图</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-内存管理导览" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      内存管理导览
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/23/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%AF%BC%E8%A7%88/" class="article-date">
+	  <time datetime="2022-10-23T06:59:15.823Z" itemprop="datePublished">2022-10-23</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-libs/">unikraft-libs</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/ukalloc/" rel="tag">ukalloc</a>, <a class="article-tag-link-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/23/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%AF%BC%E8%A7%88/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="unikraft内存管理导览"><a href="#unikraft内存管理导览" class="headerlink" title="unikraft内存管理导览"></a>unikraft内存管理导览</h1><h2 id="unikraft内存管理调用层次"><a href="#unikraft内存管理调用层次" class="headerlink" title="unikraft内存管理调用层次"></a>unikraft内存管理调用层次</h2><p><strong>内存分配管理在unikraft中的层次</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">unikraft memory allocation system</span><br><span class="line"></span><br><span class="line">POSIX Compliant external API | plat    nolibc/newlib/musl  |  linuxxu,xen,kvm</span><br><span class="line">---------------------------------	   -------------------</span><br><span class="line">internal allocation API 			   ukalloc(acts as multiplexer)</span><br><span class="line">---------------------------------	   -------------------</span><br><span class="line">backend allocator implementation		   </span><br></pre></td></tr></table></figure>
+
+<p><strong>概况：</strong></p>
+<p>以uk_前缀开头的函数为internal API并暴露给POSIX接口层，例如有uk_malloc( ), uk_calloc( )等等 。与POSIX不同的是，这些函数需要调用者(posix layer?)去指定要使用怎样的allocator后端。</p>
+<p>例如uk_malloc( )的定义：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> *<span class="title function_">uk_malloc</span><span class="params">(<span class="keyword">struct</span> uk_alloc *a, <span class="type">size_t</span> size)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>其中结构体uk_alloc * 参数就代表了allocator的后端。这个结构体内包含了指针指向对于posix接口层(malloc( ), calloc( ), posix_memalign( )等)的具体实现。值得注意的是，热点函数比如internal allocation APIs都采用了内联函数inline的修饰符，来减少函数调用的开销。</p>
+<p>ukallocbbuddy, ukallocregion等allocator，分配的内存在不同的地址空间。通过链表串起来，再通过ukalloc这个选择器来具体选择。</p>
+<p>在boot时初始化过程中，初始化函数堆中第一个可用的字节会被传递一个void *的base pointer和一个size_t的长度(定义堆的大小)</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">ukboot/boot.c</span><br><span class="line">    <span class="comment">/* try to use memory region to initialize allocator</span></span><br><span class="line"><span class="comment">		 * if it fails, we will try  again with the next region.</span></span><br><span class="line"><span class="comment">		 * As soon we have an allocator, we simply add every</span></span><br><span class="line"><span class="comment">		 * subsequent region to it</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="keyword">if</span> (!a) &#123;</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKBOOT_INITBBUDDY</span></span><br><span class="line">			a = uk_allocbbuddy_init(md.base, md.len);</span><br><span class="line"><span class="meta">#<span class="keyword">elif</span> CONFIG_LIBUKBOOT_INITREGION</span></span><br><span class="line">			a = uk_allocregion_init(md.base, md.len);</span><br><span class="line"><span class="meta">#<span class="keyword">elif</span> CONFIG_LIBUKBOOT_INITMIMALLOC</span></span><br><span class="line">			a = uk_mimalloc_init(md.base, md.len);</span><br><span class="line"><span class="meta">#<span class="keyword">elif</span> CONFIG_LIBUKBOOT_INITTLSF</span></span><br><span class="line">			a = uk_tlsf_init(md.base, md.len);</span><br><span class="line"><span class="meta">#<span class="keyword">elif</span> CONFIG_LIBUKBOOT_INITTINYALLOC</span></span><br><span class="line">			a = uk_tinyalloc_init(md.base, md.len);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			uk_alloc_addmem(a, md.base, md.len);</span><br><span class="line">		&#125;</span><br></pre></td></tr></table></figure>
+
+<p>根据unikraft 论文,uk_alloc共有五个allocator后端:”a buddy system, the Two-Level Segregated Fits [53] (TLSF) real-time memory allocator, tinyalloc [67], Mimalloc [42] (version1.6.1) and the Oscar [12] secure memory allocator”, <strong>实际上在只实现了2个 ukallocbbuddy 和 ukallocregion ; 实际运行时只使用ukallocbbuddy(写死的)</strong></p>
+<p><strong>以malloc为例对内存分配函数调用关系的梳理：</strong></p>
+<p>最上层为unikraft提供的标准c库(newlib或musl)，对应用层直接提供的malloc</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;lib-newlib/mem.c&#125;</span><br><span class="line"><span class="comment">/* Forward to libucallocator calls */</span></span><br><span class="line"><span class="type">void</span> *<span class="title function_">malloc</span><span class="params">(<span class="type">size_t</span> size)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">return</span> uk_malloc(uk_alloc_get_default(), size);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>uk_malloc在internal源语层，是一个wrapper function</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&#123;ukalloc/include/uk/alloc.h&#125;</span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> *<span class="title function_">uk_do_malloc</span><span class="params">(<span class="keyword">struct</span> uk_alloc *a, __sz size)</span></span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(a);</span><br><span class="line">	<span class="keyword">return</span> a-&gt;<span class="built_in">malloc</span>(a, size);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> *<span class="title function_">uk_malloc</span><span class="params">(<span class="keyword">struct</span> uk_alloc *a, __sz size)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">if</span> (unlikely(!a)) &#123;</span><br><span class="line">		errno = ENOMEM;</span><br><span class="line">		<span class="keyword">return</span> __NULL;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> uk_do_malloc(a, size);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>a-&gt;malloc对于有页表功能的实现方式，interface是如下定义的。在一个页内的malloc在uk层实现，页分配palloc则是由pallloc_func传入，具体在allocbuddy这个内存管理算法中去实现</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">&#123;ukalloc/include/uk/alloc_impl.h&#125;</span><br><span class="line"><span class="meta">#<span class="keyword">define</span> uk_alloc_init_palloc(a, palloc_func, pfree_func, pmaxalloc_func, \</span></span><br><span class="line"><span class="meta">			     pavailmem_func, addmem_func)		\</span></span><br><span class="line"><span class="meta">	do &#123;								\</span></span><br><span class="line"><span class="meta">		(a)-&gt;malloc         = uk_malloc_ifpages;		\</span></span><br><span class="line"><span class="meta">		(a)-&gt;calloc         = uk_calloc_compat;			\</span></span><br><span class="line"><span class="meta">		(a)-&gt;realloc        = uk_realloc_ifpages;		\</span></span><br><span class="line"><span class="meta">		(a)-&gt;posix_memalign = uk_posix_memalign_ifpages;	\</span></span><br><span class="line"><span class="meta">		(a)-&gt;memalign       = uk_memalign_compat;		\</span></span><br><span class="line"><span class="meta">		(a)-&gt;free           = uk_free_ifpages;			\</span></span><br><span class="line"><span class="meta">		(a)-&gt;palloc         = (palloc_func);			\</span></span><br><span class="line"><span class="meta">		(a)-&gt;pfree          = (pfree_func);			\</span></span><br><span class="line"><span class="meta">		(a)-&gt;pavailmem      = (pavailmem_func);			\</span></span><br><span class="line"><span class="meta">		(a)-&gt;availmem       = (pavailmem_func != NULL)		\</span></span><br><span class="line"><span class="meta">				      ? uk_alloc_availmem_ifpages : NULL; \</span></span><br><span class="line"><span class="meta">		(a)-&gt;pmaxalloc      = (pmaxalloc_func);			\</span></span><br><span class="line"><span class="meta">		(a)-&gt;maxalloc       = (pmaxalloc_func != NULL)		\</span></span><br><span class="line"><span class="meta">				      ? uk_alloc_maxalloc_ifpages : NULL; \</span></span><br><span class="line"><span class="meta">		(a)-&gt;addmem         = (addmem_func);			\</span></span><br><span class="line"><span class="meta">									\</span></span><br><span class="line"><span class="meta">		uk_alloc_stats_reset((a));				\</span></span><br><span class="line"><span class="meta">		uk_alloc_register((a));					\</span></span><br><span class="line"><span class="meta">	&#125; while (0)</span></span><br></pre></td></tr></table></figure>
+
+<p>页内malloc的实现</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">&#123;ukalloc/alloc.c&#125;</span><br><span class="line"><span class="comment">// 页内malloc的实现</span></span><br><span class="line"><span class="type">void</span> *<span class="title function_">uk_malloc_ifpages</span><span class="params">(<span class="keyword">struct</span> uk_alloc *a, __sz size)</span></span><br><span class="line">&#123;</span><br><span class="line">	__uptr intptr;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> num_pages;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">metadata_ifpages</span> *<span class="title">metadata</span>;</span></span><br><span class="line">	__sz realsize = <span class="keyword">sizeof</span>(*metadata) + size;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(a);</span><br><span class="line">	<span class="comment">/* check for invalid size and overflow */</span></span><br><span class="line">	<span class="keyword">if</span> (!size || realsize &lt; size)</span><br><span class="line">		<span class="keyword">return</span> __NULL;</span><br><span class="line"></span><br><span class="line">	num_pages = size_to_num_pages(realsize);</span><br><span class="line">	intptr = (__uptr)uk_palloc(a, num_pages);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!intptr)</span><br><span class="line">		<span class="keyword">return</span> __NULL;</span><br><span class="line"></span><br><span class="line">	metadata = (<span class="keyword">struct</span> metadata_ifpages *) intptr;</span><br><span class="line">	metadata-&gt;num_pages = num_pages;</span><br><span class="line">	metadata-&gt;base = (<span class="type">void</span> *) intptr;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> (<span class="type">void</span> *)(intptr + <span class="keyword">sizeof</span>(*metadata));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>进入到allocator后端，uk_alloc_init_palloc interface在buddy.c中realize</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;ukallocbbuddy/bbuddy.c&#125;</span><br><span class="line"><span class="comment">/* initialize and register allocator interface */</span></span><br><span class="line">uk_alloc_init_palloc(a, bbuddy_palloc, bbuddy_pfree,</span><br><span class="line">					bbuddy_pmaxalloc, bbuddy_pavailmem,</span><br><span class="line">					bbuddy_addmem);</span><br></pre></td></tr></table></figure>
+
+<p>页分配bbuddy_palloc在buddy内存算法中的实现</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#123;ukallocbbuddy/bbuddy.c&#125;&#125;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> *<span class="title function_">bbuddy_palloc</span><span class="params">(<span class="keyword">struct</span> uk_alloc *a, <span class="type">unsigned</span> <span class="type">long</span> num_pages)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_bbpalloc</span> *<span class="title">b</span>;</span></span><br><span class="line">	<span class="type">size_t</span> i;</span><br><span class="line">	<span class="type">chunk_head_t</span> *alloc_ch, *spare_ch;</span><br><span class="line">	<span class="type">chunk_tail_t</span> *spare_ct;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(a != <span class="literal">NULL</span>);</span><br><span class="line">	b = (<span class="keyword">struct</span> uk_bbpalloc *)&amp;a-&gt;priv;</span><br><span class="line"></span><br><span class="line">	<span class="type">size_t</span> order = (<span class="type">size_t</span>)num_pages_to_order(num_pages);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Find smallest order which can satisfy the request. */</span></span><br><span class="line">	<span class="keyword">for</span> (i = order; i &lt; FREELIST_SIZE; i++) &#123;</span><br><span class="line">		<span class="keyword">if</span> (!FREELIST_EMPTY(b-&gt;free_head[i]))</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (i == FREELIST_SIZE)</span><br><span class="line">		<span class="keyword">goto</span> no_memory;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Unlink a chunk. */</span></span><br><span class="line">	alloc_ch = b-&gt;free_head[i];</span><br><span class="line">	b-&gt;free_head[i] = alloc_ch-&gt;next;</span><br><span class="line">	alloc_ch-&gt;next-&gt;pprev = alloc_ch-&gt;pprev;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* We may have to break the chunk a number of times. */</span></span><br><span class="line">	<span class="keyword">while</span> (i != order) &#123;</span><br><span class="line">		<span class="comment">/* Split into two equal parts. */</span></span><br><span class="line">		i--;</span><br><span class="line">		spare_ch = (<span class="type">chunk_head_t</span> *)((<span class="type">char</span> *)alloc_ch</span><br><span class="line">					    + (<span class="number">1UL</span> &lt;&lt; (i + __PAGE_SHIFT)));</span><br><span class="line">		spare_ct = (<span class="type">chunk_tail_t</span> *)((<span class="type">char</span> *)spare_ch</span><br><span class="line">					    + (<span class="number">1UL</span> &lt;&lt; (i + __PAGE_SHIFT))) - <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* Create new header for spare chunk. */</span></span><br><span class="line">		spare_ch-&gt;level = i;</span><br><span class="line">		spare_ch-&gt;next = b-&gt;free_head[i];</span><br><span class="line">		spare_ch-&gt;pprev = &amp;b-&gt;free_head[i];</span><br><span class="line">		spare_ct-&gt;level = i;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* Link in the spare chunk. */</span></span><br><span class="line">		spare_ch-&gt;next-&gt;pprev = &amp;spare_ch-&gt;next;</span><br><span class="line">		b-&gt;free_head[i] = spare_ch;</span><br><span class="line">	&#125;</span><br><span class="line">	map_alloc(b, (<span class="type">uintptr_t</span>)alloc_ch, <span class="number">1UL</span> &lt;&lt; order);</span><br><span class="line"></span><br><span class="line">	uk_alloc_stats_count_palloc(a, (<span class="type">void</span> *) alloc_ch, num_pages);</span><br><span class="line">	<span class="keyword">return</span> ((<span class="type">void</span> *)alloc_ch);</span><br><span class="line"></span><br><span class="line">no_memory:</span><br><span class="line">	uk_pr_warn(<span class="string">&quot;%&quot;</span>__PRIuptr<span class="string">&quot;: Cannot handle palloc request of order %&quot;</span>__PRIsz<span class="string">&quot;: Out of memory\n&quot;</span>,</span><br><span class="line">		   (<span class="type">uintptr_t</span>)a, order);</span><br><span class="line"></span><br><span class="line">	uk_alloc_stats_count_penomem(a, num_pages);</span><br><span class="line">	errno = ENOMEM;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而在lib/ukboot中的boot.c启动程序中，有着plat层调用allocator的函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">257</span>  rc = ukplat_memallocator_set(a);</span><br></pre></td></tr></table></figure>
+
+<p>也可以看出plat层找到了很多内存块，然后交给ukalloc初始化</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 遍历plat层找到的内存块 */</span></span><br><span class="line">ukplat_memregion_foreach(&amp;md, UKPLAT_MEMRF_ALLOCATABLE) &#123;</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_UKPLAT_MEMRNAME</span></span><br><span class="line">		uk_pr_debug(<span class="string">&quot;Try memory region: %p - %p (flags: 0x%02x, name: %s)...\n&quot;</span>,</span><br><span class="line">			    md.base, (<span class="type">void</span> *)((<span class="type">size_t</span>)md.base + md.len),</span><br><span class="line">			    md.flags, md.name);</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">		uk_pr_debug(<span class="string">&quot;Try memory region: %p - %p (flags: 0x%02x)...\n&quot;</span>,</span><br><span class="line">			    md.base, (<span class="type">void</span> *)((<span class="type">size_t</span>)md.base + md.len),</span><br><span class="line">			    md.flags);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">		<span class="comment">/* try to use memory region to initialize allocator</span></span><br><span class="line"><span class="comment">		 * if it fails, we will try  again with the next region.</span></span><br><span class="line"><span class="comment">		 * As soon we have an allocator, we simply add every</span></span><br><span class="line"><span class="comment">		 * subsequent region to it</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">    </span><br><span class="line">    	<span class="comment">/* 将内存块交给allocator管理 */</span></span><br><span class="line">		<span class="keyword">if</span> (!a) &#123;</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKBOOT_INITBBUDDY</span></span><br><span class="line">			a = uk_allocbbuddy_init(md.base, md.len);</span><br><span class="line"><span class="meta">#<span class="keyword">elif</span> CONFIG_LIBUKBOOT_INITREGION</span></span><br><span class="line">			a = uk_allocregion_init(md.base, md.len);</span><br><span class="line"><span class="meta">#<span class="keyword">elif</span> CONFIG_LIBUKBOOT_INITMIMALLOC</span></span><br><span class="line">			a = uk_mimalloc_init(md.base, md.len);</span><br><span class="line"><span class="meta">#<span class="keyword">elif</span> CONFIG_LIBUKBOOT_INITTLSF</span></span><br><span class="line">			a = uk_tlsf_init(md.base, md.len);</span><br><span class="line"><span class="meta">#<span class="keyword">elif</span> CONFIG_LIBUKBOOT_INITTINYALLOC</span></span><br><span class="line">			a = uk_tinyalloc_init(md.base, md.len);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			uk_alloc_addmem(a, md.base, md.len);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (unlikely(!a))</span><br><span class="line">		uk_pr_warn(<span class="string">&quot;No suitable memory region for memory allocator. Continue without heap\n&quot;</span>);</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		rc = ukplat_memallocator_set(a);</span><br><span class="line">		<span class="keyword">if</span> (unlikely(rc != <span class="number">0</span>))</span><br><span class="line">			UK_CRASH(<span class="string">&quot;Could not set the platform memory allocator\n&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="unikraft内存管理调用图"><a href="#unikraft内存管理调用图" class="headerlink" title="unikraft内存管理调用图"></a>unikraft内存管理调用图</h2><p>可以参考此图对涉及内存调用的地方进行逐一阅读</p>
+<p><img src="/images/unikraft-memory/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E8%B0%83%E7%94%A8%E5%9B%BE.jpg" alt="image-20221016224520962"></p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/23/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%AF%BC%E8%A7%88/" title="内存管理导览" target="_blank" rel="external">http://example.com/2022/10/23/内存管理导览/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/10/23/ukallocbbuddy/" title="ukallocbbuddy"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/10/17/ukalloc/" title="ukalloc"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>
