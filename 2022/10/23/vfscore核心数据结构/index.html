@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>vfscore核心数据结构 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="vfscore核心数据结构数据结构介绍四个非常重要的数据结构：vfscore_file，dentry，mount，vnode 1、文件结构体文件对象描述进程怎样与一个打开的文件进行交互。文件对象是在文件被打开时创建的。 123456789101112struct vfscore_file &amp;#123;	int fd;  &#x2F;* 文件描述符，用于让进程快速索引到文件位置 *&#x2F;	int		f_flags">
+<meta property="og:type" content="article">
+<meta property="og:title" content="vfscore核心数据结构">
+<meta property="og:url" content="http://example.com/2022/10/23/vfscore%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="vfscore核心数据结构数据结构介绍四个非常重要的数据结构：vfscore_file，dentry，mount，vnode 1、文件结构体文件对象描述进程怎样与一个打开的文件进行交互。文件对象是在文件被打开时创建的。 123456789101112struct vfscore_file &amp;#123;	int fd;  &#x2F;* 文件描述符，用于让进程快速索引到文件位置 *&#x2F;	int		f_flags">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft-vfscore/dentry%E5%93%88%E5%B8%8C%E8%A1%A8.jpg">
+<meta property="og:image" content="http://example.com/images/unikraft-vfscore/mount%E7%A4%BA%E6%84%8F%E5%9B%BE.png">
+<meta property="article:published_time" content="2022-10-23T08:50:30.518Z">
+<meta property="article:modified_time" content="2022-10-23T09:04:45.945Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-文件系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft-vfscore/dentry%E5%93%88%E5%B8%8C%E8%A1%A8.jpg">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/23/vfscore%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 14px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 13px;">unikraft-文件系统</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/vfscore%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" class="title">vfscore核心数据结构</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T08:50:30.518Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="title">内存相关基础知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T06:59:15.833Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/ukallocbbuddy/" class="title">ukallocbbuddy</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T06:59:15.831Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%AF%BC%E8%A7%88/" class="title">内存管理导览</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T06:59:15.823Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/17/ukalloc/" class="title">ukalloc</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-17T14:41:34.708Z" itemprop="datePublished">2022-10-17</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#vfscore%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">1.</span> <span class="toc-text">vfscore核心数据结构</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%BB%8B%E7%BB%8D"><span class="toc-number">1.1.</span> <span class="toc-text">数据结构介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.1.1.</span> <span class="toc-text">1、文件结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-1-int-fd"><span class="toc-number">1.1.1.1.</span> <span class="toc-text">1.1 int fd</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E7%9B%AE%E5%BD%95%E9%A1%B9%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.1.2.</span> <span class="toc-text">2、目录项结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#2-1-struct-uk-hlist-node-d-link"><span class="toc-number">1.1.2.1.</span> <span class="toc-text">2.1  struct uk_hlist_node d_link;</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-struct-vnode-d-vnode"><span class="toc-number">1.1.2.2.</span> <span class="toc-text">2.2 struct vnode    *d_vnode;</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-3-struct-dentry-d-parent"><span class="toc-number">1.1.2.3.</span> <span class="toc-text">2.3 struct dentry   *d_parent;</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-4-struct-uk-list-head-d-names-link"><span class="toc-number">1.1.2.4.</span> <span class="toc-text">2.4 struct uk_list_head d_names_link;</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-5-struct-uk-list-head-d-child-list-%E4%B8%8E-struct-uk-list-head-d-child-link"><span class="toc-number">1.1.2.5.</span> <span class="toc-text">2.5 struct uk_list_head d_child_list; 与 struct uk_list_head d_child_link;</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81%E6%8C%82%E8%BD%BD%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.1.3.</span> <span class="toc-text">3、挂载结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#3-1-struct-vfsops-m-op"><span class="toc-number">1.1.3.1.</span> <span class="toc-text">3.1 struct vfsops    *m_op;</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-2-char-m-path-PATH-MAX"><span class="toc-number">1.1.3.2.</span> <span class="toc-text">3.2 char  m_path[PATH_MAX];</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-3-struct-dentry-m-root-%E4%B8%8E-struct-dentry-m-covered"><span class="toc-number">1.1.3.3.</span> <span class="toc-text">3.3 struct dentry    *m_root; 与 struct dentry    *m_covered;</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-4-struct-uk-list-head-mnt-list"><span class="toc-number">1.1.3.4.</span> <span class="toc-text">3.4 struct uk_list_head mnt_list;</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4%E3%80%81vnode%E6%96%87%E4%BB%B6%E4%BF%A1%E6%81%AF%E7%AE%A1%E7%90%86%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.1.4.</span> <span class="toc-text">4、vnode文件信息管理结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#4-1-struct-uk-list-head-v-link"><span class="toc-number">1.1.4.1.</span> <span class="toc-text">4.1 struct uk_list_head v_link;</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-2-struct-vnops-v-op"><span class="toc-number">1.1.4.2.</span> <span class="toc-text">4.2 struct vnops  *v_op;</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-3-int-v-type"><span class="toc-number">1.1.4.3.</span> <span class="toc-text">4.3 int  v_type;</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-4-struct-uk-list-head-v-names"><span class="toc-number">1.1.4.4.</span> <span class="toc-text">4.4 struct uk_list_head v_names;</span></a></li></ol></li></ol></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-vfscore核心数据结构" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      vfscore核心数据结构
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/23/vfscore%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" class="article-date">
+	  <time datetime="2022-10-23T08:50:30.518Z" itemprop="datePublished">2022-10-23</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/23/vfscore%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="vfscore核心数据结构"><a href="#vfscore核心数据结构" class="headerlink" title="vfscore核心数据结构"></a>vfscore核心数据结构</h1><h2 id="数据结构介绍"><a href="#数据结构介绍" class="headerlink" title="数据结构介绍"></a>数据结构介绍</h2><p>四个非常重要的数据结构：vfscore_file，dentry，mount，vnode</p>
+<h3 id="1、文件结构体"><a href="#1、文件结构体" class="headerlink" title="1、文件结构体"></a>1、文件结构体</h3><p>文件对象描述进程怎样与一个打开的文件进行交互。文件对象是在文件被打开时创建的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vfscore_file</span> &#123;</span></span><br><span class="line">	<span class="type">int</span> fd;  <span class="comment">/* 文件描述符，用于让进程快速索引到文件位置 */</span></span><br><span class="line">	<span class="type">int</span>		f_flags;	<span class="comment">/* open flags  打开标志 */</span></span><br><span class="line">	<span class="type">int</span>		f_count;	<span class="comment">/* reference count  引用计数 */</span></span><br><span class="line">	<span class="type">off_t</span>		f_offset;	<span class="comment">/* current position in file  文件指针，用于定位当前指针在文件中的哪个位置 */</span></span><br><span class="line">	<span class="type">void</span>		*f_data;        <span class="comment">/* file descriptor specific data  与文件描述符绑定的特殊数据？（应该和底层实现有关，之后的调研方向） */</span></span><br><span class="line">	<span class="type">int</span>		f_vfs_flags;    <span class="comment">/* internal implementation flags 实现标志（可能是区分不同类型文件的标识符） */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">dentry</span>   *<span class="title">f_dentry</span>;</span>  <span class="comment">/* 该文件所在的目录项 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_mutex</span> <span class="title">f_lock</span>;</span>  <span class="comment">/* 文件锁，用于同步操作 */</span></span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> <span class="title">f_ep</span>;</span>	<span class="comment">/* List of eventpoll_fd&#x27;s eventpoll的文件描述符的链表 */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-1-int-fd"><a href="#1-1-int-fd" class="headerlink" title="1.1 int fd"></a>1.1 int fd</h4><p>unikraft定义了这么一个结构体，叫做<code>fdtable</code>，其具体定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fdtable</span> &#123;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> bitmap[UK_BITS_TO_LONGS(FDTABLE_MAX_FILES)];</span><br><span class="line">	<span class="type">uint32_t</span> fd_start;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vfscore_file</span> *<span class="title">files</span>[<span class="title">FDTABLE_MAX_FILES</span>];</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>当文件被进程打开时，会创建一个fd作为该文件的文件标识符，用于快速检索文件所在的位置，而文件则会被file[fd]所指向，在bitmap中也会占用一个bit用来标识fd已被分配。</p>
+<h3 id="2、目录项结构体"><a href="#2、目录项结构体" class="headerlink" title="2、目录项结构体"></a>2、目录项结构体</h3><p>VFS把每个目录看作一个文件，由若干子目录和文件组成。对于进程查找路径名中的每个分量，内核都为其创建一个目录项对象；目录项对象将每个分量与其对应的索引节点相联系。例如/tmp/test，内核会分别为“/”，“tmp”，“test”创建目录项。目录项也可以用于标识普通文件。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">dentry</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_hlist_node</span> <span class="title">d_link</span>;</span>	<span class="comment">/* link for hash list 详见2.1 */</span></span><br><span class="line">	<span class="type">int</span>		d_refcnt;	<span class="comment">/* reference count  引用计数 */</span></span><br><span class="line">	<span class="type">char</span>		*d_path;	<span class="comment">/* pointer to path in fs   dentry所代表的相对mount的相对路径 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vnode</span>	*<span class="title">d_vnode</span>;</span>  <span class="comment">/* 每个目录项所绑定的vnode项 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">mount</span>	*<span class="title">d_mount</span>;</span>  <span class="comment">/* 该目录项所指向的挂载点 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">dentry</span>   *<span class="title">d_parent</span>;</span> <span class="comment">/* pointer to parent 指向父目录的指针*/</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> <span class="title">d_names_link</span>;</span> <span class="comment">/* link fo vnode::d_names 详见2.4*/</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_mutex</span>	<span class="title">d_lock</span>;</span> <span class="comment">/* 目录项锁，用于同步操作 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> <span class="title">d_child_list</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> <span class="title">d_child_link</span>;</span>  <span class="comment">/* 详见2.5 */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-1-struct-uk-hlist-node-d-link"><a href="#2-1-struct-uk-hlist-node-d-link" class="headerlink" title="2.1  struct uk_hlist_node d_link;"></a>2.1  struct uk_hlist_node d_link;</h4><p>dentry节点会被挂载在一个hashtable中，其定义在lib/vfscore/dentry.c中，其定义为：</p>
+<p><code>static struct uk_hlist_head dentry_hash_table[DENTRY_BUCKETS];</code></p>
+<p>dentry中存储的路径会与其指向的mount节点的信息计算一个hash值，然后根据假设计算出的hash值为k，那么该节点就会插入<code>dentry_hash_table[k]</code>所代表的链表中，d_link则是用于哈希链表连接的一个指针项。哈希表可以用来根据路径值和挂载点快速检索某个dentry。</p>
+<p>以下为<code>struct uk_hlist_head</code>的定义：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_hlist_head</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_hlist_node</span> *<span class="title">first</span>;</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_hlist_node</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_hlist_node</span> *<span class="title">next</span>, **<span class="title">pprev</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到该d_link项仅仅就是用来链接不同的dentry项，哈希表示意图如图所示：</p>
+<p><img src="/images/unikraft-vfscore/dentry%E5%93%88%E5%B8%8C%E8%A1%A8.jpg" alt="dentry哈希表"></p>
+<h4 id="2-2-struct-vnode-d-vnode"><a href="#2-2-struct-vnode-d-vnode" class="headerlink" title="2.2 struct vnode    *d_vnode;"></a>2.2 struct vnode    *d_vnode;</h4><p>该dentry目录项所对应的vnode项，而vnode项是描述该目录项所代表文件的各种属性，如文件类型，文件大小等，详见vnode具体分析。</p>
+<h4 id="2-3-struct-dentry-d-parent"><a href="#2-3-struct-dentry-d-parent" class="headerlink" title="2.3 struct dentry   *d_parent;"></a>2.3 struct dentry   *d_parent;</h4><p>目录项其实是一种类似于树形结构的组织结构（其实每个目录项下面的子目录项的链接是个环形结构），每个目录项节点会有一个指向父目录的指针。</p>
+<h4 id="2-4-struct-uk-list-head-d-names-link"><a href="#2-4-struct-uk-list-head-d-names-link" class="headerlink" title="2.4 struct uk_list_head d_names_link;"></a>2.4 struct uk_list_head d_names_link;</h4><p>每个vnode可能同时有多个不同的dentry同时指向，所以指向同一个vnode的所有dentry便自己组成一个环形链接结构。由vnode中的v_names则是这个链接结构的一个节点（头部），所有的<code>uk_list_head</code>结构其实都是环形双向链表结构，在遍历的时候的停止条件则可以设成遍历到本身就停止，方便遍历。</p>
+<h4 id="2-5-struct-uk-list-head-d-child-list-与-struct-uk-list-head-d-child-link"><a href="#2-5-struct-uk-list-head-d-child-list-与-struct-uk-list-head-d-child-link" class="headerlink" title="2.5 struct uk_list_head d_child_list; 与 struct uk_list_head d_child_link;"></a>2.5 struct uk_list_head d_child_list; 与 struct uk_list_head d_child_link;</h4><p>d_child_list与d_child_link的关系就像vnames与d_names_link的关系一样，d_child_list是子目录项所构成的环形链接结构的一个节点（头部），而d_child_link则是该层级目录结构下所有的目录项相互链接的链接项，父级目录与子级目录之间的关系如图所示：</p>
+<p>![dentry 父子目录项关系](/images/unikraft-vfscore/dentry 父子目录项关系.png)</p>
+<h3 id="3、挂载结构体"><a href="#3、挂载结构体" class="headerlink" title="3、挂载结构体"></a>3、挂载结构体</h3><p>mount挂载的作用，就是将一个设备（存储设备）挂接到一个已知目录下，访问该目录就是访问该存储设备</p>
+<p>linux操作系统将所有的设备都看作文件，它将整个计算机的资源都整合成一个大的文件目录。我们要访问存储设备中的文件，必须将文件所在的分区挂载到一个已存在的目录上，然后通过访问这个目录来访问存储设备。挂载就是把设备放在一个目录下，让系统知道怎么管理这个设备里的文件，了解这个存储设备的可读写特性之类的过程。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mount</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vfsops</span>	*<span class="title">m_op</span>;</span>		<span class="comment">/* pointer to vfs operation 详见3.1 */</span></span><br><span class="line">	<span class="type">int</span>		m_flags;	<span class="comment">/* mount flag  挂载标志 */</span></span><br><span class="line">	<span class="type">int</span>		m_count;	<span class="comment">/* reference count  引用计数 */</span></span><br><span class="line">	<span class="type">char</span>            m_path[PATH_MAX]; <span class="comment">/* mounted path 详见3.2 */</span></span><br><span class="line">	<span class="type">char</span>            m_special[PATH_MAX]; <span class="comment">/* resource 该mount所挂载的设备在文件系统中的绝对路径。*/</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">device</span>	*<span class="title">m_dev</span>;</span>		<span class="comment">/* mounted device 指向mount所挂载的设备 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">dentry</span>	*<span class="title">m_root</span>;</span>	<span class="comment">/* root vnode */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">dentry</span>	*<span class="title">m_covered</span>;</span>	<span class="comment">/* vnode covered on parent fs  详见3.3 */</span></span><br><span class="line">	<span class="type">void</span>		*m_data;	<span class="comment">/* private data for fs 文件系统的私有数据 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> <span class="title">mnt_list</span>;</span></span><br><span class="line">	<span class="type">fsid_t</span> 		m_fsid; 	<span class="comment">/* id that uniquely identifies the fs 该文件系统的id */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-1-struct-vfsops-m-op"><a href="#3-1-struct-vfsops-m-op" class="headerlink" title="3.1 struct vfsops    *m_op;"></a>3.1 struct vfsops    *m_op;</h4><p>通常来讲，一个mount挂载设备对应的是一个文件系统（如ext2，9p等），而m_op指向的是该类型文件系统的基本操作，vfsops结构体的定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vfsops</span> &#123;</span></span><br><span class="line">	<span class="type">int</span> (*vfs_mount)	(<span class="keyword">struct</span> mount *, <span class="type">const</span> <span class="type">char</span> *, <span class="type">int</span>, <span class="type">const</span> <span class="type">void</span> *);</span><br><span class="line">	<span class="type">int</span> (*vfs_unmount)	(<span class="keyword">struct</span> mount *, <span class="type">int</span> flags);</span><br><span class="line">	<span class="type">int</span> (*vfs_sync)		(<span class="keyword">struct</span> mount *);</span><br><span class="line">	<span class="type">int</span> (*vfs_vget)		(<span class="keyword">struct</span> mount *, <span class="keyword">struct</span> vnode *);</span><br><span class="line">	<span class="type">int</span> (*vfs_statfs)	(<span class="keyword">struct</span> mount *, <span class="keyword">struct</span> statfs *);</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vnops</span>	*<span class="title">vfs_vnops</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>之所以该vfscore可以兼容多种不同的文件系统在同一个大的文件系统中，是因为vfs定义了统一的抽象接口，而下层不同的文件系统只要实现这些接口，便可以被注册到vfs中统一管理并使用。</p>
+<h4 id="3-2-char-m-path-PATH-MAX"><a href="#3-2-char-m-path-PATH-MAX" class="headerlink" title="3.2 char  m_path[PATH_MAX];"></a>3.2 char  m_path[PATH_MAX];</h4><p>该mount点所指向的<strong>绝对路径</strong>（相对于整个文件系统根目录的路径），而前文dentry中的d_path指向的是<strong>相对路径</strong>，即以mount挂载点为root（路径为/）的相对路径。</p>
+<h4 id="3-3-struct-dentry-m-root-与-struct-dentry-m-covered"><a href="#3-3-struct-dentry-m-root-与-struct-dentry-m-covered" class="headerlink" title="3.3 struct dentry    *m_root; 与 struct dentry    *m_covered;"></a>3.3 struct dentry    *m_root; 与 struct dentry    *m_covered;</h4><p>该mount点所指向的dentry目录项为m_covered。假设我们需要将device挂载在目录<code>/home/user/fs0</code>下面，那么该m_covered所指向的为<code>/home/user/fs0</code>路径所对应的dentry，挂载之后，在该mount之下的所有dentry项的d_path都会变成相对于该mount点的相对路径，而m_root则是指向挂载mount点后所创建的root项。mount示意图如图所示：</p>
+<p><img src="/images/unikraft-vfscore/mount%E7%A4%BA%E6%84%8F%E5%9B%BE.png" alt="mount示意图"></p>
+<h4 id="3-4-struct-uk-list-head-mnt-list"><a href="#3-4-struct-uk-list-head-mnt-list" class="headerlink" title="3.4 struct uk_list_head mnt_list;"></a>3.4 struct uk_list_head mnt_list;</h4><p>关联所有mount实例的链接，所有的mount实例都会通过该mnt_list链接成一个双向链接的环</p>
+<h3 id="4、vnode文件信息管理结构体"><a href="#4、vnode文件信息管理结构体" class="headerlink" title="4、vnode文件信息管理结构体"></a>4、vnode文件信息管理结构体</h3><p>vnode用于管理文件（目录也是一种文件）的具体信息</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vnode</span> &#123;</span></span><br><span class="line">	<span class="type">uint64_t</span>	v_ino;		<span class="comment">/* inode number 该vnode所关联的底层inode的编号 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> <span class="title">v_link</span>;</span>	<span class="comment">/* link for hash list  详见4.1 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">mount</span>	*<span class="title">v_mount</span>;</span>	<span class="comment">/* mounted vfs pointer 该vnode所指向的挂载点*/</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vnops</span>	*<span class="title">v_op</span>;</span>		<span class="comment">/* vnode operations 详见4.2 */</span></span><br><span class="line">	<span class="type">int</span>		v_refcnt;	<span class="comment">/* reference count  vnode引用计数 */</span></span><br><span class="line">	<span class="type">int</span>		v_type;		<span class="comment">/* vnode type 详见4.3 */</span></span><br><span class="line">	<span class="type">int</span>		v_flags;	<span class="comment">/* vnode flag 文件的权限控制 */</span></span><br><span class="line">	<span class="type">mode_t</span>		v_mode;		<span class="comment">/* file mode 文件访问的模式 */</span></span><br><span class="line">	<span class="type">off_t</span>		v_size;		<span class="comment">/* file size  文件大小 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_mutex</span>	<span class="title">v_lock</span>;</span>		<span class="comment">/* lock for this vnode  vnode锁，用于同步操作 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> <span class="title">v_names</span>;</span>	<span class="comment">/* directory entries pointing at this */</span></span><br><span class="line">	<span class="type">void</span>		*v_data;	<span class="comment">/* private data for fs */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-1-struct-uk-list-head-v-link"><a href="#4-1-struct-uk-list-head-v-link" class="headerlink" title="4.1 struct uk_list_head v_link;"></a>4.1 struct uk_list_head v_link;</h4><p>所有的已经激活的vnode（也就是已经被opened）都会被挂载进vnode hashtable中，其定义为<code>static struct uk_list_head vnode_table[VNODE_BUCKETS];</code>，具体作用与dentry hashtable如出一辙。哈希计算参数为挂载点mount与inode编号ino。</p>
+<h4 id="4-2-struct-vnops-v-op"><a href="#4-2-struct-vnops-v-op" class="headerlink" title="4.2 struct vnops  *v_op;"></a>4.2 struct vnops  *v_op;</h4><p>每个vnode都会有很多的操作，比如open，close，write等，vnops的定义为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vnops</span> &#123;</span></span><br><span class="line">	<span class="type">vnop_open_t</span>		vop_open;</span><br><span class="line">	<span class="type">vnop_close_t</span>		vop_close;</span><br><span class="line">	<span class="type">vnop_read_t</span>		vop_read;</span><br><span class="line">	<span class="type">vnop_write_t</span>		vop_write;</span><br><span class="line">	<span class="type">vnop_seek_t</span>		vop_seek;</span><br><span class="line">	<span class="type">vnop_ioctl_t</span>		vop_ioctl;</span><br><span class="line">	<span class="type">vnop_fsync_t</span>		vop_fsync;</span><br><span class="line">	<span class="type">vnop_readdir_t</span>		vop_readdir;</span><br><span class="line">	<span class="type">vnop_lookup_t</span>		vop_lookup;</span><br><span class="line">	<span class="type">vnop_create_t</span>		vop_create;</span><br><span class="line">	<span class="type">vnop_remove_t</span>		vop_remove;</span><br><span class="line">	<span class="type">vnop_rename_t</span>		vop_rename;</span><br><span class="line">	<span class="type">vnop_mkdir_t</span>		vop_mkdir;</span><br><span class="line">	<span class="type">vnop_rmdir_t</span>		vop_rmdir;</span><br><span class="line">	<span class="type">vnop_getattr_t</span>		vop_getattr;</span><br><span class="line">	<span class="type">vnop_setattr_t</span>		vop_setattr;</span><br><span class="line">	<span class="type">vnop_inactive_t</span>		vop_inactive;</span><br><span class="line">	<span class="type">vnop_truncate_t</span>		vop_truncate;</span><br><span class="line">	<span class="type">vnop_link_t</span>		vop_link;</span><br><span class="line">	<span class="type">vnop_cache_t</span>		vop_cache;</span><br><span class="line">	<span class="type">vnop_fallocate_t</span>	vop_fallocate;</span><br><span class="line">	<span class="type">vnop_readlink_t</span>		vop_readlink;</span><br><span class="line">	<span class="type">vnop_symlink_t</span>		vop_symlink;</span><br><span class="line">	<span class="type">vnop_poll_t</span>		vop_poll;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>而该vnops也有对外封装调用的接口：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_OPEN(VP, FP)	   ((VP)-&gt;v_op-&gt;vop_open)(FP)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_CLOSE(VP, FP)	   ((VP)-&gt;v_op-&gt;vop_close)(VP, FP)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_READ(VP, FP, U, F)	   ((VP)-&gt;v_op-&gt;vop_read)(VP, FP, U, F)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_CACHE(VP, FP, U)	   ((VP)-&gt;v_op-&gt;vop_cache)(VP, FP, U)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_WRITE(VP, U, F)	   ((VP)-&gt;v_op-&gt;vop_write)(VP, U, F)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_SEEK(VP, FP, OLD, NEW) ((VP)-&gt;v_op-&gt;vop_seek)(VP, FP, OLD, NEW)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_IOCTL(VP, FP, C, A)	   ((VP)-&gt;v_op-&gt;vop_ioctl)(VP, FP, C, A)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_FSYNC(VP, FP)	   ((VP)-&gt;v_op-&gt;vop_fsync)(VP, FP)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_READDIR(VP, FP, DIR)   ((VP)-&gt;v_op-&gt;vop_readdir)(VP, FP, DIR)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_LOOKUP(DVP, N, VP)	   ((DVP)-&gt;v_op-&gt;vop_lookup)(DVP, N, VP)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_CREATE(DVP, N, M)	   ((DVP)-&gt;v_op-&gt;vop_create)(DVP, N, M)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_REMOVE(DVP, VP, N)	   ((DVP)-&gt;v_op-&gt;vop_remove)(DVP, VP, N)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_RENAME(DVP1, VP1, N1, DVP2, VP2, N2) \</span></span><br><span class="line"><span class="meta">			   ((DVP1)-&gt;v_op-&gt;vop_rename)(DVP1, VP1, N1, DVP2, VP2, N2)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_MKDIR(DVP, N, M)	   ((DVP)-&gt;v_op-&gt;vop_mkdir)(DVP, N, M)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_RMDIR(DVP, VP, N)	   ((DVP)-&gt;v_op-&gt;vop_rmdir)(DVP, VP, N)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_GETATTR(VP, VAP)	   ((VP)-&gt;v_op-&gt;vop_getattr)(VP, VAP)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_SETATTR(VP, VAP)	   ((VP)-&gt;v_op-&gt;vop_setattr)(VP, VAP)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_INACTIVE(VP)	   ((VP)-&gt;v_op-&gt;vop_inactive)(VP)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_TRUNCATE(VP, N)	   ((VP)-&gt;v_op-&gt;vop_truncate)(VP, N)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_LINK(DVP, SVP, N) 	   ((DVP)-&gt;v_op-&gt;vop_link)(DVP, SVP, N)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_FALLOCATE(VP, M, OFF, LEN) ((VP)-&gt;v_op-&gt;vop_fallocate)(VP, M, OFF, LEN)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_READLINK(VP, U)        ((VP)-&gt;v_op-&gt;vop_readlink)(VP, U)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_SYMLINK(DVP, OP, NP)   ((DVP)-&gt;v_op-&gt;vop_symlink)(DVP, OP, NP)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VOP_POLL(VP, EP, ECP)	   ((VP)-&gt;v_op-&gt;vop_poll)(VP, EP, ECP)</span></span><br></pre></td></tr></table></figure>
+
+<p>同vfs能够纳入多种不同的文件系统，vfs能够允许不同文件存在同一个文件系统的原因也是统一定义了文件操作的抽象，不同文件的区别就在于其vnode所对应的操作项的实施方式不同，而在vfs层的接口可以屏蔽这些实现细节的不同，而调用统一的抽象方法，故而一个大的文件系统可以容纳不同种类的文件。</p>
+<h4 id="4-3-int-v-type"><a href="#4-3-int-v-type" class="headerlink" title="4.3 int  v_type;"></a>4.3 int  v_type;</h4><p>标识该文件的具体类别，而在unikraft文件系统中，文件类型被封装为一个枚举变量，其中枚举了所有可能的文件类型：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">vtype</span> &#123;</span></span><br><span class="line">	VNON,	    <span class="comment">/* no type */</span></span><br><span class="line">	VREG,	    <span class="comment">/* regular file  */</span></span><br><span class="line">	VDIR,	    <span class="comment">/* directory */</span></span><br><span class="line">	VBLK,	    <span class="comment">/* block device */</span></span><br><span class="line">	VCHR,	    <span class="comment">/* character device */</span></span><br><span class="line">	VLNK,	    <span class="comment">/* symbolic link */</span></span><br><span class="line">	VSOCK,	    <span class="comment">/* socks */</span></span><br><span class="line">	VFIFO,	    <span class="comment">/* FIFO */</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LIBPOSIX_EVENT</span></span><br><span class="line">	VEPOLL,	    <span class="comment">/* epoll */</span></span><br><span class="line">	VEVENT,	    <span class="comment">/* eventfd */</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* CONFIG_LIBPOSIX_EVENT */</span></span></span><br><span class="line">	VBAD</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-4-struct-uk-list-head-v-names"><a href="#4-4-struct-uk-list-head-v-names" class="headerlink" title="4.4 struct uk_list_head v_names;"></a>4.4 struct uk_list_head v_names;</h4><p>用于关联每一个指向vnode的dentry项。d_child_list与d_child_link的关系就像vnames与d_names_link的关系一样，具体图示见2.5</p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/23/vfscore%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" title="vfscore核心数据结构" target="_blank" rel="external">http://example.com/2022/10/23/vfscore核心数据结构/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    
+    <li class="next">
+      <a href="/2022/10/23/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" title="内存相关基础知识"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>
