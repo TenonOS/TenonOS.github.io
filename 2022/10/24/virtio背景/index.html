@@ -17,16 +17,28 @@
   <meta http-equiv="window-target" content="_top" />
   
   
-  <title>分类: unikraft-libs-ukallocbbuddy | TenonOS-unikraft-learning</title>
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Hexo">
-<meta property="og:url" content="http://example.com/categories/unikraft-libs-ukallocbbuddy/index.html">
+  <title>virtio背景介绍 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="virtio背景vitro的内容用于半虚拟化的实现，这篇博客简单介绍了linux kernel中的vitro模块的实现 virtio 是一种 I&#x2F;O 半虚拟化解决方案，是一套通用 I&#x2F;O 设备虚拟化的程序，是对半虚拟化 Hypervisor 中的一组通用 I&#x2F;O 设备的抽象。提供了一套上层应用与各 Hypervisor 虚拟化设备（KVM，Xen，VMware等）之间的通信框架和编程接口，减少跨平">
+<meta property="og:type" content="article">
+<meta property="og:title" content="virtio背景介绍">
+<meta property="og:url" content="http://example.com/2022/10/24/virtio%E8%83%8C%E6%99%AF/index.html">
 <meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="virtio背景vitro的内容用于半虚拟化的实现，这篇博客简单介绍了linux kernel中的vitro模块的实现 virtio 是一种 I&#x2F;O 半虚拟化解决方案，是一套通用 I&#x2F;O 设备虚拟化的程序，是对半虚拟化 Hypervisor 中的一组通用 I&#x2F;O 设备的抽象。提供了一套上层应用与各 Hypervisor 虚拟化设备（KVM，Xen，VMware等）之间的通信框架和编程接口，减少跨平">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/virtio_background/%E5%89%8D%E5%90%8E%E7%AB%AF%E4%BA%A4%E4%BA%92.png">
+<meta property="og:image" content="http://example.com/images/virtio_background/%E9%A9%B1%E5%8A%A8%E4%BA%A4%E4%BA%92.png">
+<meta property="og:image" content="http://example.com/images/virtio_background/dev%E9%80%9A%E4%BF%A1.png">
+<meta property="og:image" content="http://example.com/images/virtio_background/unikraft%E7%B3%BB%E7%BB%9F%E5%B1%82%E6%AC%A1.png">
+<meta property="og:image" content="http://example.com/images/virtio_background/%E5%B8%B8%E8%A7%84%E8%99%9A%E6%8B%9F%E6%9C%BA%E7%B3%BB%E7%BB%9F%E5%B1%82%E6%AC%A1.png">
+<meta property="og:image" content="http://example.com/images/virtio_background/%E5%AE%B9%E5%99%A8%E7%B3%BB%E7%BB%9F%E5%B1%82%E6%AC%A1.png">
+<meta property="article:published_time" content="2022-10-24T06:16:30.795Z">
+<meta property="article:modified_time" content="2022-10-24T06:19:04.166Z">
 <meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-virtio">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/virtio_background/%E5%89%8D%E5%90%8E%E7%AB%AF%E4%BA%A4%E4%BA%92.png">
   <!-- Canonical links -->
-  <link rel="canonical" href="http://example.com/categories/unikraft-libs-ukallocbbuddy/index.html">
+  <link rel="canonical" href="http://example.com/2022/10/24/virtio%E8%83%8C%E6%99%AF/index.html">
   
     <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
   
@@ -340,61 +352,178 @@
 </aside>
 
   
-  <main class="main" role="main">
-  <article class="content article article-categories article-type-list" itemscope="">
-    <header class="article-header">
-      <h1 itemprop="name" class="hidden-xs">分类: unikraft-libs-ukallocbbuddy</h1>
-      <p class="hidden-xs">共 1 篇文章</p>
-      <nav role="navigation" id="nav-main" class="okayNav">
-        <ul>
-          <li><a href="/categories">All</a></li>
-          
-          <li><a href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a></li>
-          
-          <li><a href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a></li>
-          
-          <li><a href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a></li>
-          
-          <li><a href="/categories/unikraft-libs-导览/">unikraft-libs-导览</a></li>
-          
-          <li><a href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a></li>
-          
-          <li><a href="/categories/unikraft-thread/">unikraft-thread</a></li>
-          
-        </ul>
-      </nav>
-    </header>
-    <!-- /header -->
-    <div class="article-body">
-      <div class="panel panel-default b-no">
-    <div class="panel-heading" role="tab">
-        <h4 class="panel-title">
-            <a data-toggle="collapse" href="#collapseunikraft-libs-ukallocbbuddy" aria-expanded="true">
-              <i class="icon icon-folder text-active"></i><i class="icon icon-folder-open text"></i>
-              unikraft-libs-ukallocbbuddy
-            </a>
-            <small class="text-muted">(Total 1 articles)</small>
-        </h4>
-    </div>
-    <div id="collapseunikraft-libs-ukallocbbuddy" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingunikraft-libs-ukallocbbuddy">
-        <div class="panel-body">
-            <div class="collection">
-              
-                
-<a href="/2022/10/23/ukallocbbuddy/" class="collection-item"   itemprop="url">
-  <time datetime="2022-10-23T06:59:15.831Z" itemprop="datePublished">2022-10-23</time>
-  <span>&nbsp;&nbsp;&nbsp;</span> ukallocbbuddy
-</a>
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#virtio%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">virtio背景</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#dev%E4%B8%8Edriver"><span class="toc-number">2.</span> <span class="toc-text">dev与driver</span></a></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-virtio背景" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      virtio背景介绍
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/24/virtio%E8%83%8C%E6%99%AF/" class="article-date">
+	  <time datetime="2022-10-24T06:16:30.795Z" itemprop="datePublished">2022-10-24</time>
+	</a>
+</span>
+        
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a>
+  </span>
 
 
-              
-            </div>
-        </div>
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/24/virtio%E8%83%8C%E6%99%AF/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
     </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="virtio背景"><a href="#virtio背景" class="headerlink" title="virtio背景"></a>virtio背景</h1><p>vitro的内容用于半虚拟化的实现，这篇博客简单介绍了linux kernel中的vitro模块的实现</p>
+<p>virtio 是一种 I/O 半虚拟化解决方案，是一套通用 I/O 设备虚拟化的程序，是对半虚拟化 Hypervisor 中的一组通用 I/O 设备的抽象。提供了一套上层应用与各 Hypervisor 虚拟化设备（KVM，Xen，VMware等）之间的通信框架和编程接口，减少跨平台所带来的兼容性问题，大大提高驱动程序开发效率。</p>
+<p>在完全虚拟化的解决方案中，guest VM 要使用底层 host 资源，需要 Hypervisor 来截获所有的请求指令，然后模拟出这些指令的行为，这样势必会带来很多性能上的开销。半虚拟化通过底层硬件辅助的方式，将部分没必要虚拟化的指令通过硬件来完成，Hypervisor 只负责完成部分指令的虚拟化，要做到这点，需要 guest 来配合，guest 完成不同设备的前端驱动程序，Hypervisor 配合 guest 完成相应的后端驱动程序，这样两者之间通过某种交互机制就可以实现高效的虚拟化过程。</p>
+<p>virtio论文解读：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/68154666">https://zhuanlan.zhihu.com/p/68154666</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/wangquan1992/article/details/120649182">https://blog.csdn.net/wangquan1992/article/details/120649182</a></p>
+<p><img src="/images/virtio_background/%E5%89%8D%E5%90%8E%E7%AB%AF%E4%BA%A4%E4%BA%92.png"></p>
+<p><img src="/images/virtio_background/%E9%A9%B1%E5%8A%A8%E4%BA%A4%E4%BA%92.png"></p>
+<p>① virtio表示虚拟化IO，用于实现设备半虚拟化，即虚拟机中运行的操作系统需要加载特殊的驱动（e.g. virtio-net）且虚拟机知道自己是虚拟机</p>
+<p>相较于基于完全模拟的全虚拟化，基于virtio的半虚拟化可以提升设备访问性能</p>
+<p>② 运行在虚拟机中的部分称为前端驱动，负责对虚拟机提供统一的接口</p>
+<p>③ 运行在宿主机中的部分称为后端驱动，负责适配不同的物理硬件设备</p>
+<p>这篇文章介绍了vitro-net的原理：<a target="_blank" rel="noopener" href="https://www.51cto.com/article/660499.html">https://www.51cto.com/article/660499.html</a></p>
+<p>virtio前端驱动：</p>
+<p>运行在虚拟机中<br>针对不同类型的设备有不同的驱动程序，但是与后端驱动交互的接口都是统一的<br>本文分析virtio-net模块，源码位于drivers/net/virtio_net.c<br>virtio后端驱动</p>
+<p>运行在宿主机中<br>实现virtio后端的逻辑，主要是操作硬件设备，比如向内核协议栈发送一个网络包完成虚拟机对于网络的操作<br>在Qemu + KVM虚拟化环境中，源码位于KVM或者Xen中，这里我们没有涉及到</p>
+<p>总结：unikraft的virtio部分是在介绍virtio的前端部分</p>
+<h1 id="dev与driver"><a href="#dev与driver" class="headerlink" title="dev与driver"></a>dev与driver</h1><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/361918197">https://zhuanlan.zhihu.com/p/361918197</a></p>
+<p><img src="/images/virtio_background/dev%E9%80%9A%E4%BF%A1.png" alt="image.png"></p>
+<p>virtio分为driver和device，driver部分运行于guest操作系统中，device部分运行于hypervisor中，driver和device是生产者和消费者模式动作，driver生产内存，device消费内存。不同virtio版本之间是互相兼容的，driver和device版本不同也可以互相运转。</p>
+<p>对比unikraft的结构来看。</p>
+<p>hypervisor：Hypervisor——一种运行在基础物理服务器和操作系统之间的中间软件层，可允许多个操作系统和应用共享硬件。也可叫做VMM（ virtual machine monitor ），即虚拟机监视器。Hypervisors是一种在虚拟环境中的“元”操作系统。他们可以访问服务器上包括磁盘和内存在内的所有物理设备。Hypervisors不但协调着这些硬件资源的访问，也同时在各个虚拟机之间施加防护。当服务器启动并执行Hypervisor时，它会加载所有虚拟机客户端的操作系统同时会分配给每一台虚拟机适量的内存，CPU，网络和磁盘。</p>
+<p>KVM就属于unikraft的第一种类型，直接运行在裸金属上。KVM本身基于硬件辅助虚拟化，仅仅实现CPU和内存的虚拟化，但一台计算机不仅仅有CPU和内存，还需要各种各样的I/O设备，不过KVM不负责这些。这个时候，QEMU就和KVM搭上了线，经过改造后的QEMU，负责外部设备的虚拟，KVM负责底层执行引擎和内存的虚拟，两者彼此互补，成为新一代云计算虚拟化方案的宠儿。</p>
+<p>guest OS：在我们这里就是Unikraft core，即虚拟机</p>
+<p>Unikraft：</p>
+<p><img src="/images/virtio_background/unikraft%E7%B3%BB%E7%BB%9F%E5%B1%82%E6%AC%A1.png" alt="image.png"></p>
+<p>常规虚拟机：</p>
+<p><img src="/images/virtio_background/%E5%B8%B8%E8%A7%84%E8%99%9A%E6%8B%9F%E6%9C%BA%E7%B3%BB%E7%BB%9F%E5%B1%82%E6%AC%A1.png" alt="image.png"></p>
+<p>容器：<br><img src="/images/virtio_background/%E5%AE%B9%E5%99%A8%E7%B3%BB%E7%BB%9F%E5%B1%82%E6%AC%A1.png" alt="image.png">device status field：driver发现了device，driver可以正常驱动device，driver或者device出错了，driver或者device要进行reset。</p>
+<ul>
+<li><p>device feature bit：driver和device协商feature以便于不同virtio版本之间兼容。</p>
+</li>
+<li><p>notification：driver和device互通通知对方，driver生产好的内存要通知device去消费，device消费完了要通知driver回收内存。driver通知deivce用doorbell机制，在kvm中是写寄存器，kvm进行拦截再通知vhost。device通知driver用中断机制，在kvm中是中断注入。</p>
+</li>
+<li><p>config space：典型的如virtio-net-device的MAC地址/MTU/最大支持队列数等。</p>
+</li>
+<li><p>virtqueue：每个virtqueue分成这三部分，descriptor/available/used，descriptor/available/used就是三个大数组，descriptor数组内容存放真正东西，available和used数组内容存放descriptor数组的下标。driver生产内存，把生产的内存地址和长度写在descriptor，然后把descriptor数据下标写到available数组中，通知device，device消费内存，消费完再把descriptor的数据下标定到used数组中，通知driver进行内存回收。</p>
+</li>
+</ul>
+<p>chained descriptor，几个desciptor项连在一起，适用于scater-gather。</p>
+<p>indirect descriptor，主descriptor中一项指向另一个descriptor数组。</p>
+<p>一般设备的virtqueue基本可以分三类rx virtqueue/tx virtqueue/ctrl virtqueue，rx virtqueue和tx virtqueue用于进行IO，driver通过ctrl virtqueue控制device。</p>
+<p>device准备，driver发现device，状态更新和feature协商，driver分配virtqueue，把virtqueue地址告诉device。</p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/24/virtio%E8%83%8C%E6%99%AF/" title="virtio背景介绍" target="_blank" rel="external">http://example.com/2022/10/24/virtio背景/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
 </div>
+
+
     </div>
   </article>
-   
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    
+    <li class="next">
+      <a href="/2022/10/24/virtio-net/" title="virtio-net"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
 </main>
 
   <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
@@ -455,6 +584,37 @@ window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
 
 
 
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
 
 
 

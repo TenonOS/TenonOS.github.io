@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>virtio-net | TenonOS-unikraft-learning</title>
+  <meta name="description" content="源码解析这里我们就介绍两个源文件： 12.&#x2F;unikraft&#x2F;plat&#x2F;drivers&#x2F;include&#x2F;virtio&#x2F;virtio_net.h.&#x2F;unikraft&#x2F;plat&#x2F;drivers&#x2F;virtio&#x2F;virtio_net.c  头文件virtio_net.h这部分其实和unikraft本身关系不大，主要用于了解virtio网络设备相关背景 上来首先介绍了virtio的feature bitma">
+<meta property="og:type" content="article">
+<meta property="og:title" content="virtio-net">
+<meta property="og:url" content="http://example.com/2022/10/24/virtio-net/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="源码解析这里我们就介绍两个源文件： 12.&#x2F;unikraft&#x2F;plat&#x2F;drivers&#x2F;include&#x2F;virtio&#x2F;virtio_net.h.&#x2F;unikraft&#x2F;plat&#x2F;drivers&#x2F;virtio&#x2F;virtio_net.c  头文件virtio_net.h这部分其实和unikraft本身关系不大，主要用于了解virtio网络设备相关背景 上来首先介绍了virtio的feature bitma">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-10-24T06:16:30.793Z">
+<meta property="article:modified_time" content="2022-10-24T06:18:47.721Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-virtio">
+<meta property="article:tag" content="unikraft-netdev">
+<meta name="twitter:card" content="summary">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/24/virtio-net/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-bus/" rel="tag">unikraft-bus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-netdev/" rel="tag">unikraft-netdev</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/unikraft-bus/" style="font-size: 13px;">unikraft-bus</a> <a href="/tags/unikraft-netdev/" style="font-size: 13px;">unikraft-netdev</a> <a href="/tags/unikraft-virtio/" style="font-size: 13.67px;">unikraft-virtio</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 14px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 13.33px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13.33px;">unikraft-线程管理</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">11</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/24/virtio%E8%83%8C%E6%99%AF/" class="title">virtio背景介绍</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-24T06:16:30.795Z" itemprop="datePublished">2022-10-24</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/24/virtio-net/" class="title">virtio-net</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-24T06:16:30.793Z" itemprop="datePublished">2022-10-24</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/24/virtio-bus/" class="title">virtio-bus</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-24T06:16:30.785Z" itemprop="datePublished">2022-10-24</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-thread/">unikraft-thread</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/Unikraft%20pthread-embedded%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" class="title">Unikraft pthread-embedded源码分析</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T14:47:06.348Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-thread/">unikraft-thread</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/23/Linux%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" class="title">Linux线程模型</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-23T14:47:06.345Z" itemprop="datePublished">2022-10-23</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">源码解析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%B4%E6%96%87%E4%BB%B6virtio-net-h"><span class="toc-number">1.1.</span> <span class="toc-text">头文件virtio_net.h</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Feature-bits"><span class="toc-number">1.1.1.</span> <span class="toc-text">Feature bits</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#virtio-net-config"><span class="toc-number">1.1.2.</span> <span class="toc-text">virtio_net_config</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-virtio-net-c"><span class="toc-number">1.2.</span> <span class="toc-text">2.2 virtio_net.c</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-virtio-net" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      virtio-net
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/24/virtio-net/" class="article-date">
+	  <time datetime="2022-10-24T06:16:30.793Z" itemprop="datePublished">2022-10-24</time>
+	</a>
+</span>
+        
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-netdev/" rel="tag">unikraft-netdev</a>, <a class="article-tag-link-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/24/virtio-net/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="源码解析"><a href="#源码解析" class="headerlink" title="源码解析"></a>源码解析</h1><p>这里我们就介绍两个源文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./unikraft/plat/drivers/include/virtio/virtio_net.h</span><br><span class="line">./unikraft/plat/drivers/virtio/virtio_net.c</span><br></pre></td></tr></table></figure>
+
+<h2 id="头文件virtio-net-h"><a href="#头文件virtio-net-h" class="headerlink" title="头文件virtio_net.h"></a>头文件virtio_net.h</h2><p>这部分其实和unikraft本身关系不大，主要用于了解virtio网络设备相关背景</p>
+<p>上来首先介绍了virtio的feature bitmap.</p>
+<h3 id="Feature-bits"><a href="#Feature-bits" class="headerlink" title="Feature bits"></a>Feature bits</h3><p>定义了 Guest 和 Host 支持的功能，例如 VIRTIO_NET_F_CSUM bit 表示网络设备是否支持 checksum offload。feature bits 机制提供了未来扩充功能的灵活性，以及兼容旧设备的能力。</p>
+<p>这里是涉及到网络环境涉及的超参数宏</p>
+<ul>
+<li>  VIRTIO_NET_F_CSUM (0)  设备进行部分校验数据包。“checksum offload”是现代网卡的常见功能。</li>
+<li>  VIRTIO_NET_F_GUEST_CSUM (1) 驱动进行部分校验数据包。</li>
+<li>  VIRTIO_NET_F_CTRL_GUEST_OFFLOADS (2) 没有代码使用过，offload配置通道，好像和 XDP LRO/CSUM 相关。Control channel offloads reconfiguration support.Dynamic offload configuration。</li>
+<li>  VIRTIO_NET_F_MAC (5) 设备有指定的MAC</li>
+<li>  VIRTIO_NET_F_GUEST_TSO4 (7) 驱动支持TSOv4</li>
+<li>  VIRTIO_NET_F_GUEST_TSO6 (8) 驱动支持 TSOv6</li>
+<li>  VIRTIO_NET_F_GUEST_ECN (9) 驱动支持带有ECN 的 TSO</li>
+<li>  VIRTIO_NET_F_GUEST_UFO (10) 驱动支持 UFO. VIRTIO_NET_F_HOST_TSO4 (11) 设备支持 TSOv4.</li>
+<li>  VIRTIO_NET_F_HOST_TSO6 (12) 设备支持 TSOv6.</li>
+<li>  VIRTIO_NET_F_HOST_ECN (13) 设备支持有 ECN 的 TSO</li>
+<li>  VIRTIO_NET_F_HOST_UFO (14) 设备支持 UFO</li>
+<li>  VIRTIO_NET_F_MRG_RXBUF (15) 驱动支持 Merge Buffer</li>
+<li>  VIRTIO_NET_F_STATUS (16)  支持Configuration status 域，config change有关&#x20;</li>
+<li>  VIRTIO_NET_F_CTRL_VQ (17) 支持Control queue</li>
+<li>  VIRTIO_NET_F_CTRL_RX (18) 支持 通过Control queue 设置 RX mode，如混杂模式，组播，广播等</li>
+<li>  VIRTIO_NET_F_CTRL_VLAN (19) Control queue 设置vlan过滤表</li>
+<li>  VIRTIO_NET_F_GUEST_ANNOUNCE(21) 驱动支持发送 gratuitous packets（Gratuitous ARP）</li>
+<li>  VIRTIO_NET_F_MQ(22) 设备支持多队列，并且RR方式接收报文</li>
+<li>  VIRTIO_NET_F_CTRL_MAC_ADDR(23) 支持通过Control Queue设置MAC地址 </li>
+</ul>
+<p>里面涉及的概念补充如下：</p>
+<p>MTU：最大传输单元（Maximum Transmission Unit，MTU）用来通知对方所能接受数据服务单元的最大尺寸，说明发送方能够接受的有效载荷大小。</p>
+<p>ECN：显式拥塞通知Explicit Congestion Notification(ECN)是TCP/IP协议的扩展，在RFC 3168 (2001) 中进行了定义。<strong>ECN支持端到端的网络拥塞通知。</strong></p>
+<h3 id="virtio-net-config"><a href="#virtio-net-config" class="headerlink" title="virtio_net_config"></a>virtio_net_config</h3><p>这个数据结构主要管理configuration布局</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">virtio_net_config</span> &#123;</span></span><br><span class="line">	<span class="comment">/* The config defining mac address (if VIRTIO_NET_F_MAC) */</span></span><br><span class="line">	__u8 mac[UK_NETDEV_HWADDR_LEN]; <span class="comment">// 物理地址</span></span><br><span class="line">	<span class="comment">/* See VIRTIO_NET_F_STATUS and VIRTIO_NET_S_* above */</span></span><br><span class="line">	__u16 status; <span class="comment">// virtio_net_config.status available，主要是关于设备是否可用</span></span><br><span class="line">	<span class="comment">/* Maximum number of each of transmit and receive queues;</span></span><br><span class="line"><span class="comment">	 * see VIRTIO_NET_F_MQ and VIRTIO_NET_CTRL_MQ.</span></span><br><span class="line"><span class="comment">	 * Legal values are between 1 and 0x8000</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	 </span><br><span class="line">	 <span class="comment">/* Receive Flow</span></span><br><span class="line"><span class="comment">	 Steering，字段指定在协商VIRTIO_NET_F_MQ后可以配置的传输和接收VirtQueue</span></span><br><span class="line"><span class="comment">	分别为receiveq1…receiveqN和transmitq1…transmitqN的最大数量</span></span><br><span class="line"><span class="comment">	 </span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	__u16 max_virtqueue_pairs;  </span><br><span class="line">	<span class="comment">/* Default maximum transmit unit advice */</span></span><br><span class="line">	__u16 mtu; <span class="comment">// 网络能够传输的最大数据包大小，以字节为单位</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * speed, in units of 1Mb. All values 0 to INT_MAX are legal.</span></span><br><span class="line"><span class="comment">	 * Any other value stands for unknown.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	__u32 speed;</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * 0x00 - half duplex</span></span><br><span class="line"><span class="comment">	 * 0x01 - full duplex</span></span><br><span class="line"><span class="comment">	 * Any other value stands for unknown.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	__u8 duplex; <span class="comment">// 全双工和半双工通信</span></span><br><span class="line">&#125; __packed;</span><br></pre></td></tr></table></figure>
+
+<p>后面都是定义一些前后端交互时报文的限制条件，我们在具体实现中进行讨论</p>
+<h2 id="2-2-virtio-net-c"><a href="#2-2-virtio-net-c" class="headerlink" title="2.2 virtio_net.c"></a>2.2 virtio_net.c</h2><p>这部分主要解析和uknetdev的关系</p>
+<p>在uknetdev中曾经定义了网络驱动设备的接收和传输队列，但是没有实现，在virtio_net.c进行了明确定义。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @internal Queue structs that are defined internally by each driver</span></span><br><span class="line"><span class="comment"> * The datatype is introduced here for having type checking on the</span></span><br><span class="line"><span class="comment"> * API code</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_tx_queue</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_rx_queue</span>;</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @internal structure to represent the transmit queue.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_tx_queue</span> &#123;</span></span><br><span class="line">	<span class="comment">/* The virtqueue reference */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtqueue</span> *<span class="title">vq</span>;</span> <span class="comment">// 前后端通信队列</span></span><br><span class="line">	<span class="comment">/* The hw queue identifier */</span></span><br><span class="line">	<span class="type">uint16_t</span> hwvq_id;  <span class="comment">// hw = hardware</span></span><br><span class="line">	<span class="comment">/* The user queue identifier */</span></span><br><span class="line">	<span class="type">uint16_t</span> lqueue_id;</span><br><span class="line">	<span class="comment">/* The nr. of descriptor limit */</span></span><br><span class="line">	<span class="type">uint16_t</span> max_nb_desc;</span><br><span class="line">	<span class="comment">/* The nr. of descriptor user configured */</span></span><br><span class="line">	<span class="type">uint16_t</span> nb_desc;</span><br><span class="line">	<span class="comment">/* The flag to interrupt on the transmit queue */</span></span><br><span class="line">	<span class="type">uint8_t</span> intr_enabled;</span><br><span class="line">	<span class="comment">/* Reference to the uk_netdev */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev</span> *<span class="title">ndev</span>;</span></span><br><span class="line">	<span class="comment">/* The scatter list and its associated fragements */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_sglist</span> <span class="title">sg</span>;</span> <span class="comment">// sg = signal ? 信号量对应的语义片段</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_sglist_seg</span> <span class="title">sgsegs</span>[<span class="title">NET_MAX_FRAGMENTS</span>];</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>  virtio_net_device</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">virtio_net_device</span> &#123;</span></span><br><span class="line">	<span class="comment">/* Virtio Device */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtio_dev</span> *<span class="title">vdev</span>;</span></span><br><span class="line">	<span class="comment">/* List of all the virtqueue in the pci device */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtqueue</span> *<span class="title">vq</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev</span> <span class="title">netdev</span>;</span></span><br><span class="line">	<span class="comment">/* Count of the number of the virtqueues */</span></span><br><span class="line">	__u16 max_vqueue_pairs;</span><br><span class="line">	<span class="comment">/* List of the Rx/Tx queue 维护网络设备的消息传输和接收队列*/</span></span><br><span class="line">	__u16    rx_vqueue_cnt; </span><br><span class="line">	<span class="class"><span class="keyword">struct</span>   <span class="title">uk_netdev_rx_queue</span> *<span class="title">rxqs</span>;</span></span><br><span class="line">	__u16    tx_vqueue_cnt;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span>   <span class="title">uk_netdev_tx_queue</span> *<span class="title">txqs</span>;</span></span><br><span class="line">	<span class="comment">/* The netdevice identifier */</span></span><br><span class="line">	__u16 uid;</span><br><span class="line">	<span class="comment">/* The max mtu */</span></span><br><span class="line">	__u16 max_mtu;</span><br><span class="line">	<span class="comment">/* The mtu */</span></span><br><span class="line">	__u16 mtu;</span><br><span class="line">	<span class="comment">/* The hw address of the netdevice */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_hwaddr</span> <span class="title">hw_addr</span>;</span> <span class="comment">// 网络硬件地址</span></span><br><span class="line">	<span class="comment">/*  Netdev state */</span></span><br><span class="line">	__u8 state;  <span class="comment">// 在netdev_core.h中有定义uk_netdev_state</span></span><br><span class="line">	<span class="comment">/* RX promiscuous mode. */</span></span><br><span class="line">	__u8 promisc : <span class="number">1</span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>virtio_netdev_recv 这里定义了一个rx_one的函数，提前放上来说<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_recv</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev __unused,</span></span><br><span class="line"><span class="params">			      <span class="keyword">struct</span> uk_netdev_rx_queue *<span class="built_in">queue</span>,</span></span><br><span class="line"><span class="params">			      <span class="keyword">struct</span> uk_netbuf **pkt)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> status = <span class="number">0x0</span>;</span><br><span class="line">	<span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(dev &amp;&amp; <span class="built_in">queue</span>);</span><br><span class="line">	UK_ASSERT(pkt);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Queue interrupts have to be off when calling receive */</span></span><br><span class="line">	UK_ASSERT(!(<span class="built_in">queue</span>-&gt;intr_enabled &amp; VTNET_INTR_EN));</span><br><span class="line"></span><br><span class="line">	rc = virtio_netdev_rxq_dequeue(<span class="built_in">queue</span>, pkt);</span><br><span class="line">	<span class="keyword">if</span> (unlikely(rc &lt; <span class="number">0</span>)) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;Failed to dequeue the packet: %d\n&quot;</span>, rc);</span><br><span class="line">		<span class="keyword">goto</span> err_exit;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 检验报文接收状态</span></span><br><span class="line">	status |= (*pkt) ? UK_NETDEV_STATUS_SUCCESS : <span class="number">0x0</span>;</span><br><span class="line">	status |= virtio_netdev_rx_fillup(<span class="built_in">queue</span>, (<span class="built_in">queue</span>-&gt;nb_desc - rc), <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Enable interrupt only when user had previously enabled it */</span></span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">queue</span>-&gt;intr_enabled &amp; VTNET_INTR_USR_EN_MASK) &#123;</span><br><span class="line">		<span class="comment">/* Need to enable the interrupt on the last packet */</span></span><br><span class="line">		rc = virtqueue_intr_enable(<span class="built_in">queue</span>-&gt;vq);</span><br><span class="line">		<span class="keyword">if</span> (rc == <span class="number">1</span> &amp;&amp; !(*pkt)) &#123;</span><br><span class="line">			<span class="comment">/**</span></span><br><span class="line"><span class="comment">			 * Packet arrive after reading the queue and before</span></span><br><span class="line"><span class="comment">			 * enabling the interrupt</span></span><br><span class="line"><span class="comment">			 */</span></span><br><span class="line">			 </span><br><span class="line">			 <span class="comment">// 报文到达时间在开启中断之前到达，在执行read操作以后，再读</span></span><br><span class="line">			rc = virtio_netdev_rxq_dequeue(<span class="built_in">queue</span>, pkt);</span><br><span class="line">			<span class="keyword">if</span> (unlikely(rc &lt; <span class="number">0</span>)) &#123;</span><br><span class="line">				uk_pr_err(<span class="string">&quot;Failed to dequeue the packet: %d\n&quot;</span>,</span><br><span class="line">					  rc);</span><br><span class="line">				<span class="keyword">goto</span> err_exit;</span><br><span class="line">			&#125;</span><br><span class="line">			status |= UK_NETDEV_STATUS_SUCCESS;</span><br><span class="line"></span><br><span class="line">			<span class="comment">/*</span></span><br><span class="line"><span class="comment">			 * Since we received something, we need to fillup</span></span><br><span class="line"><span class="comment">			 * and notify</span></span><br><span class="line"><span class="comment">			 */</span></span><br><span class="line">			status |= virtio_netdev_rx_fillup(<span class="built_in">queue</span>,</span><br><span class="line">							  (<span class="built_in">queue</span>-&gt;nb_desc - rc),</span><br><span class="line">							  <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">			<span class="comment">/* Need to enable the interrupt on the last packet */</span></span><br><span class="line">			rc = virtqueue_intr_enable(<span class="built_in">queue</span>-&gt;vq);</span><br><span class="line">			status |= (rc == <span class="number">1</span>) ? UK_NETDEV_STATUS_MORE : <span class="number">0x0</span>;</span><br><span class="line">		&#125; <span class="keyword">else</span> <span class="keyword">if</span> (*pkt) &#123;</span><br><span class="line">			<span class="comment">/* When we originally got a packet and there is more */</span></span><br><span class="line">			status |= (rc == <span class="number">1</span>) ? UK_NETDEV_STATUS_MORE : <span class="number">0x0</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span> (*pkt) &#123;</span><br><span class="line">		<span class="comment">/**</span></span><br><span class="line"><span class="comment">		 * For polling case, we report always there are further</span></span><br><span class="line"><span class="comment">		 * packets unless the queue is empty.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		status |= UK_NETDEV_STATUS_MORE;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> status;</span><br><span class="line"></span><br><span class="line">err_exit:</span><br><span class="line">	UK_ASSERT(rc &lt; <span class="number">0</span>);</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>virtio_netdev操作</strong></p>
+<p>这里函数主要分成两类，一类是virtio_net_*主要是virtio层面设备的管理，信息获取等</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_net_drv_init</span><span class="params">(<span class="keyword">struct</span> uk_alloc *drv_allocator)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_net_add_dev</span><span class="params">(<span class="keyword">struct</span> virtio_dev *vdev)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">virtio_net_info_get</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev,</span></span><br><span class="line"><span class="params">				<span class="keyword">struct</span> uk_netdev_info *dev_info)</span>;</span><br><span class="line">				</span><br><span class="line"><span class="comment">// Disable interrupts on the virtqueue.</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_net_rx_intr_disable</span><span class="params">(<span class="keyword">struct</span> uk_netdev *n,</span></span><br><span class="line"><span class="params">				      <span class="keyword">struct</span> uk_netdev_rx_queue *<span class="built_in">queue</span>)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_net_rx_intr_enable</span><span class="params">(<span class="keyword">struct</span> uk_netdev *n,</span></span><br><span class="line"><span class="params">				     <span class="keyword">struct</span> uk_netdev_rx_queue *<span class="built_in">queue</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="keyword">struct</span> uk_hwaddr *<span class="title function_">virtio_net_mac_get</span><span class="params">(<span class="keyword">struct</span> uk_netdev *n)</span>;</span><br><span class="line"><span class="type">static</span> __u16 <span class="title function_">virtio_net_mtu_get</span><span class="params">(<span class="keyword">struct</span> uk_netdev *n)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">unsigned</span> <span class="title function_">virtio_net_promisc_get</span><span class="params">(<span class="keyword">struct</span> uk_netdev *n)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这里就举一个添加设备的例子</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_net_add_dev</span><span class="params">(<span class="keyword">struct</span> virtio_dev *vdev)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtio_net_device</span> *<span class="title">vndev</span>;</span> <span class="comment">// 前端设备</span></span><br><span class="line">	<span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(vdev != <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">	vndev = uk_calloc(a, <span class="number">1</span>, <span class="keyword">sizeof</span>(*vndev));</span><br><span class="line">	<span class="keyword">if</span> (!vndev) &#123;</span><br><span class="line">		rc = -ENOMEM;</span><br><span class="line">		<span class="keyword">goto</span> err_out;</span><br><span class="line">	&#125;</span><br><span class="line">	vndev-&gt;vdev = vdev;</span><br><span class="line">	<span class="comment">/* register netdev */</span></span><br><span class="line">	vndev-&gt;netdev.rx_one = virtio_netdev_recv; <span class="comment">// 接收到的packet</span></span><br><span class="line">	vndev-&gt;netdev.tx_one = virtio_netdev_xmit; <span class="comment">// 传输packet</span></span><br><span class="line">	vndev-&gt;netdev.ops = &amp;virtio_netdev_ops; <span class="comment">// 驱动设备行为</span></span><br><span class="line"></span><br><span class="line">	rc = uk_netdev_drv_register(&amp;vndev-&gt;netdev, a, drv_name); <span class="comment">// 返回一个唯一注册id</span></span><br><span class="line">	<span class="keyword">if</span> (rc &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;Failed to register virtio-net device with libuknet\n&quot;</span>);</span><br><span class="line">		<span class="keyword">goto</span> err_netdev_data;</span><br><span class="line">	&#125;</span><br><span class="line">	vndev-&gt;uid = rc;</span><br><span class="line">	rc = <span class="number">0</span>;</span><br><span class="line">	vndev-&gt;max_mtu = UK_ETH_PAYLOAD_MAXLEN;</span><br><span class="line">	vndev-&gt;mtu = vndev-&gt;max_mtu;</span><br><span class="line">	vndev-&gt;promisc = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">TODO:</span></span></span><br><span class="line"><span class="comment">	 * Adding multiqueue support for the virtio net driver.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	vndev-&gt;max_vqueue_pairs = <span class="number">1</span>;</span><br><span class="line">	uk_pr_debug(<span class="string">&quot;virtio-net device registered with libuknet\n&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">exit</span>:</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">err_netdev_data:</span><br><span class="line">	uk_free(a, vndev);</span><br><span class="line">err_out:</span><br><span class="line">	<span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>virtio_netdev_*</p>
+<p>直接和netdev扯上关系的部分的函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_configure</span><span class="params">(<span class="keyword">struct</span> uk_netdev *n,</span></span><br><span class="line"><span class="params">				   <span class="type">const</span> <span class="keyword">struct</span> uk_netdev_conf *conf)</span>; </span><br><span class="line">				   </span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_rxtx_alloc</span><span class="params">(<span class="keyword">struct</span> virtio_net_device *vndev,</span></span><br><span class="line"><span class="params">				    <span class="type">const</span> <span class="keyword">struct</span> uk_netdev_conf *conf)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_feature_negotiate</span><span class="params">(<span class="keyword">struct</span> uk_netdev *n)</span>;</span><br><span class="line"><span class="type">static</span> <span class="keyword">struct</span> uk_netdev_tx_queue *<span class="title function_">virtio_netdev_tx_queue_setup</span><span class="params">(</span></span><br><span class="line"><span class="params">					<span class="keyword">struct</span> uk_netdev *n, <span class="type">uint16_t</span> queue_id,</span></span><br><span class="line"><span class="params">					<span class="type">uint16_t</span> nb_desc,</span></span><br><span class="line"><span class="params">					<span class="keyword">struct</span> uk_netdev_txqueue_conf *conf)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_vqueue_setup</span><span class="params">(<span class="keyword">struct</span> virtio_net_device *vndev,</span></span><br><span class="line"><span class="params">				      <span class="type">uint16_t</span> queue_id, <span class="type">uint16_t</span> nr_desc,</span></span><br><span class="line"><span class="params">				      <span class="type">virtq_type_t</span> queue_type,</span></span><br><span class="line"><span class="params">				      <span class="keyword">struct</span> uk_alloc *a)</span>;</span><br><span class="line"><span class="type">static</span> <span class="keyword">struct</span> uk_netdev_rx_queue *<span class="title function_">virtio_netdev_rx_queue_setup</span><span class="params">(</span></span><br><span class="line"><span class="params">					<span class="keyword">struct</span> uk_netdev *n,</span></span><br><span class="line"><span class="params">					<span class="type">uint16_t</span> queue_id, <span class="type">uint16_t</span> nb_desc,</span></span><br><span class="line"><span class="params">					<span class="keyword">struct</span> uk_netdev_rxqueue_conf *conf)</span>;</span><br><span class="line">					</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">virtio_netdev_xmit_free</span><span class="params">(<span class="keyword">struct</span> uk_netdev_tx_queue *txq)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_xmit</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev,</span></span><br><span class="line"><span class="params">			      <span class="keyword">struct</span> uk_netdev_tx_queue *<span class="built_in">queue</span>,</span></span><br><span class="line"><span class="params">			      <span class="keyword">struct</span> uk_netbuf *pkt)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_recv</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev,</span></span><br><span class="line"><span class="params">			      <span class="keyword">struct</span> uk_netdev_rx_queue *<span class="built_in">queue</span>,</span></span><br><span class="line"><span class="params">			      <span class="keyword">struct</span> uk_netbuf **pkt)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_rxq_info_get</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev, __u16 queue_id,</span></span><br><span class="line"><span class="params">				      <span class="keyword">struct</span> uk_netdev_queue_info *qinfo)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_txq_info_get</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev, __u16 queue_id,</span></span><br><span class="line"><span class="params">				      <span class="keyword">struct</span> uk_netdev_queue_info *qinfo)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_rxq_dequeue</span><span class="params">(<span class="keyword">struct</span> uk_netdev_rx_queue *rxq,</span></span><br><span class="line"><span class="params">				     <span class="keyword">struct</span> uk_netbuf **netbuf)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_rxq_enqueue</span><span class="params">(<span class="keyword">struct</span> uk_netdev_rx_queue *rxq,</span></span><br><span class="line"><span class="params">				     <span class="keyword">struct</span> uk_netbuf *netbuf)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_recv_done</span><span class="params">(<span class="keyword">struct</span> virtqueue *vq, <span class="type">void</span> *priv)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_rx_fillup</span><span class="params">(<span class="keyword">struct</span> uk_netdev_rx_queue *rxq,</span></span><br><span class="line"><span class="params">				   __u16 num, <span class="type">int</span> notify)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这些函数，最终都要绑定在uk_netdev_ops</p>
+<p>netdev_core.h中的定义如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * A structure containing the functions exported by a driver.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_ops</span> &#123;</span></span><br><span class="line">	<span class="comment">/** RX queue interrupts. */</span></span><br><span class="line">	<span class="type">uk_netdev_rxq_intr_enable_t</span>     rxq_intr_enable;  <span class="comment">/* optional */</span></span><br><span class="line">	<span class="type">uk_netdev_rxq_intr_disable_t</span>    rxq_intr_disable; <span class="comment">/* optional */</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Set/Get hardware address. */</span></span><br><span class="line">	<span class="type">uk_netdev_hwaddr_get_t</span>          hwaddr_get;       <span class="comment">/* recommended */</span></span><br><span class="line">	<span class="type">uk_netdev_hwaddr_set_t</span>          hwaddr_set;       <span class="comment">/* optional */</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Set/Get MTU. */</span></span><br><span class="line">	<span class="type">uk_netdev_mtu_get_t</span>             mtu_get;</span><br><span class="line">	<span class="type">uk_netdev_mtu_set_t</span>             mtu_set;          <span class="comment">/* optional */</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Promiscuous mode. */</span></span><br><span class="line">	<span class="type">uk_netdev_promiscuous_set_t</span>     promiscuous_set;  <span class="comment">/* optional */</span></span><br><span class="line">	<span class="type">uk_netdev_promiscuous_get_t</span>     promiscuous_get;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Device/driver capabilities and info. */</span></span><br><span class="line">	<span class="type">uk_netdev_info_get_t</span>            info_get;</span><br><span class="line">	<span class="type">uk_netdev_txq_info_get_t</span>        txq_info_get;</span><br><span class="line">	<span class="type">uk_netdev_rxq_info_get_t</span>        rxq_info_get;</span><br><span class="line">	<span class="type">uk_netdev_einfo_get_t</span>           einfo_get;        <span class="comment">/* optional */</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Device life cycle. */</span></span><br><span class="line">	<span class="type">uk_netdev_probe_t</span>               probe;            <span class="comment">/* recommended */</span></span><br><span class="line">	<span class="type">uk_netdev_configure_t</span>           configure;</span><br><span class="line">	<span class="type">uk_netdev_txq_configure_t</span>       txq_configure;</span><br><span class="line">	<span class="type">uk_netdev_rxq_configure_t</span>       rxq_configure;</span><br><span class="line">	<span class="type">uk_netdev_start_t</span>               start;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>在virtio_net.c中的实现为</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_ops</span> <span class="title">virtio_netdev_ops</span> =</span> &#123;</span><br><span class="line">	.probe = virtio_netdev_feature_negotiate,</span><br><span class="line">	.configure = virtio_netdev_configure,</span><br><span class="line">	.rxq_configure = virtio_netdev_rx_queue_setup,</span><br><span class="line">	.txq_configure = virtio_netdev_tx_queue_setup,</span><br><span class="line">	.start = virtio_net_start,</span><br><span class="line">	.rxq_intr_enable = virtio_net_rx_intr_enable,</span><br><span class="line">	.rxq_intr_disable = virtio_net_rx_intr_disable,</span><br><span class="line">	.info_get = virtio_net_info_get,</span><br><span class="line">	.promiscuous_get = virtio_net_promisc_get,</span><br><span class="line">	.hwaddr_get = virtio_net_mac_get,</span><br><span class="line">	.mtu_get = virtio_net_mtu_get,</span><br><span class="line">	.txq_info_get = virtio_netdev_txq_info_get,</span><br><span class="line">	.rxq_info_get = virtio_netdev_rxq_info_get,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>virtio_netdev_feature_negotiate：网络设备bus相关feature map，抽取部分关键代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Read device feature bits, and write the subset of feature bits</span></span><br><span class="line"><span class="comment">	 * understood by the OS and driver to the device. During this step the</span></span><br><span class="line"><span class="comment">	 * driver MAY read (but MUST NOT write) the device-specific</span></span><br><span class="line"><span class="comment">	 * configuration fields to check that it can support the device before</span></span><br><span class="line"><span class="comment">	 * accepting it.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	host_features = virtio_feature_get(vndev-&gt;vdev);</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Hardware address</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">NOTE:</span> For now, we require a provided hw address. In principle,</span></span><br><span class="line"><span class="comment">	 *       we could generate one if none was given.</span></span><br><span class="line"><span class="comment">	 * 设置网络设备的mac硬件地址</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	</span><br><span class="line"> 	VIRTIO_FEATURE_SET(drv_features, VIRTIO_NET_F_MAC);</span><br><span class="line"> 	</span><br><span class="line"> 	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * MTU information (needed)</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line"> 	VIRTIO_FEATURE_SET(drv_features, VIRTIO_NET_F_STATUS);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Gratuitous ARP</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">NOTE:</span> We tell that we will do gratuitous ARPs ourselves.</span></span><br><span class="line"><span class="comment">	 * ARP信息，ARP就是根据IP地址解析物理地址</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	VIRTIO_FEATURE_SET(drv_features, VIRTIO_NET_F_GUEST_ANNOUNCE);</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Partial checksumming</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">NOTE:</span> This enables sending and receiving of packets marked with</span></span><br><span class="line"><span class="comment">	 *       VIRTIO_NET_HDR_F_DATA_VALID and VIRTIO_NET_HDR_F_NEEDS_CSUM</span></span><br><span class="line"><span class="comment">	 * 校验和相关特征值设置</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	 VIRTIO_FEATURE_SET(drv_features, VIRTIO_NET_F_CSUM);</span><br><span class="line">	 VIRTIO_FEATURE_SET(drv_features, VIRTIO_NET_F_GUEST_CSUM);</span><br><span class="line">	 </span><br><span class="line">	 <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Announce our enabled driver features back to the backend device</span></span><br><span class="line"><span class="comment">	 * 将feature bits映射到具体设备上</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	vndev-&gt;vdev-&gt;features = drv_features;</span><br><span class="line">	virtio_feature_set(vndev-&gt;vdev, vndev-&gt;vdev-&gt;features);</span><br></pre></td></tr></table></figure></li>
+<li><p>virtio_netdev_configure：主要是对virtio netdev里的配置初始化，主要是接收和发送队列数设置</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * netdev_core.h, nb = number</span></span><br><span class="line"><span class="comment"> * A structure used to configure a network device.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_conf</span> &#123;</span></span><br><span class="line">	<span class="type">uint16_t</span> nb_rx_queues;</span><br><span class="line">	<span class="type">uint16_t</span> nb_tx_queues;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_configure</span><span class="params">(<span class="keyword">struct</span> uk_netdev *n,</span></span><br><span class="line"><span class="params">				   <span class="type">const</span> <span class="keyword">struct</span> uk_netdev_conf *conf)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtio_net_device</span> *<span class="title">vndev</span>;</span></span><br><span class="line"></span><br><span class="line">	UK_ASSERT(n);</span><br><span class="line">	UK_ASSERT(conf);</span><br><span class="line">	vndev = to_virtionetdev(n);</span><br><span class="line"></span><br><span class="line">	rc = virtio_netdev_rxtx_alloc(vndev, conf); <span class="comment">// 给virtio netdev设置接受发送队列数上限</span></span><br><span class="line">	<span class="keyword">if</span> (rc &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;%p: Failed to initialize rx and tx rings: %d\n&quot;</span>,</span><br><span class="line">			  n, rc);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Initialize the count of the virtio-net device */</span></span><br><span class="line">	vndev-&gt;rx_vqueue_cnt = <span class="number">0</span>;</span><br><span class="line">	vndev-&gt;tx_vqueue_cnt = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>uk_netdev_rx_queue</p>
+</li>
+</ul>
+<p>初始化接收队列</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span> &#123;</span></span><br><span class="line">	VNET_RX,</span><br><span class="line">	VNET_TX,</span><br><span class="line">&#125; <span class="type">virtq_type_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">struct</span> uk_netdev_rx_queue *<span class="title function_">virtio_netdev_rx_queue_setup</span><span class="params">(</span></span><br><span class="line"><span class="params">				<span class="keyword">struct</span> uk_netdev *n, <span class="type">uint16_t</span> queue_id,</span></span><br><span class="line"><span class="params">				<span class="type">uint16_t</span> nb_desc,</span></span><br><span class="line"><span class="params">				<span class="keyword">struct</span> uk_netdev_rxqueue_conf *conf)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtio_net_device</span> *<span class="title">vndev</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_rx_queue</span> *<span class="title">rxq</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(n);</span><br><span class="line">	UK_ASSERT(conf);</span><br><span class="line">	UK_ASSERT(conf-&gt;alloc_rxpkts);</span><br><span class="line"></span><br><span class="line">	vndev = to_virtionetdev(n);</span><br><span class="line">	<span class="keyword">if</span> (queue_id &gt;= vndev-&gt;max_vqueue_pairs) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;Invalid virtqueue identifier: %&quot;</span>__PRIu16<span class="string">&quot;\n&quot;</span>,</span><br><span class="line">			  queue_id);</span><br><span class="line">		rc = -EINVAL;</span><br><span class="line">		<span class="keyword">goto</span> err_exit;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">/* Setup the virtqueue with the descriptor */</span></span><br><span class="line">	rc = virtio_netdev_vqueue_setup(vndev, queue_id, nb_desc, VNET_RX,</span><br><span class="line">					conf-&gt;a);</span><br><span class="line">	<span class="keyword">if</span> (rc &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;Failed to set up virtqueue %&quot;</span>__PRIu16<span class="string">&quot;: %d\n&quot;</span>,</span><br><span class="line">			  queue_id, rc);</span><br><span class="line">		<span class="keyword">goto</span> err_exit;</span><br><span class="line">	&#125;</span><br><span class="line">	rxq  = &amp;vndev-&gt;rxqs[rc];</span><br><span class="line">	rxq-&gt;alloc_rxpkts = conf-&gt;alloc_rxpkts;</span><br><span class="line">	rxq-&gt;alloc_rxpkts_argp = conf-&gt;alloc_rxpkts_argp;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Allocate receive buffers for this queue */</span></span><br><span class="line">	virtio_netdev_rx_fillup(rxq, rxq-&gt;nb_desc, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">exit</span>:</span><br><span class="line">	<span class="keyword">return</span> rxq;</span><br><span class="line"></span><br><span class="line">err_exit:</span><br><span class="line">	rxq = ERR2PTR(rc);</span><br><span class="line">	<span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>这里涉及到了virtio_netdev_vqueue_setup函数。</p>
+<p>这个函数的主要目的是初始化队列virtio_vqueue_setup（vqueue）中的，接收和发送队列都需要调用这个函数。完成的任务包括为队列绑定callback，队列描述符的初始化，rxqs成员变量初始化。</p>
+<p>在绑定callback时调用了virtio_netdev_recv_done函数，这个函数主要用于终止队列ring的打断virtqueue_intr_disable，并触发uk_netdev_drv_rx_event，表示完成接收事件后的动作</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * This function setup the vring infrastructure.</span></span><br><span class="line"><span class="comment"> * @param vndev</span></span><br><span class="line"><span class="comment"> *	Reference to the virtio net device.</span></span><br><span class="line"><span class="comment"> * @param queue_id</span></span><br><span class="line"><span class="comment"> *	User queue identifier</span></span><br><span class="line"><span class="comment"> * @param nr_desc</span></span><br><span class="line"><span class="comment"> *	User configured number of descriptors.</span></span><br><span class="line"><span class="comment"> * @param queue_type</span></span><br><span class="line"><span class="comment"> *	Queue type.</span></span><br><span class="line"><span class="comment"> * @param a</span></span><br><span class="line"><span class="comment"> *	Reference to the allocator.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_vqueue_setup</span><span class="params">(<span class="keyword">struct</span> virtio_net_device *vndev,</span></span><br><span class="line"><span class="params">		<span class="type">uint16_t</span> queue_id, <span class="type">uint16_t</span> nr_desc, <span class="type">virtq_type_t</span> queue_type,</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> uk_alloc *a)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">	<span class="type">int</span> id = <span class="number">0</span>;</span><br><span class="line">	<span class="type">virtqueue_callback_t</span> callback;</span><br><span class="line">	<span class="type">uint16_t</span> max_desc, hwvq_id;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtqueue</span> *<span class="title">vq</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (queue_type == VNET_RX) &#123;</span><br><span class="line">		id = vndev-&gt;rx_vqueue_cnt;</span><br><span class="line">		callback = virtio_netdev_recv_done;</span><br><span class="line">		max_desc = vndev-&gt;rxqs[id].max_nb_desc;</span><br><span class="line">		hwvq_id = vndev-&gt;rxqs[id].hwvq_id;</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		id = vndev-&gt;tx_vqueue_cnt;</span><br><span class="line">		<span class="comment">/* We don&#x27;t support the callback from the txqueue yet */</span></span><br><span class="line">		callback = <span class="literal">NULL</span>;</span><br><span class="line">		max_desc = vndev-&gt;txqs[id].max_nb_desc;</span><br><span class="line">		hwvq_id = vndev-&gt;txqs[id].hwvq_id;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (unlikely(max_desc &lt; nr_desc)) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;Max allowed desc: %&quot;</span>__PRIu16<span class="string">&quot; Requested desc:%&quot;</span>__PRIu16<span class="string">&quot;\n&quot;</span>,</span><br><span class="line">			  max_desc, nr_desc);</span><br><span class="line">		<span class="keyword">return</span> -ENOBUFS;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	nr_desc = (nr_desc != <span class="number">0</span>) ? nr_desc : max_desc;</span><br><span class="line">	uk_pr_debug(<span class="string">&quot;Configuring the %d descriptors\n&quot;</span>, nr_desc);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Check if the descriptor is a power of 2 */</span></span><br><span class="line">	<span class="keyword">if</span> (unlikely(nr_desc &amp; (nr_desc - <span class="number">1</span>))) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;Expect descriptor count as a power 2\n&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span> -EINVAL;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line">	vq = virtio_vqueue_setup(vndev-&gt;vdev, hwvq_id, nr_desc, callback, a);</span><br><span class="line">	<span class="keyword">if</span> (unlikely(PTRISERR(vq))) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;Failed to set up virtqueue %&quot;</span>__PRIu16<span class="string">&quot;\n&quot;</span>,</span><br><span class="line">			  queue_id);</span><br><span class="line">		rc = PTR2ERR(vq);</span><br><span class="line">		<span class="keyword">return</span> rc;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (queue_type == VNET_RX) &#123;</span><br><span class="line">		vq-&gt;priv = &amp;vndev-&gt;rxqs[id];</span><br><span class="line">		vndev-&gt;rxqs[id].ndev = &amp;vndev-&gt;netdev;</span><br><span class="line">		vndev-&gt;rxqs[id].vq = vq;</span><br><span class="line">		vndev-&gt;rxqs[id].nb_desc = nr_desc;</span><br><span class="line">		vndev-&gt;rxqs[id].lqueue_id = queue_id;</span><br><span class="line">		vndev-&gt;rx_vqueue_cnt++;</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		vndev-&gt;txqs[id].vq = vq;</span><br><span class="line">		vndev-&gt;txqs[id].ndev = &amp;vndev-&gt;netdev;</span><br><span class="line">		vndev-&gt;txqs[id].nb_desc = nr_desc;</span><br><span class="line">		vndev-&gt;txqs[id].lqueue_id = queue_id;</span><br><span class="line">		vndev-&gt;tx_vqueue_cnt++;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> id;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>uk_netdev_tx_queue和这个读队列的操作基本一致，就不再赘述</p>
+<ul>
+<li>virtio_net_start：这个函数就是禁用接收和发送队列的中断选项</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_net_start</span><span class="params">(<span class="keyword">struct</span> uk_netdev *n)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtio_net_device</span> *<span class="title">d</span>;</span></span><br><span class="line">	<span class="type">int</span> i = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(n != <span class="literal">NULL</span>);</span><br><span class="line">	d = to_virtionetdev(n);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * By default, interrupts are disabled and it is up to the user or</span></span><br><span class="line"><span class="comment">	 * network stack to manually enable them with a call to</span></span><br><span class="line"><span class="comment">	 * enable_tx|rx_intr()</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; d-&gt;rx_vqueue_cnt; i++) &#123;</span><br><span class="line">		virtqueue_intr_disable(d-&gt;rxqs[i].vq);</span><br><span class="line">		d-&gt;rxqs[i].intr_enabled = <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; d-&gt;tx_vqueue_cnt; i++) &#123;</span><br><span class="line">		virtqueue_intr_disable(d-&gt;txqs[i].vq);</span><br><span class="line">		d-&gt;txqs[i].intr_enabled = <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Set the DRIVER_OK status bit. At this point the device is &quot;live&quot;.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	virtio_dev_drv_up(d-&gt;vdev);</span><br><span class="line">	uk_pr_info(DRIVER_NAME<span class="string">&quot;: %&quot;</span>__PRIu16<span class="string">&quot; started\n&quot;</span>, d-&gt;uid);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>virtio_net_rx_intr_enable, virtio_net_rx_intr_disable：管理接收发送队列的enable与disable<br>it</li>
+<li>virtio_net_info_get：获取virtio_netdev的最大接收传输队列，对齐标志以及feature bit。</li>
+<li>virtio_net_promisc_get：是否promisc模式</li>
+<li>virtio_net_mac_get：获取设备硬件mac地址</li>
+<li>virtio_net_mtu_get：获取网络最大传输单元</li>
+<li>virtio_netdev_rxq_info_get：获取接收队列信息，主要是描述符</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_netdev_rxq_info_get</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev,</span></span><br><span class="line"><span class="params">				      __u16 queue_id,</span></span><br><span class="line"><span class="params">				      <span class="keyword">struct</span> uk_netdev_queue_info *qinfo)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtio_net_device</span> *<span class="title">vndev</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_rx_queue</span> *<span class="title">rxq</span>;</span></span><br><span class="line">	<span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(dev);</span><br><span class="line">	UK_ASSERT(qinfo);</span><br><span class="line">	vndev = to_virtionetdev(dev);</span><br><span class="line">	<span class="keyword">if</span> (unlikely(queue_id &gt;= vndev-&gt;max_vqueue_pairs)) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;Invalid virtqueue id: %&quot;</span>__PRIu16<span class="string">&quot;\n&quot;</span>, queue_id);</span><br><span class="line">		rc = -EINVAL;</span><br><span class="line">		<span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	rxq = &amp;vndev-&gt;rxqs[queue_id];</span><br><span class="line">	qinfo-&gt;nb_min = <span class="number">1</span>;</span><br><span class="line">	qinfo-&gt;nb_max = rxq-&gt;max_nb_desc;</span><br><span class="line">	qinfo-&gt;nb_is_power_of_two = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="built_in">exit</span>:</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/24/virtio-net/" title="virtio-net" target="_blank" rel="external">http://example.com/2022/10/24/virtio-net/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/10/24/virtio%E8%83%8C%E6%99%AF/" title="virtio背景介绍"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/10/24/virtio-bus/" title="virtio-bus"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>
