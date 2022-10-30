@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>uknetdev 源码分析 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="uknetdev论文部分uknetdev 部分 API 的主要目标是将驱动与平台分离开，使驱动可以在多种平台上重用。  How?  API 给用户提供三种操作 Unikraft 驱动的方式：轮询、中断和混合。另外，API 还将内存分配的部分开放给了应用，同时支持一些高性能的特性例如多队列，零拷贝 I&#x2F;O 和数据包批处理。应用程序可以通过 API 获取信息以操控驱动。  Where?  netbuf">
+<meta property="og:type" content="article">
+<meta property="og:title" content="uknetdev 源码分析">
+<meta property="og:url" content="http://example.com/2022/10/30/uknetdev/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="uknetdev论文部分uknetdev 部分 API 的主要目标是将驱动与平台分离开，使驱动可以在多种平台上重用。  How?  API 给用户提供三种操作 Unikraft 驱动的方式：轮询、中断和混合。另外，API 还将内存分配的部分开放给了应用，同时支持一些高性能的特性例如多队列，零拷贝 I&#x2F;O 和数据包批处理。应用程序可以通过 API 获取信息以操控驱动。  Where?  netbuf">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft-uknetdev/netbuf.svg">
+<meta property="og:image" content="http://example.com/images/unikraft-uknetdev/netbuf_mem.svg">
+<meta property="og:image" content="http://example.com/images/unikraft-uknetdev/netdev_init.png">
+<meta property="article:published_time" content="2022-10-30T13:43:33.792Z">
+<meta property="article:modified_time" content="2022-10-30T13:41:09.446Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-网络通信">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft-uknetdev/netbuf.svg">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/30/uknetdev/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-bus/">unikraft-bus</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-liblwip/">unikraft-liblwip</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-9pfs/">unikraft-libs-9pfs</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-netdev/">unikraft-netdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-uknetdev/">unikraft-uknetdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-virtio/">unikraft-virtio</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-bus/" rel="tag">unikraft-bus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-futex/" rel="tag">unikraft-futex</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-netdev/" rel="tag">unikraft-netdev</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-process/" rel="tag">unikraft-process</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-thread/" rel="tag">unikraft-thread</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/" rel="tag">unikraft-网络通信</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/unikraft-bus/" style="font-size: 13px;">unikraft-bus</a> <a href="/tags/unikraft-futex/" style="font-size: 13px;">unikraft-futex</a> <a href="/tags/unikraft-netdev/" style="font-size: 13px;">unikraft-netdev</a> <a href="/tags/unikraft-process/" style="font-size: 13px;">unikraft-process</a> <a href="/tags/unikraft-thread/" style="font-size: 13.33px;">unikraft-thread</a> <a href="/tags/unikraft-virtio/" style="font-size: 13.67px;">unikraft-virtio</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 13.67px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 14px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13.33px;">unikraft-线程管理</a> <a href="/tags/unikraft-%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/" style="font-size: 13.33px;">unikraft-网络通信</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-liblwip/">unikraft-liblwip</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/lwip/" class="title">lwip 源码分析</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T13:44:48.824Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-uknetdev/">unikraft-uknetdev</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/uknetdev/" class="title">uknetdev 源码分析</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T13:43:33.792Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/%E5%86%85%E5%AD%98%E7%9B%B8%E5%85%B3%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="title">内存相关基础知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.034Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-virtio/">unikraft-virtio</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/" class="title">virtio-ring与virtio-queue</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.028Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/" class="title">unikraft文件系统导览</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.010Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#uknetdev"><span class="toc-number">1.</span> <span class="toc-text">uknetdev</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%BA%E6%96%87%E9%83%A8%E5%88%86"><span class="toc-number">1.1.</span> <span class="toc-text">论文部分</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#netbuf-h"><span class="toc-number">1.2.</span> <span class="toc-text">netbuf.h</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#netdev-core-h"><span class="toc-number">1.3.</span> <span class="toc-text">netdev_core.h</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#netdev-driver-h"><span class="toc-number">1.4.</span> <span class="toc-text">netdev_driver.h</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#netdev-h-netdev-c"><span class="toc-number">1.5.</span> <span class="toc-text">netdev.h&#x2F;netdev.c</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-uknetdev" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      uknetdev 源码分析
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/30/uknetdev/" class="article-date">
+	  <time datetime="2022-10-30T13:43:33.792Z" itemprop="datePublished">2022-10-30</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-uknetdev/">unikraft-uknetdev</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/" rel="tag">unikraft-网络通信</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/30/uknetdev/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="uknetdev"><a href="#uknetdev" class="headerlink" title="uknetdev"></a>uknetdev</h1><h2 id="论文部分"><a href="#论文部分" class="headerlink" title="论文部分"></a>论文部分</h2><p><code>uknetdev</code> 部分 API 的主要目标是将驱动与平台分离开，使驱动可以在多种平台上重用。</p>
+<blockquote>
+<p>How?</p>
+</blockquote>
+<p>API 给用户提供三种操作 Unikraft 驱动的方式：轮询、中断和混合。另外，API 还将内存分配的部分开放给了应用，同时支持一些高性能的特性例如多队列，零拷贝 I/O 和数据包批处理。应用程序可以通过 API 获取信息以操控驱动。</p>
+<blockquote>
+<p>Where?</p>
+</blockquote>
+<h2 id="netbuf-h"><a href="#netbuf-h" class="headerlink" title="netbuf.h"></a>netbuf.h</h2><p>在 <code>netbuf.h</code> 文件中，位于首部的注释给我们描述了 <code>netbuf</code> 的结构，归结如下图：</p>
+<p><img src="/images/unikraft-uknetdev/netbuf.svg" alt="netbuf"></p>
+<p>在分配好的内存中的结构如下：</p>
+<p><img src="/images/unikraft-uknetdev/netbuf_mem.svg" alt="netbuf_mem"></p>
+<p><code>netbuf</code> 结构体代码定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_netbuf</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netbuf</span> *<span class="title">next</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netbuf</span> *<span class="title">prev</span>;</span></span><br><span class="line">	<span class="comment">// netbuf 的标志</span></span><br><span class="line">	<span class="type">uint8_t</span> flags;         <span class="comment">/**&lt; Flags for this netbuf */</span></span><br><span class="line">	<span class="comment">// 指向负载的开始部分</span></span><br><span class="line">	<span class="type">void</span> *data;            <span class="comment">/**&lt; Payload start, is part of buf. */</span></span><br><span class="line">	<span class="comment">// 负载长度</span></span><br><span class="line">	<span class="type">uint16_t</span> len;          <span class="comment">/**&lt; Payload length (should be &lt;= buflen). */</span></span><br><span class="line">	<span class="comment">// 引用次数</span></span><br><span class="line">	__atomic refcount;     <span class="comment">/**&lt; Reference counter */</span></span><br><span class="line">	<span class="comment">// 指向 private meta data 部分</span></span><br><span class="line">	<span class="type">void</span> *priv;            <span class="comment">/**&lt; Reference to user-provided private data */</span></span><br><span class="line">	<span class="comment">// 指向整个 buffer 的起始部分</span></span><br><span class="line">	<span class="type">void</span> *buf;             <span class="comment">/**&lt; Start address of contiguous buffer. */</span></span><br><span class="line">	<span class="type">size_t</span> buflen;         <span class="comment">/**&lt; Length of buffer. */</span></span><br><span class="line">	<span class="comment">// 校验和的起始位置</span></span><br><span class="line">	<span class="type">uint16_t</span> csum_start;   <span class="comment">/**&lt; Used if UK_NETBUF_F_PARTIAL_CSUM is set;</span></span><br><span class="line"><span class="comment">				 * Offset within this netbuf&#x27;s data segment to</span></span><br><span class="line"><span class="comment">				 * begin checksumming</span></span><br><span class="line"><span class="comment">				 */</span></span><br><span class="line">	<span class="comment">// 校验和偏移量</span></span><br><span class="line">	<span class="type">uint16_t</span> csum_offset;  <span class="comment">/**&lt; Used if UK_NETBUF_F_PARTIAL_CSUM is set;</span></span><br><span class="line"><span class="comment">				 * Number of bytes starting from `csum_start`</span></span><br><span class="line"><span class="comment">				 * pointing to the checksum field</span></span><br><span class="line"><span class="comment">				 */</span></span><br><span class="line">	<span class="comment">// 析构函数</span></span><br><span class="line">	<span class="type">uk_netbuf_dtor_t</span> dtor; <span class="comment">/**&lt; Destructor callback */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_alloc</span> *_<span class="title">a</span>;</span>   <span class="comment">/**&lt; @internal Allocator for free&#x27;ing */</span></span><br><span class="line">	<span class="type">void</span> *_b;              <span class="comment">/**&lt; @internal Base address for free&#x27;ing */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>从定义的开头部分即可看出所有的 netbuf 由一个双向链表索引起来，所以在后面的代码中我们也可以看到对于链表的相关操作函数以及宏定义：</p>
+<blockquote>
+<p>为什么是链表？</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//这里是两个用于遍历链表的宏定义</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_NETBUF_CHAIN_FOREACH(var, head)				\</span></span><br><span class="line"><span class="meta">	for ((var) = (head); (var) != NULL; (var) = (var)-&gt;next)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_NETBUF_CHAIN_FOREACH_R(var, tail)				\</span></span><br><span class="line"><span class="meta">	for ((var) = (tail); (var) != NULL; (var) = (var)-&gt;prev)</span></span><br></pre></td></tr></table></figure>
+
+<p>在 netbuf.h 中除了对于双向链表的操作外，还包含对于 netbuf 本身操作的函数，例如分配空间、使用用户给定值进行初始化等等，各函数间的调用关系图如下：</p>
+<p><img src="/images/unikraft-uknetdev/netdev_init.png" alt="该文件中各函数调用关系"></p>
+<p>其中，<code>init_indir</code> 函数用于初始化 <code>uk_netbuf</code> 结构体，<code>.data</code> 字段的定义就如同前面绘制的结构图那样，起始位置为 <code>*buf</code> 指针加上 <code>headroom</code> 的长度</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">uk_netbuf_init_indir</span><span class="params">(<span class="keyword">struct</span> uk_netbuf *m,</span></span><br><span class="line"><span class="params">			  <span class="type">void</span> *buf, <span class="type">size_t</span> buflen, <span class="type">uint16_t</span> headroom,</span></span><br><span class="line"><span class="params">			  <span class="type">void</span> *priv, <span class="type">uk_netbuf_dtor_t</span> dtor)</span></span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(m);</span><br><span class="line">	UK_ASSERT(buf || (buf == <span class="literal">NULL</span> &amp;&amp; buflen == <span class="number">0</span>));</span><br><span class="line">	UK_ASSERT(headroom &lt;= buflen);</span><br><span class="line">	<span class="comment">// 使用给定值为各变量进行初始化</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Reset pbuf, non-listed fields are automatically set to 0 */</span></span><br><span class="line">	*m = (<span class="keyword">struct</span> uk_netbuf) &#123;</span><br><span class="line">		.buf    = buf,</span><br><span class="line">		.buflen = buflen,</span><br><span class="line">		.data   = (<span class="type">void</span> *) ((<span class="type">uintptr_t</span>) buf + headroom),</span><br><span class="line">		.priv   = priv,</span><br><span class="line">		.dtor   = dtor</span><br><span class="line">	&#125;;</span><br><span class="line">	<span class="comment">// 初始化引用次数为1</span></span><br><span class="line">	uk_refcount_init(&amp;m-&gt;refcount, <span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>alloc_indir</code> 函数用于为 <code>uk_netbuf</code> 部分分配内存空间，在分配好相应的空间后调用 <code>init_indir</code> 函数对分配的内存进行初始化。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> uk_netbuf *<span class="title function_">uk_netbuf_alloc_indir</span><span class="params">(<span class="keyword">struct</span> uk_alloc *a,</span></span><br><span class="line"><span class="params">					<span class="type">void</span> *buf, <span class="type">size_t</span> buflen,</span></span><br><span class="line"><span class="params">					<span class="type">uint16_t</span> headroom,</span></span><br><span class="line"><span class="params">					<span class="type">size_t</span> privlen, <span class="type">uk_netbuf_dtor_t</span> dtor)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netbuf</span> *<span class="title">m</span>;</span></span><br><span class="line">	<span class="comment">// 若 privlen != 0 则为 private data 部分额外分配内存</span></span><br><span class="line">	<span class="keyword">if</span> (privlen)</span><br><span class="line">		m = uk_malloc(a, NETBUF_ADDR_ALIGN_UP(<span class="keyword">sizeof</span>(*m)) + privlen);</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		m = uk_malloc(a, <span class="keyword">sizeof</span>(*m));</span><br><span class="line">	<span class="comment">// 分配失败返回 NULL</span></span><br><span class="line">	<span class="keyword">if</span> (!m)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">	<span class="comment">// 对分配好内存的变量进行初始化，privlen 的起始地址为 netbuf 起始地址加上 netbuf 结构体大小</span></span><br><span class="line">	uk_netbuf_init_indir(m,</span><br><span class="line">			     buf,</span><br><span class="line">			     buflen,</span><br><span class="line">			     headroom,</span><br><span class="line">			     privlen &gt; <span class="number">0</span></span><br><span class="line">			     ? (<span class="type">void</span> *)((<span class="type">uintptr_t</span>) m</span><br><span class="line">					+ NETBUF_ADDR_ALIGN_UP(<span class="keyword">sizeof</span>(*m)))</span><br><span class="line">			     : <span class="literal">NULL</span>,</span><br><span class="line">			     dtor);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Save reference to allocator that is used</span></span><br><span class="line"><span class="comment">	 * for free&#x27;ing this uk_netbuf.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="comment">// 存储用于释放空间的构造器以及首地址</span></span><br><span class="line">	m-&gt;_a = a;</span><br><span class="line">	m-&gt;_b = m;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> m;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>alloc_buf</code> 函数用于为整个 buffer 申请内存地址，在计算完所需要的内存大小后调用 <code>uk_memalign</code> 以一定的粒度大小进行内存的分配，随后调用 <code>prepare_buf</code> 进行整块 buffer 的初始化。</p>
+<blockquote>
+<p>与上一个函数相比，多了 netbuf 中指针指向区域的内存分配</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> uk_netbuf *<span class="title function_">uk_netbuf_alloc_buf</span><span class="params">(<span class="keyword">struct</span> uk_alloc *a, <span class="type">size_t</span> buflen,</span></span><br><span class="line"><span class="params">				      <span class="type">size_t</span> bufalign, <span class="type">uint16_t</span> headroom,</span></span><br><span class="line"><span class="params">				      <span class="type">size_t</span> privlen, <span class="type">uk_netbuf_dtor_t</span> dtor)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">void</span> *mem;</span><br><span class="line">	<span class="type">size_t</span> alloc_len;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netbuf</span> *<span class="title">m</span>;</span></span><br><span class="line"></span><br><span class="line">	UK_ASSERT(buflen &gt; <span class="number">0</span>);</span><br><span class="line">	UK_ASSERT(headroom &lt;= buflen);</span><br><span class="line">	<span class="comment">// 三部分长度之和 buflen + netbuf + priv</span></span><br><span class="line">	alloc_len = NETBUF_ADDR_ALIGN_UP(buflen)</span><br><span class="line">		    + NETBUF_ADDR_ALIGN_UP(<span class="keyword">sizeof</span>(*m) + privlen);</span><br><span class="line">	mem = uk_memalign(a, bufalign, alloc_len);</span><br><span class="line">	<span class="keyword">if</span> (!mem)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	m = uk_netbuf_prepare_buf(mem,</span><br><span class="line">				  alloc_len,</span><br><span class="line">				  headroom,</span><br><span class="line">				  privlen,</span><br><span class="line">				  dtor);</span><br><span class="line">	<span class="keyword">if</span> (!m) &#123;</span><br><span class="line">		uk_free(a, mem);</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Save reference to allocator and allocation</span></span><br><span class="line"><span class="comment">	 * that is used for free&#x27;ing this uk_netbuf.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	m-&gt;_a = a;</span><br><span class="line">	m-&gt;_b = mem;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> m;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>prepare_buf</code> 函数用于初始化整个 buffer，通过计算令各个指针指向各自的位置。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> uk_netbuf *<span class="title function_">uk_netbuf_prepare_buf</span><span class="params">(<span class="type">void</span> *mem, <span class="type">size_t</span> size,</span></span><br><span class="line"><span class="params">					<span class="type">uint16_t</span> headroom,</span></span><br><span class="line"><span class="params">					<span class="type">size_t</span> privlen, <span class="type">uk_netbuf_dtor_t</span> dtor)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netbuf</span> *<span class="title">m</span>;</span></span><br><span class="line">	<span class="type">size_t</span> meta_len = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(mem);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Place headroom and buf at the beginning of the allocation,</span></span><br><span class="line"><span class="comment">	 * This is done in order to forward potential alignments of the</span></span><br><span class="line"><span class="comment">	 * underlying allocation directly to the netbuf data area.</span></span><br><span class="line"><span class="comment">	 * `m` (followed by `m-&gt;priv` if privlen &gt; 0) will be placed at</span></span><br><span class="line"><span class="comment">	 * the end of the given memory.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="comment">// meta_len长度为netbuf结构体大小+private部分大小并向上对齐</span></span><br><span class="line">	meta_len = NETBUF_ADDR_ALIGN_UP(<span class="keyword">sizeof</span>(*m) + privlen);</span><br><span class="line">	<span class="comment">// 元数据长度大于总长度则无法分配</span></span><br><span class="line">	<span class="keyword">if</span> (meta_len &gt; NETBUF_ADDR_ALIGN_DOWN((__uptr) mem + size))</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">	<span class="comment">// *m 所指向的位置是总长度减去 meta data 的长度</span></span><br><span class="line">	m = (<span class="keyword">struct</span> uk_netbuf *) (NETBUF_ADDR_ALIGN_DOWN((__uptr) mem + size)</span><br><span class="line">				  - meta_len);</span><br><span class="line">	<span class="comment">// 调用函数对分配的空间进行初始化</span></span><br><span class="line">	uk_netbuf_init_indir(m,</span><br><span class="line">			     mem,</span><br><span class="line">			     (<span class="type">size_t</span>) ((__uptr) m - (__uptr) mem),</span><br><span class="line">			     headroom,</span><br><span class="line">			     privlen &gt; <span class="number">0</span> ? (<span class="type">void</span> *) ((__uptr) m+ <span class="keyword">sizeof</span>(*m))</span><br><span class="line">					 : <span class="literal">NULL</span>,</span><br><span class="line">			     dtor);</span><br><span class="line">	<span class="keyword">return</span> m;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>随后该文件中还包含了一系列的对于双向链表的操作函数或宏定义</p>
+<p>获取链中开始/结尾的元素</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> uk_netbuf_chain_last(m)						\</span></span><br><span class="line"><span class="meta">	(&#123;								\</span></span><br><span class="line"><span class="meta">		struct uk_netbuf *__ret = NULL;				\</span></span><br><span class="line"><span class="meta">		struct uk_netbuf *__iter;				\</span></span><br><span class="line"><span class="meta">		UK_NETBUF_CHAIN_FOREACH(__iter, (m))			\</span></span><br><span class="line"><span class="meta">			__ret = __iter;					\</span></span><br><span class="line"><span class="meta">									\</span></span><br><span class="line"><span class="meta">		(__ret);						\</span></span><br><span class="line"><span class="meta">	&#125;)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> uk_netbuf_chain_first(m)					\</span></span><br><span class="line"><span class="meta">	(&#123;								\</span></span><br><span class="line"><span class="meta">		struct uk_netbuf *__ret = NULL;				\</span></span><br><span class="line"><span class="meta">		struct uk_netbuf *__iter;				\</span></span><br><span class="line"><span class="meta">		UK_NETBUF_CHAIN_FOREACH_R(__iter, (m))			\</span></span><br><span class="line"><span class="meta">			__ret = __iter;					\</span></span><br><span class="line"><span class="meta">									\</span></span><br><span class="line"><span class="meta">		(__ret);						\</span></span><br><span class="line"><span class="meta">	&#125;)</span></span><br></pre></td></tr></table></figure>
+
+<p>连接两条 netbuf 链（末尾）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">uk_netbuf_connect</span><span class="params">(<span class="keyword">struct</span> uk_netbuf *headtail,</span></span><br><span class="line"><span class="params">		       <span class="keyword">struct</span> uk_netbuf *tail)</span></span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(headtail);</span><br><span class="line">	UK_ASSERT(!headtail-&gt;next);</span><br><span class="line">	UK_ASSERT(tail);</span><br><span class="line">	UK_ASSERT(!tail-&gt;prev);</span><br><span class="line"></span><br><span class="line">	headtail-&gt;next = tail;</span><br><span class="line">	tail-&gt;prev = headtail;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>连接两条 netbuf 链（非末尾）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">uk_netbuf_append</span><span class="params">(<span class="keyword">struct</span> uk_netbuf *head,</span></span><br><span class="line"><span class="params">		      <span class="keyword">struct</span> uk_netbuf *tail)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netbuf</span> *<span class="title">headtail</span>;</span></span><br><span class="line"></span><br><span class="line">	UK_ASSERT(head);</span><br><span class="line">	UK_ASSERT(!head-&gt;prev);</span><br><span class="line">	UK_ASSERT(tail);</span><br><span class="line">	UK_ASSERT(!tail-&gt;prev);</span><br><span class="line"></span><br><span class="line">	headtail = uk_netbuf_chain_last(head);</span><br><span class="line">	headtail-&gt;next = tail;</span><br><span class="line">	tail-&gt;prev = headtail;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>将一个 buffer 从链中断开</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> uk_netbuf *<span class="title function_">uk_netbuf_disconnect</span><span class="params">(<span class="keyword">struct</span> uk_netbuf *m)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netbuf</span> *<span class="title">remhead</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(m);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* We want to return the next element of m as the</span></span><br><span class="line"><span class="comment">	 * remaining head of the chain. If there is no next element</span></span><br><span class="line"><span class="comment">	 * there was no chain.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	remhead = m-&gt;next;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Reconnect the chains before and after m. */</span></span><br><span class="line">	<span class="keyword">if</span> (m-&gt;prev)</span><br><span class="line">		m-&gt;prev-&gt;next = m-&gt;next;</span><br><span class="line">	<span class="keyword">if</span> (m-&gt;next)</span><br><span class="line">		m-&gt;next-&gt;prev = m-&gt;prev;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Disconnect m. */</span></span><br><span class="line">	m-&gt;prev = <span class="literal">NULL</span>;</span><br><span class="line">	m-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> remhead;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>有分配函数必然就对应着释放函数</p>
+<blockquote>
+<p>在什么情况下一个 netbuf 会被多次引用？</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">uk_netbuf_free_single</span><span class="params">(<span class="keyword">struct</span> uk_netbuf *m)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_alloc</span> *<span class="title">a</span>;</span></span><br><span class="line">	<span class="type">void</span> *b;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(m);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Decrease refcount and call destructor and free up memory</span></span><br><span class="line"><span class="comment">	 * when last reference was released.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="comment">// 当引用次数等于 1 时才可释放此 netbuf</span></span><br><span class="line">	<span class="keyword">if</span> (uk_refcount_release(&amp;m-&gt;refcount) == <span class="number">1</span>) &#123;</span><br><span class="line">		uk_pr_debug(<span class="string">&quot;Freeing netbuf %p (next: %p)\n&quot;</span>, m, m-&gt;next);</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* Disconnect this netbuf from the chain. */</span></span><br><span class="line">		uk_netbuf_disconnect(m);</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* Copy the reference of the allocator and base address</span></span><br><span class="line"><span class="comment">		 * in case the destructor is free&#x27;ing up our memory</span></span><br><span class="line"><span class="comment">		 * (e.g., uk_netbuf_init_indir() used).</span></span><br><span class="line"><span class="comment">		 * In such a case `a` and `b` should be (NULL),</span></span><br><span class="line"><span class="comment">		 * however we need to access them for a check after</span></span><br><span class="line"><span class="comment">		 * we have called the destructor.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		a = m-&gt;_a;</span><br><span class="line">		b = m-&gt;_b;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (m-&gt;dtor)</span><br><span class="line">			m-&gt;dtor(m);</span><br><span class="line">		<span class="keyword">if</span> (a &amp;&amp; b)</span><br><span class="line">			uk_free(a, b);</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		uk_pr_debug(<span class="string">&quot;Not freeing netbuf %p (next: %p): refcount greater than 1&quot;</span>,</span><br><span class="line">			    m, m-&gt;next);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="netdev-core-h"><a href="#netdev-core-h" class="headerlink" title="netdev_core.h"></a>netdev_core.h</h2><p>此报头包含所有 API 数据类型。其中⼀些是公共 API 和⼀些是内部 API 的⼀部分。设备的数据与操作是分离的。这种分割允许函数指针和驱动程序数据分散在每个进程中，但实际上共享设备的配置数据。</p>
+<p>用于与网络设备进行交互的结构体为 <code>uk_netdev</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev</span> &#123;</span></span><br><span class="line">	<span class="comment">//数据包单次接收与发送</span></span><br><span class="line">	<span class="comment">/** Packet transmission. */</span></span><br><span class="line">	<span class="type">uk_netdev_tx_one_t</span>          tx_one; <span class="comment">/* by driver */</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Packet reception. */</span></span><br><span class="line">	<span class="type">uk_netdev_rx_one_t</span>          rx_one; <span class="comment">/* by driver */</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Pointer to API-internal state data. */</span></span><br><span class="line">	<span class="comment">// 该结构体中包含网络设备的状态、事件处理函数、ID以及名称</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_data</span>       *_<span class="title">data</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Functions callbacks by driver. */</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * 操作配置选项集合，包括是否⽀持队列中断、硬件物理地址设置、</span></span><br><span class="line"><span class="comment">	 * mtu(最⼤传输单元)、队列信息获取、设备声明周期管理等</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_ops</span>  *<span class="title">ops</span>;</span>   <span class="comment">/* by driver */</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Pointers to queues (API-private) */</span></span><br><span class="line">	<span class="comment">// 队列包含设备、队列唯⼀id、描述符、以及队列描述配置</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_rx_queue</span>   *_<span class="title">rx_queue</span>[<span class="title">CONFIG_LIBUKNETDEV_MAXNBQUEUES</span>];</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_tx_queue</span>   *_<span class="title">tx_queue</span>[<span class="title">CONFIG_LIBUKNETDEV_MAXNBQUEUES</span>];</span></span><br><span class="line"></span><br><span class="line">	UK_TAILQ_ENTRY(<span class="keyword">struct</span> uk_netdev) _list;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Netdevice address configuration */</span></span><br><span class="line">	<span class="comment">// 这⾥特指ipv4⽹络配置</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_einfo</span> *_<span class="title">einfo</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> (CONFIG_UK_NETDEV_SCRATCH_SIZE &gt; 0)</span></span><br><span class="line">	<span class="type">char</span> scratch_pad[CONFIG_UK_NETDEV_SCRATCH_SIZE];</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* CONFIG_UK_NETDEV_SCRATCH_SIZE */</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="netdev-driver-h"><a href="#netdev-driver-h" class="headerlink" title="netdev_driver.h"></a>netdev_driver.h</h2><p>在该文件中共有两个函数，主要作用是为用户提供 Unikraft 网络设备驱动的 API。</p>
+<p><code>uk_netdev_drv_rx_event</code> 函数用于将一个 RX 队列事件转发给 API 的使用者。由于接收方不知道什么时候会接收到数据包，故此函数通常也应该由设备中断上下文调用，以此通知该函数进行相应处理。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">uk_netdev_drv_rx_event</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev,</span></span><br><span class="line"><span class="params">					  <span class="type">uint16_t</span> queue_id)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_event_handler</span> *<span class="title">rxq_handler</span>;</span></span><br><span class="line"></span><br><span class="line">	UK_ASSERT(dev);</span><br><span class="line">	UK_ASSERT(dev-&gt;_data);</span><br><span class="line">	UK_ASSERT(queue_id &lt; CONFIG_LIBUKNETDEV_MAXNBQUEUES);</span><br><span class="line"></span><br><span class="line">	rxq_handler = &amp;dev-&gt;_data-&gt;rxq_handler[queue_id];</span><br><span class="line">	<span class="comment">// 若定义了调度函数线程，则操作信号量使位于 netdev.c 中的 dispatcher 工作</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LIBUKNETDEV_DISPATCHERTHREADS</span></span><br><span class="line">	uk_semaphore_up(&amp;rxq_handler-&gt;events);</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">	<span class="comment">// 调用回调函数</span></span><br><span class="line">	<span class="keyword">if</span> (rxq_handler-&gt;callback)</span><br><span class="line">		rxq_handler-&gt;callback(dev, queue_id, rxq_handler-&gt;cookie);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>uk_netdev_drv_register</code> 函数的主体部分位于 <code>netdev.c</code> 文件中，其主要作用是向设备列表中添加一个网络设备，将在下文中进行介绍。</p>
+<h2 id="netdev-h-netdev-c"><a href="#netdev-h-netdev-c" class="headerlink" title="netdev.h/netdev.c"></a>netdev.h/netdev.c</h2><p>这两个文件中主要包含工具函数、内存分配、设备注册、获取及设置设备信息、创建和销毁调度线程、配置 RX/TX 队列以及启动设备。由于配置部分函数结构相同，在这里仅介绍几个比较关键的函数。</p>
+<p>首先就是对网络设备进行注册的函数 <code>uk_netdev_drv_register</code>，在该函数中为各字段分配了内存，最后将该设备插入至设备列表的末尾并维护总设备数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">uk_netdev_drv_register</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev, <span class="keyword">struct</span> uk_alloc *a,</span></span><br><span class="line"><span class="params">			   <span class="type">const</span> <span class="type">char</span> *drv_name)</span></span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(dev);</span><br><span class="line">	UK_ASSERT(!dev-&gt;_data);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Assert mandatory configuration */</span></span><br><span class="line">	UK_ASSERT(dev-&gt;ops);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops-&gt;info_get);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops-&gt;configure);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops-&gt;rxq_info_get);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops-&gt;rxq_configure);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops-&gt;txq_info_get);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops-&gt;txq_configure);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops-&gt;start);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops-&gt;promiscuous_get);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops-&gt;mtu_get);</span><br><span class="line">	UK_ASSERT((dev-&gt;ops-&gt;rxq_intr_enable &amp;&amp; dev-&gt;ops-&gt;rxq_intr_disable)</span><br><span class="line">		  || (!dev-&gt;ops-&gt;rxq_intr_enable</span><br><span class="line">		      &amp;&amp; !dev-&gt;ops-&gt;rxq_intr_disable));</span><br><span class="line">	UK_ASSERT(dev-&gt;rx_one);</span><br><span class="line">	UK_ASSERT(dev-&gt;tx_one);</span><br><span class="line">	<span class="comment">// 为 _data 字段分配内存并赋值</span></span><br><span class="line">	dev-&gt;_data = _alloc_data(a, netdev_count,  drv_name);</span><br><span class="line">	<span class="keyword">if</span> (!dev-&gt;_data)</span><br><span class="line">		<span class="keyword">return</span> -ENOMEM;</span><br><span class="line">	<span class="comment">// 为网络设备分配 IPv4 相关的内存</span></span><br><span class="line">	<span class="keyword">if</span> (ipv4_addr || ipv4_subnet_mask || ipv4_gw_addr) &#123;</span><br><span class="line">		dev-&gt;_einfo = _alloc_einfo(a);</span><br><span class="line">		<span class="keyword">if</span> (PTRISERR(dev-&gt;_einfo))</span><br><span class="line">			<span class="keyword">return</span> PTR2ERR(dev-&gt;_einfo);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 将当前设备添加至设备列表的末尾</span></span><br><span class="line">	UK_TAILQ_INSERT_TAIL(&amp;uk_netdev_list, dev, _list);</span><br><span class="line">	uk_pr_info(<span class="string">&quot;Registered netdev%&quot;</span>PRIu16<span class="string">&quot;: %p (%s)\n&quot;</span>,</span><br><span class="line">		   netdev_count, dev, drv_name);</span><br><span class="line">	<span class="comment">// 令设备数 +1</span></span><br><span class="line">	<span class="keyword">return</span> netdev_count++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>dispatcher</code> 是调度线程所执行的函数，可以看出其中有一个不会终止的 for 循环持续对信号量进行监听，该信号量的 +1 操作由 <code>netdev_driver.h</code> 中的 <code>uk_netdev_drv_rx_event</code> 进行。</p>
+<blockquote>
+<p>scheduler 与 dispatcher 的区别<br>通常来说，scheduler 才是真正意义上的调度器，因为其带有一定的策略。而 dispatcher 执行的只是简单的无策略的分发工作。</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LIBUKNETDEV_DISPATCHERTHREADS</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> _dispatcher(<span class="type">void</span> *arg)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_event_handler</span> *<span class="title">handler</span> =</span></span><br><span class="line">		(<span class="keyword">struct</span> uk_netdev_event_handler *) arg;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(handler);</span><br><span class="line">	UK_ASSERT(handler-&gt;callback);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (;;) &#123;</span><br><span class="line">		uk_semaphore_down(&amp;handler-&gt;events);</span><br><span class="line">		handler-&gt;callback(handler-&gt;dev,</span><br><span class="line">				  handler-&gt;queue_id,</span><br><span class="line">				  handler-&gt;cookie);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+
+<p>有了线程执行的函数本体，我们就要有相应的创建线程和销毁线程的函数。在这个函数中，通过判断 <code>CONFIG_LIBUKNETDEV_DISPATCHERTHREADS</code> 项来决定是否创建单独的线程进行调度操作，若无需线程则仅进行回调函数的赋值。线程间通信所用到的信号量也是在该函数中定义并初始化的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> _create_event_handler(<span class="type">uk_netdev_queue_event_t</span> callback,</span><br><span class="line">				 <span class="type">void</span> *callback_cookie,</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LIBUKNETDEV_DISPATCHERTHREADS</span></span><br><span class="line">				 <span class="keyword">struct</span> uk_netdev *dev, <span class="type">uint16_t</span> queue_id,</span><br><span class="line">				 <span class="type">const</span> <span class="type">char</span> *queue_type_str,</span><br><span class="line">				 <span class="keyword">struct</span> uk_sched *s,</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">				 <span class="keyword">struct</span> uk_netdev_event_handler *h)</span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(h);</span><br><span class="line">	UK_ASSERT(callback || (!callback &amp;&amp; !callback_cookie));</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LIBUKNETDEV_DISPATCHERTHREADS</span></span><br><span class="line">	UK_ASSERT(!h-&gt;dispatcher);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	h-&gt;callback = callback;</span><br><span class="line">	h-&gt;cookie   = callback_cookie;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LIBUKNETDEV_DISPATCHERTHREADS</span></span><br><span class="line">	<span class="comment">/* If we do not have a callback, we do not need a thread */</span></span><br><span class="line">	<span class="comment">// 若不存在回调函数则无需创建线程</span></span><br><span class="line">	<span class="keyword">if</span> (!callback)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	<span class="comment">// 初始化变量以及传递信息所用的信号量</span></span><br><span class="line">	h-&gt;dev = dev;</span><br><span class="line">	h-&gt;queue_id = queue_id;</span><br><span class="line">	uk_semaphore_init(&amp;h-&gt;events, <span class="number">0</span>);</span><br><span class="line">	h-&gt;dispatcher_s = s;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Create a name for the dispatcher thread.</span></span><br><span class="line"><span class="comment">	 * In case of errors, we just continue without a name</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (asprintf(&amp;h-&gt;dispatcher_name,</span><br><span class="line">		     <span class="string">&quot;netdev%&quot;</span>PRIu16<span class="string">&quot;-%s[%&quot;</span>PRIu16<span class="string">&quot;]&quot;</span>,</span><br><span class="line">		     dev-&gt;_data-&gt;id, queue_type_str, queue_id) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		h-&gt;dispatcher_name = <span class="literal">NULL</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 新建线程运行调度函数</span></span><br><span class="line">	h-&gt;dispatcher = uk_sched_thread_create(h-&gt;dispatcher_s,</span><br><span class="line">					       h-&gt;dispatcher_name, <span class="literal">NULL</span>,</span><br><span class="line">					       _dispatcher, h);</span><br><span class="line">	<span class="keyword">if</span> (!h-&gt;dispatcher) &#123;</span><br><span class="line">		<span class="keyword">if</span> (h-&gt;dispatcher_name)</span><br><span class="line">			<span class="built_in">free</span>(h-&gt;dispatcher_name);</span><br><span class="line">		h-&gt;dispatcher_name = <span class="literal">NULL</span>;</span><br><span class="line">		<span class="keyword">return</span> -ENOMEM;</span><br><span class="line">	&#125;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>销毁部分的函数则相对简单一些，通过调用 <code>unikraft</code> 所提供的线程管理函数即可完成。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> _destroy_event_handler(<span class="keyword">struct</span> uk_netdev_event_handler *h</span><br><span class="line">				   __maybe_unused)</span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(h);</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LIBUKNETDEV_DISPATCHERTHREADS</span></span><br><span class="line">	UK_ASSERT(h-&gt;dispatcher_s);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (h-&gt;dispatcher) &#123;</span><br><span class="line">		uk_thread_kill(h-&gt;dispatcher);</span><br><span class="line">		uk_thread_wait(h-&gt;dispatcher);</span><br><span class="line">	&#125;</span><br><span class="line">	h-&gt;dispatcher = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (h-&gt;dispatcher_name)</span><br><span class="line">		<span class="built_in">free</span>(h-&gt;dispatcher_name);</span><br><span class="line">	h-&gt;dispatcher_name = <span class="literal">NULL</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于只有在处理 RX 队列时才需要创建调度器线程，故上述的两个函数均由 <code>uk_netdev_rxq_configure</code> 调用。该函数的主要作用就是对 RX 队列进行配置。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">uk_netdev_rxq_configure</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev, <span class="type">uint16_t</span> queue_id,</span></span><br><span class="line"><span class="params">			    <span class="type">uint16_t</span> nb_desc,</span></span><br><span class="line"><span class="params">			    <span class="keyword">struct</span> uk_netdev_rxqueue_conf *rx_conf)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> err;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(dev);</span><br><span class="line">	UK_ASSERT(dev-&gt;_data);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops-&gt;rxq_configure);</span><br><span class="line">	UK_ASSERT(queue_id &lt; CONFIG_LIBUKNETDEV_MAXNBQUEUES);</span><br><span class="line">	UK_ASSERT(rx_conf);</span><br><span class="line">	UK_ASSERT(rx_conf-&gt;alloc_rxpkts);</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LIBUKNETDEV_DISPATCHERTHREADS</span></span><br><span class="line">	UK_ASSERT((rx_conf-&gt;callback &amp;&amp; rx_conf-&gt;s)</span><br><span class="line">		  || !rx_conf-&gt;callback);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (dev-&gt;_data-&gt;state != UK_NETDEV_CONFIGURED)</span><br><span class="line">		<span class="keyword">return</span> -EINVAL;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Make sure that we are not initializing this queue a second time */</span></span><br><span class="line">	<span class="keyword">if</span> (!PTRISERR(dev-&gt;_rx_queue[queue_id]))</span><br><span class="line">		<span class="keyword">return</span> -EBUSY;</span><br><span class="line">	<span class="comment">// 调用函数进行事件处理器的配置</span></span><br><span class="line">	err = _create_event_handler(rx_conf-&gt;callback, rx_conf-&gt;callback_cookie,</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LIBUKNETDEV_DISPATCHERTHREADS</span></span><br><span class="line">				    dev, queue_id, <span class="string">&quot;rxq&quot;</span>, rx_conf-&gt;s,</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">				    &amp;dev-&gt;_data-&gt;rxq_handler[queue_id]);</span><br><span class="line">	<span class="keyword">if</span> (err)</span><br><span class="line">		<span class="keyword">goto</span> err_out;</span><br><span class="line">	<span class="comment">// 进行配置</span></span><br><span class="line">	dev-&gt;_rx_queue[queue_id] = dev-&gt;ops-&gt;rxq_configure(dev, queue_id,</span><br><span class="line">							   nb_desc, rx_conf);</span><br><span class="line">	<span class="keyword">if</span> (PTRISERR(dev-&gt;_rx_queue[queue_id])) &#123;</span><br><span class="line">		err = PTR2ERR(dev-&gt;_rx_queue[queue_id]);</span><br><span class="line">		<span class="keyword">goto</span> err_destroy_handler;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	uk_pr_info(<span class="string">&quot;netdev%&quot;</span>PRIu16<span class="string">&quot;: Configured receive queue %&quot;</span>PRIu16<span class="string">&quot;\n&quot;</span>,</span><br><span class="line">		   dev-&gt;_data-&gt;id, queue_id);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	<span class="comment">// 出错时销毁事件处理器</span></span><br><span class="line">err_destroy_handler:</span><br><span class="line">	_destroy_event_handler(&amp;dev-&gt;_data-&gt;rxq_handler[queue_id]);</span><br><span class="line">err_out:</span><br><span class="line">	<span class="keyword">return</span> err;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上文中提到，接收事件处理函数需要由中断上下文来调用，这就需要通知该队列打开中断或关闭中断。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">uk_netdev_rxq_intr_enable</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev,</span></span><br><span class="line"><span class="params">					    <span class="type">uint16_t</span> queue_id)</span></span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(dev);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops);</span><br><span class="line">	UK_ASSERT(dev-&gt;_data);</span><br><span class="line">	UK_ASSERT(dev-&gt;_data-&gt;state == UK_NETDEV_RUNNING);</span><br><span class="line">	UK_ASSERT(queue_id &lt; CONFIG_LIBUKNETDEV_MAXNBQUEUES);</span><br><span class="line">	UK_ASSERT(!PTRISERR(dev-&gt;_rx_queue[queue_id]));</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (unlikely(!dev-&gt;ops-&gt;rxq_intr_enable))</span><br><span class="line">		<span class="keyword">return</span> -ENOTSUP;</span><br><span class="line">	<span class="keyword">return</span> dev-&gt;ops-&gt;rxq_intr_enable(dev, dev-&gt;_rx_queue[queue_id]);</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">uk_netdev_rxq_intr_disable</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev,</span></span><br><span class="line"><span class="params">					     <span class="type">uint16_t</span> queue_id)</span></span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(dev);</span><br><span class="line">	UK_ASSERT(dev-&gt;ops);</span><br><span class="line">	UK_ASSERT(dev-&gt;_data);</span><br><span class="line">	UK_ASSERT(dev-&gt;_data-&gt;state == UK_NETDEV_RUNNING);</span><br><span class="line">	UK_ASSERT(queue_id &lt; CONFIG_LIBUKNETDEV_MAXNBQUEUES);</span><br><span class="line">	UK_ASSERT(!PTRISERR(dev-&gt;_rx_queue[queue_id]));</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (unlikely(!dev-&gt;ops-&gt;rxq_intr_disable))</span><br><span class="line">		<span class="keyword">return</span> -ENOTSUP;</span><br><span class="line">	<span class="keyword">return</span> dev-&gt;ops-&gt;rxq_intr_disable(dev, dev-&gt;_rx_queue[queue_id]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最后就是包的收发操作</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">uk_netdev_rx_one</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev, <span class="type">uint16_t</span> queue_id,</span></span><br><span class="line"><span class="params">				   <span class="keyword">struct</span> uk_netbuf **pkt)</span></span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(dev);</span><br><span class="line">	UK_ASSERT(dev-&gt;rx_one);</span><br><span class="line">	UK_ASSERT(queue_id &lt; CONFIG_LIBUKNETDEV_MAXNBQUEUES);</span><br><span class="line">	UK_ASSERT(dev-&gt;_data-&gt;state == UK_NETDEV_RUNNING);</span><br><span class="line">	UK_ASSERT(!PTRISERR(dev-&gt;_rx_queue[queue_id]));</span><br><span class="line">	UK_ASSERT(pkt);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> dev-&gt;rx_one(dev, dev-&gt;_rx_queue[queue_id], pkt);</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">uk_netdev_tx_one</span><span class="params">(<span class="keyword">struct</span> uk_netdev *dev, <span class="type">uint16_t</span> queue_id,</span></span><br><span class="line"><span class="params">				   <span class="keyword">struct</span> uk_netbuf *pkt)</span></span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(dev);</span><br><span class="line">	UK_ASSERT(dev-&gt;tx_one);</span><br><span class="line">	UK_ASSERT(queue_id &lt; CONFIG_LIBUKNETDEV_MAXNBQUEUES);</span><br><span class="line">	UK_ASSERT(dev-&gt;_data-&gt;state == UK_NETDEV_RUNNING);</span><br><span class="line">	UK_ASSERT(!PTRISERR(dev-&gt;_tx_queue[queue_id]));</span><br><span class="line">	UK_ASSERT(pkt);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> dev-&gt;tx_one(dev, dev-&gt;_tx_queue[queue_id], pkt);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/30/uknetdev/" title="uknetdev 源码分析" target="_blank" rel="external">http://example.com/2022/10/30/uknetdev/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/10/30/lwip/" title="lwip 源码分析"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/10/30/%E5%86%85%E5%AD%98%E7%9B%B8%E5%85%B3%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" title="内存相关基础知识"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>
