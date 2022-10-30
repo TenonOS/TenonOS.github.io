@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>virtio-ring与virtio-queue | TenonOS-unikraft-learning</title>
+  <meta name="description" content="virtio_ring与virtio_queue参考链接：https:&#x2F;&#x2F;blog.csdn.net&#x2F;weixin_43836778&#x2F;article&#x2F;details&#x2F;103777170，并在此基础上做了整合. 注意有virtio_ring.c但是没有virtio_queue.c。因此先把两个数据结构的头文件分析完了，再分析实现 这部分不是unikraft特有的，它就是把linux内核里这块给拿过来">
+<meta property="og:type" content="article">
+<meta property="og:title" content="virtio-ring与virtio-queue">
+<meta property="og:url" content="http://example.com/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="virtio_ring与virtio_queue参考链接：https:&#x2F;&#x2F;blog.csdn.net&#x2F;weixin_43836778&#x2F;article&#x2F;details&#x2F;103777170，并在此基础上做了整合. 注意有virtio_ring.c但是没有virtio_queue.c。因此先把两个数据结构的头文件分析完了，再分析实现 这部分不是unikraft特有的，它就是把linux内核里这块给拿过来">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/virtio-ring_queue/vring%E5%92%8Cvqueue%E6%9E%B6%E6%9E%84.png">
+<meta property="og:image" content="http://example.com/images/virtio-ring_queue/vring%E4%B8%8Evq%E4%BA%A4%E4%BA%92.png">
+<meta property="article:published_time" content="2022-10-30T10:47:29.028Z">
+<meta property="article:modified_time" content="2022-10-30T10:41:58.422Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-virtio">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/virtio-ring_queue/vring%E5%92%8Cvqueue%E6%9E%B6%E6%9E%84.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-bus/">unikraft-bus</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-9pfs/">unikraft-libs-9pfs</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-netdev/">unikraft-netdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-virtio/">unikraft-virtio</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-bus/" rel="tag">unikraft-bus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-futex/" rel="tag">unikraft-futex</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-netdev/" rel="tag">unikraft-netdev</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-process/" rel="tag">unikraft-process</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-thread/" rel="tag">unikraft-thread</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/unikraft-bus/" style="font-size: 13px;">unikraft-bus</a> <a href="/tags/unikraft-futex/" style="font-size: 13px;">unikraft-futex</a> <a href="/tags/unikraft-netdev/" style="font-size: 13px;">unikraft-netdev</a> <a href="/tags/unikraft-process/" style="font-size: 13px;">unikraft-process</a> <a href="/tags/unikraft-thread/" style="font-size: 13.33px;">unikraft-thread</a> <a href="/tags/unikraft-virtio/" style="font-size: 13.67px;">unikraft-virtio</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 14px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 14px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13.33px;">unikraft-线程管理</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">18</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/%E5%86%85%E5%AD%98%E7%9B%B8%E5%85%B3%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="title">内存相关基础知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.034Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-virtio/">unikraft-virtio</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/" class="title">virtio-ring与virtio-queue</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.028Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/" class="title">unikraft文件系统导览</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.010Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/POSIX%20process/" class="title">posix-process</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:28.995Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/POSIX%20futex/" class="title">posix-futex</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:28.994Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#virtio-ring%E4%B8%8Evirtio-queue"><span class="toc-number">1.</span> <span class="toc-text">virtio_ring与virtio_queue</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#1-virtio-h"><span class="toc-number">2.</span> <span class="toc-text">1. virtio.h</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-virtqueue-h"><span class="toc-number">3.</span> <span class="toc-text">2. virtqueue.h</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-virtio-ring-c"><span class="toc-number">4.</span> <span class="toc-text">3. virtio_ring.c</span></a></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-virtio-ring及virtio-queue" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      virtio-ring与virtio-queue
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/" class="article-date">
+	  <time datetime="2022-10-30T10:47:29.028Z" itemprop="datePublished">2022-10-30</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-virtio/">unikraft-virtio</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="virtio-ring与virtio-queue"><a href="#virtio-ring与virtio-queue" class="headerlink" title="virtio_ring与virtio_queue"></a>virtio_ring与virtio_queue</h1><p>参考链接：<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43836778/article/details/103777170">https://blog.csdn.net/weixin_43836778/article/details/103777170</a>，并在此基础上做了整合.</p>
+<p>注意有virtio_ring.c但是没有virtio_queue.c。因此先把两个数据结构的头文件分析完了，再分析实现</p>
+<p>这部分不是unikraft特有的，它就是把linux内核里这块给拿过来了。</p>
+<p><img src="/images/virtio-ring_queue/vring%E5%92%8Cvqueue%E6%9E%B6%E6%9E%84.png"></p>
+<p>vring由3部分组成</p>
+<ul>
+<li>  Descriptor Table，**存放Guest Driver提供的buffer的指针，每个条目指向一个Guest Driver分配的收发数据buffer。**注意，VRing中buffer空间的分配永远由Guest Driver负责，Guest Driver发数据时，还需要向buffer填写数据，Guest Driver收数据时，分配buffer空间后通知Host向buffer中填写数据</li>
+<li>  Avail Ring，**存放Decriptor Table索引，指向Descriptor Table中的一个entry。**当Guest Driver向Vring中添加buffer时，可以一次添加一个或多个buffer，所有buffer组成一个Descriptor chain，Guest Driver添加buffer成功后，需要将Descriptor chain头部的地址记录到Avail Ring中，让Host端能够知道新的可用的buffer是从VRing的哪个地方开始的。Host查找Descriptor chain头部地址，需要经过两次索引Buffer Adress = Descriptor Table[Avail Ring[last_avail_idx]]，last_avail_idx是Host端记录的Guest上一次增加的buffer在Avail Ring中的位置。**Guest Driver每添加一次buffer，就将Avail Ring的idx加1，以表示自己工作在Avail Ring中的哪个位置。<strong>Avail Rring是Guest维护，提供给Host用。</strong></li>
+<li>  Used Ring，同Used Ring一样，存放Decriptor Table索引。当Host根据Avail Ring中提供的信息从VRing中取出buffer，处理完之后，更新Used Ring，把这一次处理的Descriptor chain头部的地址放到Used Ring中。Host每取一次buffer，就将Used Ring的idx加1，以表示自己工作在Used Ring中的哪个位置。Used Ring是Host维护，提供给Guest用</li>
+</ul>
+<p>个人总结：</p>
+<p>这个机制就是为了说明Host后端是怎么把前端的buffer给拿过来的，其实就是host后端通过自己的used ring索引。</p>
+<p>具体的，前端添加buffer到descriptor chain中，并将这组buffer的头部存到available ring中，具体数据结构是vring_avail。</p>
+<p>接着host后端来取信息了，首先是从available ring中拿到available last idx，然后通过available ring[idx]，获取buffer在descriptor table中的地址，最后在descriptor table中映射到buffer。访问过的ring就放到used ring里。</p>
+<h1 id="1-virtio-h"><a href="#1-virtio-h" class="headerlink" title="1. virtio.h"></a>1. virtio.h</h1><p><code>vring_desc</code></p>
+<p>vring_desc是一个buffer描述符，可以认为它代表了一个Guest内存的buffer。指向要传输的数据。所有的vring_desc组成一个Descriptor Table，Table的条目数就是virtqueue的队列深度，表示Guest一次性最多可以存放的数据buffer，qemu默认设置为128。见上图</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Virtqueue descriptors: 16 bytes.</span></span><br><span class="line"><span class="comment"> * These can chain together via &quot;next&quot;.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vring_desc</span> &#123;</span></span><br><span class="line">	<span class="comment">/* Address (guest-physical). */</span></span><br><span class="line">	__virtio_le64 addr;</span><br><span class="line">	<span class="comment">/* Length. */</span></span><br><span class="line">	__virtio_le32 len;</span><br><span class="line">	<span class="comment">/* The flags as indicated above. */</span></span><br><span class="line">	__virtio_le16 flags;</span><br><span class="line">	<span class="comment">/* We chain unused descriptors via this, too */</span></span><br><span class="line">	__virtio_le16 next;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>addr：数据的物理地址，此处应该是物理地址<br>len：数据的长度<br>flags：标记数据对于Host是可读还是可写，如果buffer用于发送数据，对Host只读，否则，对Host只写。解释如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* This marks a buffer as continuing via the next field. </span></span><br><span class="line"><span class="comment"> * 表示该buffer之后还有buffer，所有buffer可以通过next连成一个Descriptor chain</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VRING_DESC_F_NEXT   1</span></span><br><span class="line"><span class="comment">/* This marks a buffer as write-only (otherwise read-only). </span></span><br><span class="line"><span class="comment"> * 表示该buffer只能写，当buffer用于接收数据时，需要向Host提供buffer，这个时候就标记buffer为写。反之是发送数据，标记为读</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VRING_DESC_F_WRITE  2</span></span><br><span class="line"><span class="comment">/* This means the buffer contains a list of buffer descriptors. </span></span><br><span class="line"><span class="comment"> * 不做讨论</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VRING_DESC_F_INDIRECT   4</span></span><br></pre></td></tr></table></figure>
+
+<p>next：存放下一个buffer在Descriptor Table的位置。<br>注意，next不是存放的物理地址，通过其类型不难判断，next是存放的下一个buffer在Descriptor Table的索引</p>
+<p><code>vring_avail</code></p>
+<p>Guest通过Avail Ring向Host提供buffer，指示Guest增加的buffer位置和当前工作的位置</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vring_avail</span> &#123;</span></span><br><span class="line">	__virtio_le16 flags;</span><br><span class="line">	__virtio_le16 idx;</span><br><span class="line">	__virtio_le16 ring[];</span><br><span class="line">	<span class="comment">/* Only if VIRTIO_F_EVENT_IDX: __virtio_le16 used_event; */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>  flags：用于指示Host当它处理完buffer，将Descriptor index写入Used Ring之后，是否通过注入中断通知Guest。如果flags设置为0，Host每处理完一次buffer就会中断通知Guest，从而触发VMExit，增加开销。如果flags为1，不通知Guest。这是一种比较粗糙的方式，要么不通知，要么通知。还有一种比较优雅的方式，叫做VIRTIO_F_EVENT_IDX特性，它根据前后端的处理速度，来判断是否进行通知。如果该特性开启，那么flags的意义将会改变，Guest必须把flags设置为0，然后通过used_event机制实现通知。used_event机制会在后面进行介绍。</li>
+<li>  idx：指示Guest下一次添加buffer时的在Avail Ring所处的位置，换句话说，idx存放的ring[]数组索引，ring[idx]存放才是下一次添加的buffer头在Descriptor Table的位置</li>
+<li>  ring：存放Descriptor Table索引的环，是一个数组，长度是队列深度加1个。其中最后一个用作Event方式通知机制，见下图。VirtIO实现了两级索引，一级索引指向Descriptor Table中的元素，Avail Ring和Used Ring代表的是一级索引，核心就是这里的ring[]数组成员。二级索引指向buffer的物理地址，Descriptor Table是二级索引</li>
+</ul>
+<p><code>vring_used</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* __virtio_le32 is used here for ids for padding reasons. */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vring_used_elem</span> &#123;</span></span><br><span class="line">	<span class="comment">/* Index of start of used descriptor chain. */</span></span><br><span class="line">	__virtio_le32 id;</span><br><span class="line">	<span class="comment">/* Total length of the descriptor chain which was written to. */</span></span><br><span class="line">	__virtio_le32 len;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vring_used</span> &#123;</span></span><br><span class="line">	__virtio_le16 flags;</span><br><span class="line">	__virtio_le16 idx;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vring_used_elem</span> <span class="title">ring</span>[];</span></span><br><span class="line">	<span class="comment">/* Only if VIRTIO_F_EVENT_IDX: __virtio_le16 avail_event; */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>flags：用于指示Guest当它添加完buffer，将Descriptor index写入Avail Ring之后，是否发送notification通知Host。**如果flags设置为0，Guest每增加一次buffer就会通知Host，如果flags为1，不通知Host。**Used Ring flags的含义和Avail Ring flags的含义类似，都是指示前后端数据处理完后是否通知对方。同样的，当VIRTIO_F_EVENT_IDX特性开启时，flags必须被设置成0，Guest使用avail_event方式通知Host</p>
+<p>idx：指示Host下一次处理的buffer在Used Ring所的位置</p>
+<p>ring：存放Descriptor Table索引的环。意义和Avail Ring中的ring类似，都是存放指向Descriptor Table的索引。但Used Ring不同的是，它的元素还增加了一个len字段，用来表示Host在buffer中处理了多长的数据。这个字段在某些场景下有用。这里不做介绍</p>
+<p><code>vring</code></p>
+<p>VRing包含数据传输的所有要素，包括Descriptor Table，Avail Ring和Used Ring，其中Descriptor Table是一个数组，每个Entry描述一个数据的buffer，Descriptor Table存放的是指针，Avail Ring和Used Ring中的ring数组则不同，它们存放的是索引，用来间接记录Descriptor chain。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vring</span> &#123;</span></span><br><span class="line">    <span class="comment">/* VRing的队列深度，表示一个VRing有多少个buffer */</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> num;</span><br><span class="line">    <span class="comment">/* 指向Descriptor Table */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">vring_desc</span> *<span class="title">desc</span>;</span></span><br><span class="line">    <span class="comment">/* 指向Avail Ring */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">vring_avail</span> *<span class="title">avail</span>;</span></span><br><span class="line">    <span class="comment">/* 指向Used Ring */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">vring_used</span> *<span class="title">used</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/virtio-ring_queue/vring%E4%B8%8Evq%E4%BA%A4%E4%BA%92.png"></p>
+<p>接着这里还实现了些vring的相关函数，后面与vqueue结合起来看的</p>
+<h1 id="2-virtqueue-h"><a href="#2-virtqueue-h" class="headerlink" title="2. virtqueue.h"></a>2. virtqueue.h</h1><p><code>virtqueue</code></p>
+<p>virtqueue用作在Guest与Host之间传递数据，Host可以在用户态（qemu）实现，也可以在内核态（vhost）实现。一个virtio设备可以是磁盘，网卡或者控制台，可以拥有一个或者多个virtqueue，每个virtqueue独立完成数据收发。virtqueue数量多少根据设备的需求来定，比如网卡，通常有两个virtqueue，一个用来接收数据，一个用来发送数据。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Type declarations</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">virtqueue</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">virtio_dev</span>;</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="title function_">int</span> <span class="params">(*<span class="type">virtqueue_callback_t</span>)</span><span class="params">(<span class="keyword">struct</span> virtqueue *, <span class="type">void</span> *priv)</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="title function_">int</span> <span class="params">(*<span class="type">virtqueue_notify_host_t</span>)</span><span class="params">(<span class="keyword">struct</span> virtio_dev *, __u16 queue_nr)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Structure to describe the virtqueue.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">virtqueue</span> &#123;</span></span><br><span class="line">	<span class="comment">/* Reference the virtio_dev it belong to */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtio_dev</span> *<span class="title">vdev</span>;</span></span><br><span class="line">	<span class="comment">/* Virtqueue identifier */</span></span><br><span class="line">	__u16 queue_id;</span><br><span class="line">	<span class="comment">/* Notify to the host */</span></span><br><span class="line">	<span class="type">virtqueue_notify_host_t</span> vq_notify_host;</span><br><span class="line">	<span class="comment">/* Callback from the virtqueue */</span></span><br><span class="line">	<span class="type">virtqueue_callback_t</span> vq_callback;</span><br><span class="line">	<span class="comment">/* Next entry of the queue */</span></span><br><span class="line">	UK_TAILQ_ENTRY(<span class="keyword">struct</span> virtqueue) next;</span><br><span class="line">	<span class="comment">/* Private data structure used by the driver of the queue */</span></span><br><span class="line">	<span class="type">void</span> *priv;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>后面声明了很多对于vq和vring的操作函数，统一在virtio_ring.c里说</p>
+<h1 id="3-virtio-ring-c"><a href="#3-virtio-ring-c" class="headerlink" title="3. virtio_ring.c"></a>3. virtio_ring.c</h1><p>这里就主要提一下vring在vqueue的入队和出队的过程</p>
+<p><code>vring_virtqueue</code></p>
+<p>virtqueue是virtio设备看到的队列形式，真正实现数据传输的VRing不会被设备看见，它隐藏在virtqueue的下面，和virtqueue一起，组成了vring_virtqueue。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">virtqueue_desc_info</span> &#123;</span></span><br><span class="line">	<span class="type">void</span> *cookie;</span><br><span class="line">	__u16 desc_count;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">virtqueue_vring</span> &#123;</span></span><br><span class="line">	<span class="comment">/* 设备看到的VRing */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtqueue</span> <span class="title">vq</span>;</span></span><br><span class="line">	</span><br><span class="line">	<span class="comment">/* Descriptor Ring */</span></span><br><span class="line">	<span class="comment">// 实现数据传输的VRing结构</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vring</span> <span class="title">vring</span>;</span></span><br><span class="line">	</span><br><span class="line">	<span class="comment">/* Reference to the vring */</span></span><br><span class="line">	<span class="type">void</span>   *vring_mem;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Keep track of available descriptors */</span></span><br><span class="line">	__u16 desc_avail;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Index of the next available slot */</span></span><br><span class="line">	__u16 head_free_desc;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Index of the last used descriptor by the host */</span></span><br><span class="line">	__u16 last_used_desc_idx;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Cookie to identify driver buffer */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtqueue_desc_info</span> <span class="title">vq_info</span>[];</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><code>入队过程分析virtqueue_buffer_enqueue</code></p>
+<p>丛代码层面意思看，入队过程就是guest os向desc chain里加数据</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">virtqueue_buffer_enqueue</span><span class="params">(<span class="keyword">struct</span> virtqueue *vq, <span class="type">void</span> *cookie,</span></span><br><span class="line"><span class="params">			     <span class="keyword">struct</span> uk_sglist *sg, __u16 read_bufs,</span></span><br><span class="line"><span class="params">			     __u16 write_bufs)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">// 这里的sg是某种信号量列表</span></span><br><span class="line">	__u32 total_desc = <span class="number">0</span>;</span><br><span class="line">	__u16 head_idx = <span class="number">0</span>, idx = <span class="number">0</span>;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtqueue_vring</span> *<span class="title">vrq</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(vq);</span><br><span class="line"></span><br><span class="line">	vrq = to_virtqueue_vring(vq); <span class="comment">// virtqueue -&gt; virtqueue_vring</span></span><br><span class="line">	total_desc = read_bufs + write_bufs; <span class="comment">// 每个描述符对应一个buf</span></span><br><span class="line">	<span class="keyword">if</span> (unlikely(total_desc &lt; <span class="number">1</span> || total_desc &gt; vrq-&gt;vring.num)) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;%&quot;</span>__PRIu32<span class="string">&quot; invalid number of descriptor\n&quot;</span>,</span><br><span class="line">			  total_desc);</span><br><span class="line">		<span class="keyword">return</span> -EINVAL;</span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span> (vrq-&gt;desc_avail &lt; total_desc) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;Available descriptor:%&quot;</span>__PRIu16<span class="string">&quot;, Requested descriptor:%&quot;</span>__PRIu32<span class="string">&quot;\n&quot;</span>,</span><br><span class="line">			  vrq-&gt;desc_avail, total_desc);</span><br><span class="line">		<span class="keyword">return</span> -ENOSPC;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">/* Get the head of free descriptor */</span></span><br><span class="line">	head_idx = vrq-&gt;head_free_desc; <span class="comment">// 找到首地址塞buf</span></span><br><span class="line">	UK_ASSERT(cookie);</span><br><span class="line">	<span class="comment">/* Additional information to reconstruct the data buffer */</span></span><br><span class="line">	vrq-&gt;vq_info[head_idx].cookie = cookie;</span><br><span class="line">	vrq-&gt;vq_info[head_idx].desc_count = total_desc;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * We separate the descriptor management to enqueue segment(s).</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	idx = virtqueue_buffer_enqueue_segments(vrq, head_idx, sg,</span><br><span class="line">			read_bufs, write_bufs);  <span class="comment">// buf写入virtqueue，具体过程见下面的分析</span></span><br><span class="line">	<span class="comment">/* Metadata maintenance for the virtqueue */</span></span><br><span class="line">	vrq-&gt;head_free_desc = idx; <span class="comment">// 下一个vrq里的开始id</span></span><br><span class="line">	vrq-&gt;desc_avail -= total_desc; <span class="comment">// 可用描述符个数更新</span></span><br><span class="line"></span><br><span class="line">	uk_pr_debug(<span class="string">&quot;Old head:%d, new head:%d, total_desc:%d\n&quot;</span>,</span><br><span class="line">		    head_idx, idx, total_desc);</span><br><span class="line"></span><br><span class="line">	virtqueue_ring_update_avail(vrq, head_idx); <span class="comment">// last available idx</span></span><br><span class="line">	<span class="keyword">return</span> vrq-&gt;desc_avail;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">virtqueue_buffer_enqueue_segments</span><span class="params">(</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> virtqueue_vring *vrq,</span></span><br><span class="line"><span class="params">		__u16 head, <span class="keyword">struct</span> uk_sglist *sg, __u16 read_bufs,</span></span><br><span class="line"><span class="params">		__u16 write_bufs)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> i = <span class="number">0</span>, total_desc = <span class="number">0</span>;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_sglist_seg</span> *<span class="title">segs</span>;</span></span><br><span class="line">	__u16 idx = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	total_desc = read_bufs + write_bufs;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>, idx = head; i &lt; total_desc; i++) &#123;</span><br><span class="line">		segs = &amp;sg-&gt;sg_segs[i]; <span class="comment">// 存放物理地址和长度信息，即信号量就是描述符</span></span><br><span class="line">		vrq-&gt;vring.desc[idx].addr = segs-&gt;ss_paddr;</span><br><span class="line">		vrq-&gt;vring.desc[idx].len = segs-&gt;ss_len;</span><br><span class="line">		vrq-&gt;vring.desc[idx].flags = <span class="number">0</span>; <span class="comment">// flag根据下标更新</span></span><br><span class="line">		<span class="keyword">if</span> (i &gt;= read_bufs) <span class="comment">// 区分读写队列，对于写的buf，标记为仅可写</span></span><br><span class="line">			vrq-&gt;vring.desc[idx].flags |= VRING_DESC_F_WRITE;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (i &lt; total_desc - <span class="number">1</span>) <span class="comment">// 标记终止符，所以对于write_buf实际上是011的标识，可写且有下一个</span></span><br><span class="line">			vrq-&gt;vring.desc[idx].flags |= VRING_DESC_F_NEXT;</span><br><span class="line">		idx = vrq-&gt;vring.desc[idx].next; <span class="comment">// vring描述符是链表，而vrq是数组结构，更新下标</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> idx; <span class="comment">// descriptors表的最后一个idx</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">virtqueue_ring_update_avail</span><span class="params">(<span class="keyword">struct</span> virtqueue_vring *vrq,</span></span><br><span class="line"><span class="params">					__u16 idx)</span></span><br><span class="line">&#123;</span><br><span class="line">	__u16 avail_idx;</span><br><span class="line"></span><br><span class="line">	avail_idx = vrq-&gt;vring.avail-&gt;idx &amp; (vrq-&gt;vring.num - <span class="number">1</span>); </span><br><span class="line">	<span class="comment">/* Adding the idx to available ring */</span></span><br><span class="line">	vrq-&gt;vring.avail-&gt;ring[avail_idx] = idx;</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Write barrier to make sure we push the descriptor on the available</span></span><br><span class="line"><span class="comment">	 * descriptor and then increment available index.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	wmb();</span><br><span class="line">	vrq-&gt;vring.avail-&gt;idx++; <span class="comment">// 回到最开始，这就是available last idx</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>出队过程分析virtqueue_buffer_denqueue</code></p>
+<p>从vrq里读信息到host，并更新used ring</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">virtqueue_buffer_dequeue</span><span class="params">(<span class="keyword">struct</span> virtqueue *vq, <span class="type">void</span> **cookie, __u32 *len)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtqueue_vring</span> *<span class="title">vrq</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">	__u16 used_idx, head_idx;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vring_used_elem</span> *<span class="title">elem</span>;</span></span><br><span class="line"></span><br><span class="line">	UK_ASSERT(vq);</span><br><span class="line">	UK_ASSERT(cookie);</span><br><span class="line">	vrq = to_virtqueue_vring(vq);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* No new descriptor since last dequeue operation */</span></span><br><span class="line">	<span class="keyword">if</span> (!virtqueue_hasdata(vq))</span><br><span class="line">		<span class="keyword">return</span> -ENOMSG;</span><br><span class="line">	used_idx = vrq-&gt;last_used_desc_idx++ &amp; (vrq-&gt;vring.num - <span class="number">1</span>);</span><br><span class="line">	elem = &amp;vrq-&gt;vring.used-&gt;ring[used_idx]; <span class="comment">// 根据used ring提供的下标，取出对应vring</span></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * We are reading from the used descriptor information updated by the</span></span><br><span class="line"><span class="comment">	 * host.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	rmb();</span><br><span class="line">	head_idx = elem-&gt;id;</span><br><span class="line">	<span class="keyword">if</span> (len)</span><br><span class="line">		*len = elem-&gt;len;</span><br><span class="line">	*cookie = vrq-&gt;vq_info[head_idx].cookie;</span><br><span class="line">	virtqueue_detach_desc(vrq, head_idx); <span class="comment">// </span></span><br><span class="line">	vrq-&gt;vq_info[head_idx].cookie = <span class="literal">NULL</span>;</span><br><span class="line">	<span class="keyword">return</span> (vrq-&gt;vring.num - vrq-&gt;desc_avail); <span class="comment">// 返回的是下一个available_idx in vrq</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">virtqueue_detach_desc</span><span class="params">(<span class="keyword">struct</span> virtqueue_vring *vrq,</span></span><br><span class="line"><span class="params">					__u16 head_idx)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vring_desc</span> *<span class="title">desc</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtqueue_desc_info</span> *<span class="title">vq_info</span>;</span></span><br><span class="line"></span><br><span class="line">	desc = &amp;vrq-&gt;vring.desc[head_idx]; <span class="comment">// desc存储了buffer的物理地址 长度，flag，next等信息</span></span><br><span class="line">	vq_info = &amp;vrq-&gt;vq_info[head_idx];</span><br><span class="line">	vrq-&gt;desc_avail += vq_info-&gt;desc_count; <span class="comment">// 更新队列下一个可用描述符下标</span></span><br><span class="line">	vq_info-&gt;desc_count--;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">while</span> (desc-&gt;flags &amp; VRING_DESC_F_NEXT) &#123; <span class="comment">// 遍历所有vrq中有next的信息，然后更新vq信息</span></span><br><span class="line">		desc = &amp;vrq-&gt;vring.desc[desc-&gt;next];</span><br><span class="line">		vq_info-&gt;desc_count--;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* The value should be empty */</span></span><br><span class="line">	UK_ASSERT(vq_info-&gt;desc_count == <span class="number">0</span>); <span class="comment">// 都出队完后 vq_info对应描述符数量应该为空</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Appending the descriptor to the head of list */</span></span><br><span class="line">	desc-&gt;next = vrq-&gt;head_free_desc;</span><br><span class="line">	vrq-&gt;head_free_desc = head_idx; </span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/" title="virtio-ring与virtio-queue" target="_blank" rel="external">http://example.com/2022/10/30/virtio-ring及virtio-queue/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/10/30/%E5%86%85%E5%AD%98%E7%9B%B8%E5%85%B3%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" title="内存相关基础知识"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/" title="unikraft文件系统导览"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>unikraft文件系统导览 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="unikraft文件系统导览文件系统操作调用层次注：本调用以9pfs与文件读取函数（read）为例 文件操作在unikraft中的调用层次，总的来说可以分为5层，分别为c语言标准库函数，vfscore虚拟文件系统，9pfs，uk9p以及plat。 123456789c语言标准库函数---------------vfscore---------------9pfs---------------uk9">
+<meta property="og:type" content="article">
+<meta property="og:title" content="unikraft文件系统导览">
+<meta property="og:url" content="http://example.com/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="unikraft文件系统导览文件系统操作调用层次注：本调用以9pfs与文件读取函数（read）为例 文件操作在unikraft中的调用层次，总的来说可以分为5层，分别为c语言标准库函数，vfscore虚拟文件系统，9pfs，uk9p以及plat。 123456789c语言标准库函数---------------vfscore---------------9pfs---------------uk9">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft-vfscore/IO%E8%AF%B7%E6%B1%82.png">
+<meta property="article:published_time" content="2022-10-30T10:47:29.010Z">
+<meta property="article:modified_time" content="2022-10-30T10:45:11.588Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-文件系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft-vfscore/IO%E8%AF%B7%E6%B1%82.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-bus/">unikraft-bus</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-9pfs/">unikraft-libs-9pfs</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-netdev/">unikraft-netdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-virtio/">unikraft-virtio</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-bus/" rel="tag">unikraft-bus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-futex/" rel="tag">unikraft-futex</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-netdev/" rel="tag">unikraft-netdev</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-process/" rel="tag">unikraft-process</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-thread/" rel="tag">unikraft-thread</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/unikraft-bus/" style="font-size: 13px;">unikraft-bus</a> <a href="/tags/unikraft-futex/" style="font-size: 13px;">unikraft-futex</a> <a href="/tags/unikraft-netdev/" style="font-size: 13px;">unikraft-netdev</a> <a href="/tags/unikraft-process/" style="font-size: 13px;">unikraft-process</a> <a href="/tags/unikraft-thread/" style="font-size: 13.33px;">unikraft-thread</a> <a href="/tags/unikraft-virtio/" style="font-size: 13.67px;">unikraft-virtio</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 14px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 14px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13.33px;">unikraft-线程管理</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">18</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/%E5%86%85%E5%AD%98%E7%9B%B8%E5%85%B3%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="title">内存相关基础知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.034Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-virtio/">unikraft-virtio</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/" class="title">virtio-ring与virtio-queue</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.028Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/" class="title">unikraft文件系统导览</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.010Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/POSIX%20process/" class="title">posix-process</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:28.995Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/POSIX%20futex/" class="title">posix-futex</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:28.994Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88"><span class="toc-number">1.</span> <span class="toc-text">unikraft文件系统导览</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E6%93%8D%E4%BD%9C%E8%B0%83%E7%94%A8%E5%B1%82%E6%AC%A1"><span class="toc-number">1.1.</span> <span class="toc-text">文件系统操作调用层次</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#vfscore"><span class="toc-number">1.1.1.</span> <span class="toc-text">vfscore</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9pfs"><span class="toc-number">1.1.2.</span> <span class="toc-text">9pfs</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#uk9p"><span class="toc-number">1.1.3.</span> <span class="toc-text">uk9p</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#plat-virtio"><span class="toc-number">1.1.4.</span> <span class="toc-text">plat&#x2F;virtio</span></a></li></ol></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-unikraft文件系统导览" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      unikraft文件系统导览
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/" class="article-date">
+	  <time datetime="2022-10-30T10:47:29.010Z" itemprop="datePublished">2022-10-30</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="unikraft文件系统导览"><a href="#unikraft文件系统导览" class="headerlink" title="unikraft文件系统导览"></a>unikraft文件系统导览</h1><h2 id="文件系统操作调用层次"><a href="#文件系统操作调用层次" class="headerlink" title="文件系统操作调用层次"></a>文件系统操作调用层次</h2><p>注：本调用以9pfs与文件读取函数（read）为例</p>
+<p>文件操作在unikraft中的调用层次，总的来说可以分为5层，分别为c语言标准库函数，vfscore虚拟文件系统，9pfs，uk9p以及plat。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">c语言标准库函数</span><br><span class="line">---------------</span><br><span class="line">vfscore</span><br><span class="line">---------------</span><br><span class="line">9pfs</span><br><span class="line">---------------</span><br><span class="line">uk9p</span><br><span class="line">---------------</span><br><span class="line">plat/virtio</span><br></pre></td></tr></table></figure>
+
+<p>具体的函数调用流程如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">libs/vfscore/main.c: UK_SYSCALL_R_DEFINE(ssize_t,read, ....)</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">libs/vfscore/main.c: UK_SYSCALL_R_DEFINE(ssize_t, readv, ...)</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">libs/vfscore/main.c: static ssize_t do_preadv(.....)</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">libs/vfscore/syscalls.c: int sys_read(struct vfscore_file *fp, .....)</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">libs/vfscore/fops: int vfs_read(struct vfscore_file *fp, ......)</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">libs/vfscore/include/vfscore/vnode.h: #define VOP_READ(VP, FP, U, F) .....</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">libs/9pfs/9pfs_vnops.c: static int uk_9pfs_read(struct vnode *vp, ....)</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">libs/uk9p/9p.c: int64_t uk_9p_read(struct uk_9pdev *dev, ....)</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">libs/uk9p/9p.c: static inline int send_and_wait_zc(struct uk_9pdev *dev, ..)</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">libs/uk9p/9pdev.c: int uk_9pdev_request(struct uk_9pdev *dev, ....)</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">plat/drivers/virtio_9p.c: static int virtio_9p_request(....)</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">plat/drivers/virtio_pci.c: static int vpci_legacy_notify(....)</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">plat/drivers/include/virtio/virtio_config.h: static inline void _virtio_cwrite_bytes(....)</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line">plat/commom/include/arm/arm64/cpu.h: static inline void ioreg_write8(....)</span><br></pre></td></tr></table></figure>
+
+<p>这篇文章讲了一些关于virtio的东西<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/542483879">https://zhuanlan.zhihu.com/p/542483879</a></p>
+<p>这里把里面的一张图拿出来：</p>
+<p><img src="/images/unikraft-vfscore/IO%E8%AF%B7%E6%B1%82.png" alt="IO请求"></p>
+<p>这张图比较简单粗暴地概括了整个文件系统操作的调用层次。</p>
+<h3 id="vfscore"><a href="#vfscore" class="headerlink" title="vfscore"></a>vfscore</h3><p>c语言函数标准库中，read的定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">ssize_t</span> <span class="title function_">read</span><span class="params">(<span class="type">int</span> fd, <span class="type">void</span>*buf, <span class="type">size_t</span> count)</span></span><br></pre></td></tr></table></figure>
+
+<p>该函数的功能是读文件描述符为fd的文件，将其中的count个字节读入以buf指针为起始的内存中</p>
+<p>而在unikraft中，其被定义在了vfscore/main.c下，使用了宏定义的模式定义该函数，该函数在main.c中的定义及实现如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">ssize_t</span>, read, <span class="type">int</span>, fd, <span class="type">void</span> *, buf, <span class="type">size_t</span>, count)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">ssize_t</span> bytes;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(buf);</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">iovec</span> <span class="title">iov</span> =</span> &#123;</span><br><span class="line">			.iov_base	= buf,</span><br><span class="line">			.iov_len	= count,</span><br><span class="line">	&#125;;</span><br><span class="line"></span><br><span class="line">	trace_vfs_read(fd, buf, count);</span><br><span class="line"></span><br><span class="line">	bytes = uk_syscall_r_readv((<span class="type">long</span>) fd, (<span class="type">long</span>) &amp;iov, <span class="number">1</span>);</span><br><span class="line">	<span class="keyword">if</span> (bytes &lt; <span class="number">0</span>)</span><br><span class="line">		trace_vfs_read_err(bytes);</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		trace_vfs_read_ret(bytes);</span><br><span class="line">	<span class="keyword">return</span> bytes;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在该函数中，定义了一个iovec，作为读数据的缓冲区，而该缓冲区的<code>iov_base</code>指向了传入的参数buf，<code>iov_len</code>的长度为传入的参数count，所以接下来向该iovec读入数据就等同于对buf指针读入数据。然后调用函数uk_syscall_r_readv。</p>
+<p>uk_syscall_r_readv的定义及实现如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">ssize_t</span>, readv,</span><br><span class="line">		  <span class="type">int</span>, fd, <span class="type">const</span> <span class="keyword">struct</span> iovec *, iov, <span class="type">int</span>, iovcnt)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vfscore_file</span> *<span class="title">fp</span>;</span></span><br><span class="line">	<span class="type">ssize_t</span> bytes;</span><br><span class="line">	<span class="type">int</span> error;</span><br><span class="line"></span><br><span class="line">	trace_vfs_readv(fd, iov, iovcnt);</span><br><span class="line">	error = fget(fd, &amp;fp);</span><br><span class="line">	<span class="keyword">if</span> (error) &#123;</span><br><span class="line">		error = -error;</span><br><span class="line">		<span class="keyword">goto</span> out_error;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Check if the file has not already been read and that is</span></span><br><span class="line"><span class="comment">	 * not a character device.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (fp-&gt;f_offset &lt; <span class="number">0</span> &amp;&amp;</span><br><span class="line">	   (fp-&gt;f_dentry == <span class="literal">NULL</span> ||</span><br><span class="line">	    fp-&gt;f_dentry-&gt;d_vnode-&gt;v_type != VCHR)) &#123;</span><br><span class="line">		error = -EINVAL;</span><br><span class="line">		<span class="keyword">goto</span> out_error_fdrop;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Otherwise, try to read the file. */</span></span><br><span class="line">	error = do_preadv(fp, iov, iovcnt, <span class="number">-1</span>, &amp;bytes);</span><br><span class="line"></span><br><span class="line">out_error_fdrop:</span><br><span class="line">	fdrop(fp);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (error &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">goto</span> out_error;</span><br><span class="line"></span><br><span class="line">	trace_vfs_readv_ret(bytes);</span><br><span class="line">	<span class="keyword">return</span> bytes;</span><br><span class="line"></span><br><span class="line">out_error:</span><br><span class="line">	trace_vfs_readv_err(error);</span><br><span class="line">	<span class="keyword">return</span> error;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该函数主要判断了vfscore_file中的各项属性如指针偏移，dentry目录项以及文件类型是否合法，若不合法则报错返回error，若合法则进入下一层调用do_preadv。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">do_preadv</span><span class="params">(<span class="keyword">struct</span> vfscore_file *fp, <span class="type">const</span> <span class="keyword">struct</span> iovec *iov,</span></span><br><span class="line"><span class="params">			 <span class="type">int</span> iovcnt, <span class="type">off_t</span> offset, <span class="type">ssize_t</span> *bytes)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">size_t</span> cnt;</span><br><span class="line">	<span class="type">int</span> error;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(fp &amp;&amp; iov);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Otherwise, try to read the file. */</span></span><br><span class="line">	error = sys_read(fp, iov, iovcnt, offset, &amp;cnt);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (has_error(error, cnt))</span><br><span class="line">		<span class="keyword">goto</span> out_error;</span><br><span class="line"></span><br><span class="line">	*bytes = cnt;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">out_error:</span><br><span class="line">	<span class="keyword">return</span> -error;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而do_preadv中则是直接了当地调用了sys_read。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span></span><br><span class="line"><span class="title function_">sys_read</span><span class="params">(<span class="keyword">struct</span> vfscore_file *fp, <span class="type">const</span> <span class="keyword">struct</span> iovec *iov, <span class="type">size_t</span> niov,</span></span><br><span class="line"><span class="params">		<span class="type">off_t</span> offset, <span class="type">size_t</span> *count)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> error = <span class="number">0</span>;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">iovec</span> *<span class="title">copy_iov</span>;</span></span><br><span class="line">	<span class="keyword">if</span> ((fp-&gt;f_flags &amp; UK_FREAD) == <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">return</span> EBADF;</span><br><span class="line"></span><br><span class="line">	<span class="type">size_t</span> bytes = <span class="number">0</span>;</span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">iovec</span> *<span class="title">iovp</span> =</span> iov;</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 判断所有iovec的iov_len的总和是否会超过IOSIZE_MAX，并统计总可用大小 */</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="type">unsigned</span> i = <span class="number">0</span>; i &lt; niov; i++) &#123;</span><br><span class="line">		<span class="keyword">if</span> (iovp-&gt;iov_len &gt; IOSIZE_MAX - bytes) &#123;</span><br><span class="line">			<span class="keyword">return</span> EINVAL;</span><br><span class="line">		&#125;</span><br><span class="line">		bytes += iovp-&gt;iov_len;</span><br><span class="line">		iovp++;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 如果iov_len都为0，说明不需要读数据，直接返回 */</span></span><br><span class="line">	<span class="keyword">if</span> (bytes == <span class="number">0</span>) &#123;</span><br><span class="line">		*count = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uio</span> <span class="title">uio</span>;</span></span><br><span class="line">	<span class="comment">/* <span class="doctag">TODO:</span> is it necessary to copy iov within Unikraft?</span></span><br><span class="line"><span class="comment">	 * OSv did this, mentioning this reason:</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * &quot;Unfortunately, the current implementation of fp-&gt;read</span></span><br><span class="line"><span class="comment">	 *  zeros the iov_len fields when it reads from disk, so we</span></span><br><span class="line"><span class="comment">	 *  have to copy iov. &quot;</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">    <span class="comment">/* 复制该iovec，并一起构造uio对象，再调用下层的vfs_read */</span></span><br><span class="line">	copy_iov = <span class="built_in">calloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> iovec), niov);</span><br><span class="line">	<span class="keyword">if</span> (!copy_iov)</span><br><span class="line">		<span class="keyword">return</span> ENOMEM;</span><br><span class="line">	<span class="built_in">memcpy</span>(copy_iov, iov, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> iovec)*niov);</span><br><span class="line"></span><br><span class="line">	uio.uio_iov = copy_iov;</span><br><span class="line">	uio.uio_iovcnt = niov;</span><br><span class="line">	uio.uio_offset = offset;</span><br><span class="line">	uio.uio_resid = bytes;</span><br><span class="line">	uio.uio_rw = UIO_READ;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/* FOF_OFFSET? 可能是是否要每次从头开始读的标志（即不改变文件内指针f_offset） */</span></span><br><span class="line">	error = vfs_read(fp, &amp;uio, (offset == <span class="number">-1</span>) ? <span class="number">0</span> : FOF_OFFSET);</span><br><span class="line">	*count = bytes - uio.uio_resid;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">free</span>(copy_iov);</span><br><span class="line">	<span class="keyword">return</span> error;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在sys_read中首先对传入的所有iovec进行了iov_len判断，判断其iov_len加起来会不会超过最大io值IOSIZE_MAX，若超过，则返回报错。然后判断实际的io长度是否为0，若为0说明不需要从下层读取数据，直接返回。最后通过iovec指针iov，iovec的数量niov，文件指针偏移量offset、总读取数量以及uio的读写模式构造uio对象，再调用vfs_read函数进入下层。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">vfs_read</span><span class="params">(<span class="keyword">struct</span> vfscore_file *fp, <span class="keyword">struct</span> uio *uio, <span class="type">int</span> flags)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vnode</span> *<span class="title">vp</span> =</span> fp-&gt;f_dentry-&gt;d_vnode;</span><br><span class="line">	<span class="type">int</span> error;</span><br><span class="line">	<span class="type">size_t</span> count;</span><br><span class="line">	<span class="type">ssize_t</span> bytes;</span><br><span class="line"></span><br><span class="line">	bytes = uio-&gt;uio_resid;</span><br><span class="line"></span><br><span class="line">	vn_lock(vp);</span><br><span class="line">	<span class="keyword">if</span> ((flags &amp; FOF_OFFSET) == <span class="number">0</span>)</span><br><span class="line">		uio-&gt;uio_offset = fp-&gt;f_offset;</span><br><span class="line"></span><br><span class="line">	error = VOP_READ(vp, fp, uio, <span class="number">0</span>);</span><br><span class="line">	<span class="keyword">if</span> (!error) &#123;</span><br><span class="line">		count = bytes - uio-&gt;uio_resid;</span><br><span class="line">		<span class="keyword">if</span> (((flags &amp; FOF_OFFSET) == <span class="number">0</span>) &amp;&amp;</span><br><span class="line">		    !(fp-&gt;f_vfs_flags &amp; UK_VFSCORE_NOPOS))</span><br><span class="line">			fp-&gt;f_offset += count;</span><br><span class="line">	&#125;</span><br><span class="line">	vn_unlock(vp);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> error;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>调用VOP_READ宏，也就是vnode的读文件函数，并在调用完毕之后将文件指针向后移动count（count即读入的长度），意思就是已经从文件读了count长度的内容，所以在本次打开文件的下次读该文件就应该从移动后的文件指针开始读。</p>
+<h3 id="9pfs"><a href="#9pfs" class="headerlink" title="9pfs"></a>9pfs</h3><p>vfscore中的VOP_READ宏是对vnode中的vop_read的封装，便于给上层进行调用。而在9pfs中则对vops中的各种操作进行了实现：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vnops</span> <span class="title">uk_9pfs_vnops</span> =</span> &#123;</span><br><span class="line">	.vop_open	= uk_9pfs_open,</span><br><span class="line">	.vop_close	= uk_9pfs_close,</span><br><span class="line">	.vop_read	= uk_9pfs_read,</span><br><span class="line">	.vop_write	= uk_9pfs_write,</span><br><span class="line">	.vop_seek	= uk_9pfs_seek,</span><br><span class="line">	.vop_ioctl	= uk_9pfs_ioctl,</span><br><span class="line">	.vop_fsync	= uk_9pfs_fsync,</span><br><span class="line">	.vop_readdir	= uk_9pfs_readdir,</span><br><span class="line">	.vop_lookup	= uk_9pfs_lookup,</span><br><span class="line">	.vop_create	= uk_9pfs_create,</span><br><span class="line">	.vop_remove	= uk_9pfs_remove,</span><br><span class="line">	.vop_rename	= uk_9pfs_rename,</span><br><span class="line">	.vop_mkdir	= uk_9pfs_mkdir,</span><br><span class="line">	.vop_rmdir	= uk_9pfs_rmdir,</span><br><span class="line">	.vop_getattr	= uk_9pfs_getattr,</span><br><span class="line">	.vop_setattr	= uk_9pfs_setattr,</span><br><span class="line">	.vop_inactive	= uk_9pfs_inactive,</span><br><span class="line">	.vop_truncate	= uk_9pfs_truncate,</span><br><span class="line">	.vop_link	= uk_9pfs_link,</span><br><span class="line">	.vop_cache	= uk_9pfs_cache,</span><br><span class="line">	.vop_fallocate	= uk_9pfs_fallocate,</span><br><span class="line">	.vop_readlink	= uk_9pfs_readlink,</span><br><span class="line">	.vop_symlink	= uk_9pfs_symlink,</span><br><span class="line">	.vop_poll	= uk_9pfs_poll,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>所以上层的VOP_READ实际上对应的就是9pfs中的<code>uk_9pfs_read</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">uk_9pfs_read</span><span class="params">(<span class="keyword">struct</span> vnode *vp, <span class="keyword">struct</span> vfscore_file *fp,</span></span><br><span class="line"><span class="params">			<span class="keyword">struct</span> uio *uio, <span class="type">int</span> ioflag __unused)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">/* 取出9pfs相关的信息 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev</span> *<span class="title">dev</span> =</span> UK_9PFS_MD(vp-&gt;v_mount)-&gt;dev;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfid</span> *<span class="title">fid</span> =</span> UK_9PFS_FD(fp)-&gt;fid;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">iovec</span> *<span class="title">iov</span>;</span></span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line">	<span class="comment">/* 判断文件是否支持读 */</span></span><br><span class="line">	<span class="keyword">if</span> (vp-&gt;v_type == VDIR)</span><br><span class="line">		<span class="keyword">return</span> EISDIR;</span><br><span class="line">	<span class="keyword">if</span> (vp-&gt;v_type != VREG)</span><br><span class="line">		<span class="keyword">return</span> EINVAL;</span><br><span class="line">    <span class="comment">/* 文件指针偏移量小于零，出错 */</span></span><br><span class="line">	<span class="keyword">if</span> (uio-&gt;uio_offset &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">return</span> EINVAL;</span><br><span class="line">    <span class="comment">/* 文件指针的偏移量已经不比文件内容小，说明当前文件操作中文件内容已经读完了 */</span></span><br><span class="line">	<span class="keyword">if</span> (uio-&gt;uio_offset &gt;= (<span class="type">off_t</span>) vp-&gt;v_size)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 待处理的缓冲区内容大小为0，说明不需要再往下处理了 */</span></span><br><span class="line">	<span class="keyword">if</span> (!uio-&gt;uio_resid)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 找到uio中iovec数组中iov_len不等于零的那个，也就是可用的那个 */</span></span><br><span class="line">	iov = uio-&gt;uio_iov;</span><br><span class="line">	<span class="keyword">while</span> (!iov-&gt;iov_len) &#123;</span><br><span class="line">		uio-&gt;uio_iov++;</span><br><span class="line">		uio-&gt;uio_iovcnt--;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 调用uk9p中的read函数 */</span></span><br><span class="line">	rc = uk_9p_read(dev, fid, uio-&gt;uio_offset,</span><br><span class="line">			   iov-&gt;iov_len, iov-&gt;iov_base);</span><br><span class="line">	<span class="keyword">if</span> (rc &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">return</span> -rc;</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 读文件完毕，若没出错，则将uio中的成员值更新，分别是：</span></span><br><span class="line"><span class="comment">    	iov_base：即存放读内容的起始地址后移，也就是下一次读的时候就从还未存放数据的地方开始处理。</span></span><br><span class="line"><span class="comment">    	iov_len：该iovec中缓冲区还剩下的区域大小</span></span><br><span class="line"><span class="comment">    	uio_resid: 该uio还需要处理的字节数</span></span><br><span class="line"><span class="comment">    	uio_offset: 文件指针的偏移量</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">	iov-&gt;iov_base = (<span class="type">char</span> *)iov-&gt;iov_base + rc;</span><br><span class="line">	iov-&gt;iov_len -= rc;</span><br><span class="line">	uio-&gt;uio_resid -= rc;</span><br><span class="line">	uio-&gt;uio_offset += rc;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在vnode和mount的结构体中，都分别有一个void *类型的data，里面存放的是私有数据，实际上vnode里面的data存放的是9p文件系统中的<code>uk_9pfs_file_data</code>，而mount中的data则存放的是<code>uk_9pfs_mount_data</code>。<code>uk_9pfs_file_data</code>中存放的是与9p文件相关的信息，<code>uk_9pfs_mount_data</code>中存放的是与9pfs挂载设备相关的信息。</p>
+<h3 id="uk9p"><a href="#uk9p" class="headerlink" title="uk9p"></a>uk9p</h3><p>在uk_9pfs_read中调用了uk_9p_read函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int64_t</span> <span class="title function_">uk_9p_read</span><span class="params">(<span class="keyword">struct</span> uk_9pdev *dev, <span class="keyword">struct</span> uk_9pfid *fid,</span></span><br><span class="line"><span class="params">		<span class="type">uint64_t</span> offset, <span class="type">uint32_t</span> count, <span class="type">char</span> *buf)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9preq</span> *<span class="title">req</span>;</span></span><br><span class="line">	<span class="type">int64_t</span> rc;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (fid-&gt;iounit != <span class="number">0</span>)</span><br><span class="line">		count = MIN(count, fid-&gt;iounit);</span><br><span class="line">	count = MIN(count, dev-&gt;msize - <span class="number">11</span>);</span><br><span class="line"></span><br><span class="line">	uk_pr_debug(<span class="string">&quot;TREAD fid %u offset %lu count %u\n&quot;</span>, fid-&gt;fid,</span><br><span class="line">			offset, count);</span><br><span class="line">	<span class="comment">/* 创建请求，请求的类型是TREAD（要被发送的READ请求） */</span></span><br><span class="line">	req = request_create(dev, UK_9P_TREAD);</span><br><span class="line">	<span class="keyword">if</span> (PTRISERR(req))</span><br><span class="line">		<span class="keyword">return</span> PTR2ERR(req);</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 写请求头fid, offset, count写进req请求结构体中 */</span></span><br><span class="line">	<span class="keyword">if</span> ((rc = uk_9preq_write32(req, fid-&gt;fid)) ||</span><br><span class="line">		(rc = uk_9preq_write64(req, offset)) ||</span><br><span class="line">		(rc = uk_9preq_write32(req, count)) ||</span><br><span class="line">        <span class="comment">/* 发送请求并等待零拷贝 */</span></span><br><span class="line">		(rc = send_and_wait_zc(dev, req, UK_9PREQ_ZCDIR_READ, buf,</span><br><span class="line">				       count, <span class="number">11</span>)) ||</span><br><span class="line">        <span class="comment">/* 从req中读出count */</span></span><br><span class="line">		(rc = uk_9preq_read32(req, &amp;count)))</span><br><span class="line">		<span class="keyword">goto</span> out;</span><br><span class="line"></span><br><span class="line">	uk_pr_debug(<span class="string">&quot;RREAD count %u\n&quot;</span>, count);</span><br><span class="line"></span><br><span class="line">	rc = count;</span><br><span class="line"></span><br><span class="line">out:</span><br><span class="line">	uk_9pdev_req_remove(dev, req);</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而在uk_9p_read中则是使用了plan 9协议，将请求头序列化进uk_9preq中，然后通过send_and_wait_zc函数发送请求。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">send_and_wait_zc</span><span class="params">(<span class="keyword">struct</span> uk_9pdev *dev, <span class="keyword">struct</span> uk_9preq *req,</span></span><br><span class="line"><span class="params">		<span class="keyword">enum</span> uk_9preq_zcdir zc_dir, <span class="type">void</span> *zc_buf, <span class="type">uint32_t</span> zc_size,</span></span><br><span class="line"><span class="params">		<span class="type">uint32_t</span> zc_offset)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ((rc = uk_9preq_ready(req, zc_dir, zc_buf, zc_size, zc_offset)))</span><br><span class="line">		<span class="keyword">return</span> rc;</span><br><span class="line">	uk_9p_trace_ready(req-&gt;tag);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ((rc = uk_9pdev_request(dev, req)))</span><br><span class="line">		<span class="keyword">return</span> rc;</span><br><span class="line">	uk_9p_trace_sent(req-&gt;tag);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ((rc = uk_9preq_waitreply(req)))</span><br><span class="line">		<span class="keyword">return</span> rc;</span><br><span class="line">	uk_9p_trace_received(req-&gt;tag);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在send_and_wait_zc函数中，可以发现有三个步骤。首先是调用uk_9preq_ready将请求req标记为准备状态，具体是根据zc_dir的类型（也就是读或写）分别进行不同的初始化（主要针对于zc_buf，zc_size以及zc_offset），使得req的成员变量的值能够达到发送write内容或接收read内容的状态。第二个步骤是调用uk_9pdev_request，将请求发送出去，进入到下层的调用，第三个步骤则是等待下层接收并处理请求获取reply。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">uk_9pdev_request</span><span class="params">(<span class="keyword">struct</span> uk_9pdev *dev, <span class="keyword">struct</span> uk_9preq *req)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(dev);</span><br><span class="line">	UK_ASSERT(req);</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 判断req的状态是不是ready */</span></span><br><span class="line">	<span class="keyword">if</span> (UK_READ_ONCE(req-&gt;state) != UK_9PREQ_READY) &#123;</span><br><span class="line">		rc = -EINVAL;</span><br><span class="line">		<span class="keyword">goto</span> out;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* 判断设备是否已经连接 */</span></span><br><span class="line">	<span class="keyword">if</span> (dev-&gt;state != UK_9PDEV_CONNECTED) &#123;</span><br><span class="line">		rc = -EIO;</span><br><span class="line">		<span class="keyword">goto</span> out;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKSCHED</span></span><br><span class="line">	uk_waitq_wait_event(&amp;dev-&gt;xmit_wq,</span><br><span class="line">		(rc = dev-&gt;ops-&gt;request(dev, req)) != -ENOSPC);</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">	<span class="keyword">do</span> &#123;</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Retry the request while it has no space available on the</span></span><br><span class="line"><span class="comment">		 * transport layer.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">        <span class="comment">/* 调用下层的ops的request */</span></span><br><span class="line">		rc = dev-&gt;ops-&gt;request(dev, req);</span><br><span class="line">	&#125; <span class="keyword">while</span> (rc == -ENOSPC);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">out:</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>到了uk_9p_request中，首先是判断了一下req和设备的状态是否良好，然后马上就调用了下层的dev-&gt;ops-&gt;request(dev, req)。而该request的底层实现有两个地方：plat/drivers/virtio/virtio_9p.c和plat/xen/drivers/9p/9pfront.c，这里以前者为例作为介绍。</p>
+<h3 id="plat-virtio"><a href="#plat-virtio" class="headerlink" title="plat/virtio"></a>plat/virtio</h3><p>上层dev的trans_ops的实现在plat/drivers/virtio/virtio_9p.c中，virtio_9p中实现了uk_9pdev_trans_ops中的三个操作，以及封装了uk_9pdev_trans结构体：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev_trans_ops</span> <span class="title">v9p_trans_ops</span> =</span> &#123;</span><br><span class="line">	.connect        = virtio_9p_connect,</span><br><span class="line">	.disconnect     = virtio_9p_disconnect,</span><br><span class="line">	.request        = virtio_9p_request</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev_trans</span> <span class="title">v9p_trans</span> =</span> &#123;</span><br><span class="line">	.name           = <span class="string">&quot;virtio&quot;</span>,</span><br><span class="line">	.ops            = &amp;v9p_trans_ops,</span><br><span class="line">	.a              = <span class="literal">NULL</span> <span class="comment">/* Set by the driver initialization. */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>可以看出上层的dev-&gt;ops-&gt;request(dev, req)对应的就是这里的virtio_9p_request函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_9p_request</span><span class="params">(<span class="keyword">struct</span> uk_9pdev *p9dev,</span></span><br><span class="line"><span class="params">			     <span class="keyword">struct</span> uk_9preq *req)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtio_9p_device</span> *<span class="title">dev</span>;</span></span><br><span class="line">	<span class="type">int</span> rc, host_notified = <span class="number">0</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> flags;</span><br><span class="line">	<span class="type">size_t</span> read_segs, write_segs;</span><br><span class="line">	<span class="type">bool</span> failed = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(p9dev);</span><br><span class="line">	UK_ASSERT(req);</span><br><span class="line">	UK_ASSERT(UK_READ_ONCE(req-&gt;state) == UK_9PREQ_READY);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Get the request such that it won&#x27;t get freed while it&#x27;s</span></span><br><span class="line"><span class="comment">	 * used as a cookie for the virtqueue.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	uk_9preq_get(req);</span><br><span class="line">	dev = p9dev-&gt;priv;</span><br><span class="line">	ukplat_spin_lock_irqsave(&amp;dev-&gt;spinlock, flags);</span><br><span class="line">	uk_sglist_reset(&amp;dev-&gt;sg);</span><br><span class="line"></span><br><span class="line">	rc = uk_sglist_append(&amp;dev-&gt;sg, req-&gt;xmit.buf, req-&gt;xmit.size);</span><br><span class="line">	<span class="keyword">if</span> (rc &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		failed = <span class="literal">true</span>;</span><br><span class="line">		<span class="keyword">goto</span> out_unlock;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (req-&gt;xmit.zc_buf) &#123;</span><br><span class="line">		rc = uk_sglist_append(&amp;dev-&gt;sg, req-&gt;xmit.zc_buf,</span><br><span class="line">				req-&gt;xmit.zc_size);</span><br><span class="line">		<span class="keyword">if</span> (rc &lt; <span class="number">0</span>) &#123;</span><br><span class="line">			failed = <span class="literal">true</span>;</span><br><span class="line">			<span class="keyword">goto</span> out_unlock;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	read_segs = dev-&gt;sg.sg_nseg;</span><br><span class="line"></span><br><span class="line">	rc = uk_sglist_append(&amp;dev-&gt;sg, req-&gt;recv.buf, req-&gt;recv.size);</span><br><span class="line">	<span class="keyword">if</span> (rc &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		failed = <span class="literal">true</span>;</span><br><span class="line">		<span class="keyword">goto</span> out_unlock;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (req-&gt;recv.zc_buf) &#123;</span><br><span class="line">		<span class="type">uint32_t</span> recv_size = req-&gt;recv.size + req-&gt;recv.zc_size;</span><br><span class="line"></span><br><span class="line">		rc = uk_sglist_append(&amp;dev-&gt;sg, req-&gt;recv.zc_buf,</span><br><span class="line">				req-&gt;recv.zc_size);</span><br><span class="line">		<span class="keyword">if</span> (rc &lt; <span class="number">0</span>) &#123;</span><br><span class="line">			failed = <span class="literal">true</span>;</span><br><span class="line">			<span class="keyword">goto</span> out_unlock;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* Make eure there is sufficient space for Rerror replies. */</span></span><br><span class="line">		<span class="keyword">if</span> (recv_size &lt; UK_9P_RERROR_MAXSIZE) &#123;</span><br><span class="line">			<span class="type">uint32_t</span> leftover = UK_9P_RERROR_MAXSIZE - recv_size;</span><br><span class="line"></span><br><span class="line">			rc = uk_sglist_append(&amp;dev-&gt;sg,</span><br><span class="line">					req-&gt;recv.buf + recv_size, leftover);</span><br><span class="line">			<span class="keyword">if</span> (rc &lt; <span class="number">0</span>) &#123;</span><br><span class="line">				failed = <span class="literal">true</span>;</span><br><span class="line">				<span class="keyword">goto</span> out_unlock;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	write_segs = dev-&gt;sg.sg_nseg - read_segs;</span><br><span class="line"></span><br><span class="line">	rc = virtqueue_buffer_enqueue(dev-&gt;vq, req, &amp;dev-&gt;sg,</span><br><span class="line">				      read_segs, write_segs);</span><br><span class="line">	<span class="keyword">if</span> (likely(rc &gt;= <span class="number">0</span>)) &#123;</span><br><span class="line">		UK_WRITE_ONCE(req-&gt;state, UK_9PREQ_SENT);</span><br><span class="line">		virtqueue_host_notify(dev-&gt;vq);</span><br><span class="line">		host_notified = <span class="number">1</span>;</span><br><span class="line">		rc = <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">out_unlock:</span><br><span class="line">	<span class="keyword">if</span> (failed)</span><br><span class="line">		uk_pr_err(DRIVER_NAME<span class="string">&quot;: Failed to append to the sg list.\n&quot;</span>);</span><br><span class="line">	ukplat_spin_unlock_irqrestore(&amp;dev-&gt;spinlock, flags);</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Release the reference to the 9P request if it was not successfully</span></span><br><span class="line"><span class="comment">	 * sent.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (!host_notified)</span><br><span class="line">		uk_9preq_put(req);</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>代码很长，上面的代码简单来说分为几步：</p>
+<p>1、将req-&gt;xmit.buf和req-&gt;xmit.size（请求头）传入sglist</p>
+<p>2、如果req-&gt;xmit.zc_buf非空，说明该操作是写操作，要将req-&gt;xmit.zc_buf和req-&gt;xmit.zc_size（上面要写的数据）传入sglist中</p>
+<p>3、将当前的segment数量存储到read_segs中（至于为什么是read_segs，我猜想可能是因为req-&gt;xmit.buf和req-&gt;xmit.zc_buf都是携带上层数据数据传来的，所以下层的需要对这些上层数据进行读操作。）</p>
+<p>4、将req-&gt;recv.buf和req-&gt;recv.size（响应头的两个参数，方便下层将响应写入recv.buf中）传入sglist中</p>
+<p>5、如果req-&gt;recv.zc_buf非空，说明该操作是读操作，要将req-&gt;recv.zc_buf和req-&gt;recv.zc_size（读出来的数据要放置的地方）传入sglist中</p>
+<p>6、将read_segs之后的segment数量存储到write_segs中（至于为什么是write_segs，我猜想可能是因为req-&gt;recv.buf和req-&gt;recv.zc_buf传入下层之后，下层需要对这两个缓冲区分别进行写操作。）</p>
+<p>7、最后将req，dev的sglist，read_segs以及write_segs传入dev所对应的virtqueue中，然后调用virtqueue_host_notify函数通知hostOS请求数据已发送。</p>
+<p>而virtqueue_host_notify函数其实是对vq-&gt;vq_notify_host函数的一层封装：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&#123;virtio/virtqueue.h&#125;</span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">virtqueue_host_notify</span><span class="params">(<span class="keyword">struct</span> virtqueue *vq)</span></span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(vq);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Before notifying the virtio backend on the host we should make sure</span></span><br><span class="line"><span class="comment">	 * that the virtqueue index update operation happened. Note that this</span></span><br><span class="line"><span class="comment">	 * function is declared as inline.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	mb();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (vq-&gt;vq_notify_host &amp;&amp; virtqueue_notify_enabled(vq)) &#123;</span><br><span class="line">		uk_pr_debug(<span class="string">&quot;notify queue %d\n&quot;</span>, vq-&gt;queue_id);</span><br><span class="line">		vq-&gt;vq_notify_host(vq-&gt;vdev, vq-&gt;queue_id);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>vq_notify_host其实也是一个接口函数的定义，它的具体实现在virtio_pci.c中</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">167</span> vq = virtqueue_create(queue_id, num_desc, VIRTIO_PCI_VRING_ALIGN,</span><br><span class="line"><span class="number">168</span>			      callback, vpci_legacy_notify, vdev, a);</span><br></pre></td></tr></table></figure>
+
+<p>通过virtqueue_create函数将vpci_legacy_notify赋值给了vq_notify_host，作为了vq_notify_host的具体实现。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">vpci_legacy_notify</span><span class="params">(<span class="keyword">struct</span> virtio_dev *vdev, __u16 queue_id)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtio_pci_dev</span> *<span class="title">vpdev</span>;</span></span><br><span class="line"></span><br><span class="line">	UK_ASSERT(vdev);</span><br><span class="line">	vpdev = to_virtiopcidev(vdev);</span><br><span class="line">	virtio_cwrite16((<span class="type">void</span> *)(<span class="type">unsigned</span> <span class="type">long</span>) vpdev-&gt;pci_base_addr,</span><br><span class="line">			VIRTIO_PCI_QUEUE_NOTIFY, queue_id);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而vpci_legacy_notify通过调用virtio_cwrite16函数将queue_id写向了底层，沿着virtio_cwrite16往下引用会发现在virtio_config中的_virtio_cwrite_bytes函数调用了ioreg_write系列函数，ioreg_write系列函数在<code>plat/common/include/arm/arm64/cpu.h</code>中定义：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">ioreg_write8</span><span class="params">(<span class="type">const</span> <span class="keyword">volatile</span> <span class="type">uint8_t</span> *address, <span class="type">uint8_t</span> value)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">asm</span> <span class="title function_">volatile</span> <span class="params">(<span class="string">&quot;strb %w0, [%1]&quot;</span> : : <span class="string">&quot;rZ&quot;</span>(value), <span class="string">&quot;r&quot;</span>(address))</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">ioreg_write16</span><span class="params">(<span class="type">const</span> <span class="keyword">volatile</span> <span class="type">uint16_t</span> *address,</span></span><br><span class="line"><span class="params">				 <span class="type">uint16_t</span> value)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">asm</span> <span class="title function_">volatile</span> <span class="params">(<span class="string">&quot;strh %w0, [%1]&quot;</span> : : <span class="string">&quot;rZ&quot;</span>(value), <span class="string">&quot;r&quot;</span>(address))</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">ioreg_write32</span><span class="params">(<span class="type">const</span> <span class="keyword">volatile</span> <span class="type">uint32_t</span> *address,</span></span><br><span class="line"><span class="params">				 <span class="type">uint32_t</span> value)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">asm</span> <span class="title function_">volatile</span> <span class="params">(<span class="string">&quot;str %w0, [%1]&quot;</span> : : <span class="string">&quot;rZ&quot;</span>(value), <span class="string">&quot;r&quot;</span>(address))</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个ioreg_write涉及到一段汇编代码（？）目前意义未知，需要进一步探索。</p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/" title="unikraft文件系统导览" target="_blank" rel="external">http://example.com/2022/10/30/unikraft文件系统导览/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/" title="virtio-ring与virtio-queue"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/10/30/POSIX%20process/" title="posix-process"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

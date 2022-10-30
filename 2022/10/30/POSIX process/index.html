@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>posix-process | TenonOS-unikraft-learning</title>
+  <meta name="description" content="posix-processposix-process主要提供了POSIX中要求的大部分关于进程、线程管理的结构体与函数。 文件结构1234567891011121314151617posix-process&#x2F;├── Config.uk├── include│   ├── sys│   │   └── prctl.h│   └── uk│       └── process.h├── Makefil">
+<meta property="og:type" content="article">
+<meta property="og:title" content="posix-process">
+<meta property="og:url" content="http://example.com/2022/10/30/POSIX%20process/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="posix-processposix-process主要提供了POSIX中要求的大部分关于进程、线程管理的结构体与函数。 文件结构1234567891011121314151617posix-process&#x2F;├── Config.uk├── include│   ├── sys│   │   └── prctl.h│   └── uk│       └── process.h├── Makefil">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft-process/MMU.png">
+<meta property="article:published_time" content="2022-10-30T10:47:28.995Z">
+<meta property="article:modified_time" content="2022-10-30T10:41:58.420Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-thread">
+<meta property="article:tag" content="unikraft-process">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft-process/MMU.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/30/POSIX%20process/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-bus/">unikraft-bus</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-9pfs/">unikraft-libs-9pfs</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-netdev/">unikraft-netdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-virtio/">unikraft-virtio</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-bus/" rel="tag">unikraft-bus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-futex/" rel="tag">unikraft-futex</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-netdev/" rel="tag">unikraft-netdev</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-process/" rel="tag">unikraft-process</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-thread/" rel="tag">unikraft-thread</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/unikraft-bus/" style="font-size: 13px;">unikraft-bus</a> <a href="/tags/unikraft-futex/" style="font-size: 13px;">unikraft-futex</a> <a href="/tags/unikraft-netdev/" style="font-size: 13px;">unikraft-netdev</a> <a href="/tags/unikraft-process/" style="font-size: 13px;">unikraft-process</a> <a href="/tags/unikraft-thread/" style="font-size: 13.33px;">unikraft-thread</a> <a href="/tags/unikraft-virtio/" style="font-size: 13.67px;">unikraft-virtio</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 14px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 14px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13.33px;">unikraft-线程管理</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">18</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/%E5%86%85%E5%AD%98%E7%9B%B8%E5%85%B3%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="title">内存相关基础知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.034Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-virtio/">unikraft-virtio</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/" class="title">virtio-ring与virtio-queue</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.028Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/" class="title">unikraft文件系统导览</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.010Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/POSIX%20process/" class="title">posix-process</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:28.995Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/POSIX%20futex/" class="title">posix-futex</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:28.994Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#posix-process"><span class="toc-number">1.</span> <span class="toc-text">posix-process</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84"><span class="toc-number">1.1.</span> <span class="toc-text">文件结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">1.2.</span> <span class="toc-text">数据结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8F%90%E4%BE%9B%E7%9A%84%E6%8E%A5%E5%8F%A3"><span class="toc-number">1.3.</span> <span class="toc-text">提供的接口</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#prctl"><span class="toc-number">1.3.1.</span> <span class="toc-text">prctl</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#exec%E5%87%BD%E6%95%B0%E6%97%8F"><span class="toc-number">1.3.2.</span> <span class="toc-text">exec函数族</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A3%B0%E6%98%8E%E4%BD%86%E6%9C%AA%E5%AE%9E%E7%8E%B0%E7%9A%84%E5%87%BD%E6%95%B0"><span class="toc-number">1.4.</span> <span class="toc-text">声明但未实现的函数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B7%B2%E5%AE%9E%E7%8E%B0%E7%9A%84%E5%87%BD%E6%95%B0"><span class="toc-number">1.5.</span> <span class="toc-text">已实现的函数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A1%B5%E9%9D%A2%E7%AE%A1%E7%90%86"><span class="toc-number">1.6.</span> <span class="toc-text">页面管理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#MMU"><span class="toc-number">1.6.1.</span> <span class="toc-text">MMU</span></a></li></ol></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-POSIX process" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      posix-process
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/30/POSIX%20process/" class="article-date">
+	  <time datetime="2022-10-30T10:47:28.995Z" itemprop="datePublished">2022-10-30</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-process/" rel="tag">unikraft-process</a>, <a class="article-tag-link-link" href="/tags/unikraft-thread/" rel="tag">unikraft-thread</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/30/POSIX%20process/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="posix-process"><a href="#posix-process" class="headerlink" title="posix-process"></a>posix-process</h1><p>posix-process主要提供了POSIX中要求的大部分关于进程、线程管理的结构体与函数。</p>
+<h2 id="文件结构"><a href="#文件结构" class="headerlink" title="文件结构"></a>文件结构</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">posix-process/</span><br><span class="line">├── Config.uk</span><br><span class="line">├── include</span><br><span class="line">│   ├── sys</span><br><span class="line">│   │   └── prctl.h</span><br><span class="line">│   └── uk</span><br><span class="line">│       └── process.h</span><br><span class="line">├── Makefile.uk</span><br><span class="line">├── musl-imported</span><br><span class="line">│   ├── arch</span><br><span class="line">│   │   └── generic</span><br><span class="line">│   │       └── bits</span><br><span class="line">│   │           └── resource.h</span><br><span class="line">│   └── include</span><br><span class="line">│       └── sys</span><br><span class="line">│           └── resource.h</span><br><span class="line">└── process.c</span><br></pre></td></tr></table></figure>
+
+<h2 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h2><p>该结构体位于musl-imported/include/sys/resource.h中<br>该结构体主要定义了对资源的使用限制</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rusage</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">ru_utime</span>;</span>    <span class="comment">//  线程在用户态下的执行时间</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">ru_stime</span>;</span>    <span class="comment">//  线程在内核态下的执行时间</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* linux extentions, but useful */</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_maxrss;          <span class="comment">//  最大驻留集大小</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_ixrss;           <span class="comment">//  整体共享内存大小</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_idrss;           <span class="comment">//  整体非共享内存大小</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_isrss;           <span class="comment">//  整体非共享堆栈大小</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_minflt;          <span class="comment">//  页面回收(软页面错误)</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_majflt;          <span class="comment">//  页面错误(硬页面错误)</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_nswap;           <span class="comment">//  交换</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_inblock;         <span class="comment">//  块输入操作</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_oublock;         <span class="comment">//  块输出操作</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_msgsnd;          <span class="comment">//  发送IPC消息</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_msgrcv;          <span class="comment">//  接受IPC消息</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_nsignals;        <span class="comment">//  接受的信号量</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_nvcsw;           <span class="comment">//  自愿的上下文切换</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    ru_nivcsw;          <span class="comment">//  非自愿的上下文切换</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* room for more... */</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span>    __reserved[<span class="number">16</span>];</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>ru_utime : 在用户态下执行程序的总时间，以timeval结构体表示。</li>
+<li>ru_stime : 在内核态下执行程序的总时间，以timeval结构体表示。</li>
+<li>ru_maxrss : 使用的最大驻留集大小(以KB为单位)。</li>
+<li>ru_ixrss : TODO：在Linux中未使用，在Unikraft中未知。</li>
+<li>ru_idrss : TODO：在Linux中未使用，在Unikraft中未知。</li>
+<li>ru_isrss : TODO：在Linux中未使用，在Unikraft中未知。</li>
+<li>ru_minflt :  minor page fault(次要的缺页错误)。没有任何IO服务的缺页异常。即请求的页面已在内存中，但是没有向MMU注册，此时需要MMU建立映射关系。(注释中提到，没有IO的异常服务，应是指，不需要从外存读取到物理内存中)。</li>
+<li>ru_majflt :  major page fault(主要的缺页错误)。即请求的页面不在物理内存中，此时指示CPU从外存读取对应内容到物理内存中。</li>
+<li>ru_nswap :  向主存交换的次数</li>
+<li>ru_inblock : 文件系统需要输入操作的次数</li>
+<li>ru_oublock : 文件系统需要输出操作的次数</li>
+<li>ru_msgsnd : 发送消息的次数</li>
+<li>ru_msgrcv : 接受消息的次数</li>
+<li>ru_nsignals : 接受信号量的次数</li>
+<li>ru_nvcsw : 自愿的上下文切换</li>
+<li>ru_nivcsw : 非自愿的上下文切换</li>
+<li>__reserved :</li>
+</ul>
+<p>该结构体定义了对资源数量的限制</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rlimit</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">rlim_t</span> rlim_cur;        <span class="comment">// 软限制</span></span><br><span class="line"></span><br><span class="line">    <span class="type">rlim_t</span> rlim_max;        <span class="comment">// 硬限制</span></span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>rlim_cur : 软限制，允许程序在一定时间内超过该限制。</li>
+<li>rlim_max :  硬限制，在任何情况都不允许程序超过该限制。</li>
+</ul>
+<p>该结构体定义了对线程在内存区域的限制</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">prctl_mm_map</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span> start_code;    <span class="comment">// 可执行代码的起点</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span> end_code;      <span class="comment">// 可执行代码的终点</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span> start_data;    <span class="comment">// 数据区域的起点</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span> end_data;      <span class="comment">// 数据区域的终点</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span> start_brk;     <span class="comment">// brk系统调用区域的起点</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span> brk;           <span class="comment">// brk系统调用区域的终点</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span> start_stack;   <span class="comment">// 在计算命令行参数、环境和shmat()系统调用所需空间时使用</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span> arg_start;     <span class="comment">// 表示为命令行参数、环境变量提供的内存区域</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span> arg_end;       <span class="comment">// 表示为命令行参数、环境变量提供的内存区域</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span> env_start;     <span class="comment">// 表示为命令行参数、环境变量提供的内存区域</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span> env_end;       <span class="comment">// 表示为命令行参数、环境变量提供的内存区域</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span> *auxv;         <span class="comment">// 辅助向量</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint32_t</span> auxv_size;     <span class="comment">// 辅助向量大小</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint32_t</span> exe_fd;        <span class="comment">// 可执行链接的文件描述符编号</span></span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>具体可以参考手册<a target="_blank" rel="noopener" href="https://lore.kernel.org/lkml/20140825100843.GM25918@moon/">prctl</a></p>
+<h2 id="提供的接口"><a href="#提供的接口" class="headerlink" title="提供的接口"></a>提供的接口</h2><h3 id="prctl"><a href="#prctl" class="headerlink" title="prctl"></a>prctl</h3><p>在Linux中，prctl提供了一系列操作线程/进程的方法。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">if</span> UK_LIBC_SYSCALLS</span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">prctl</span><span class="params">(<span class="type">int</span> option,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">      <span class="type">unsigned</span> <span class="type">long</span> arg2,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">      <span class="type">unsigned</span> <span class="type">long</span> arg3,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">      <span class="type">unsigned</span> <span class="type">long</span> arg4,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">      <span class="type">unsigned</span> <span class="type">long</span> arg5)</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* UK_LIBC_SYSCALLS */</span></span></span><br><span class="line"></span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">int</span>, prctl, <span class="type">int</span>, option,</span><br><span class="line"></span><br><span class="line">            <span class="type">unsigned</span> <span class="type">long</span>, arg2,</span><br><span class="line"></span><br><span class="line">            <span class="type">unsigned</span> <span class="type">long</span>, arg3,</span><br><span class="line"></span><br><span class="line">            <span class="type">unsigned</span> <span class="type">long</span>, arg4,</span><br><span class="line"></span><br><span class="line">            <span class="type">unsigned</span> <span class="type">long</span>, arg5)</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    UK_WARN_STUBBED();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>; <span class="comment">/* syscall has no effect */</span></span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用prctl()时，第一个参数决定做什么，后面的参数依赖于第一个参数。参数说明如下所示(以缩进代表参数次序)。下面举几个例子加以说明。</p>
+<ul>
+<li><strong>PR_CAP_AMBIENT</strong> : 根据arg2的值改变或者读取thread的环境能力集(the ambient capability set)。<ul>
+<li><strong>PR_CAP_AMBIENT_RAISE</strong> : arg3指定的能力被添加到环境能力集中，指定的功能必须在已经存在于进程允许且可继承的集合中。</li>
+<li><strong>PR_CAP_AMBIENT_LOWER</strong> : arg3指定的能力将从集合中删除。</li>
+<li><strong>PR_CAP_AMBIENT_IS_SET</strong>: 判断arg3指定的能力是否在环境集中。</li>
+<li><strong>PR_CAP_AMBIENT_CLEAR_ALL</strong> ：所有能力从环境集中删除。<br>arg4与arg5需要设置为0。</li>
+</ul>
+</li>
+<li><strong>PR_SET_CHILD_SUBREAPER</strong> : 用于收养孤儿线程，让当前进程充当init线程的功能，使其收养该线程树下的所有线程。</li>
+<li><strong>PR_SET_FP_MODE</strong> : 允许用户从用户空间操控浮点模式。</li>
+<li><strong>PR_SET_NO_NEW_PRIVS</strong>: 将调用线程的no_new_privs属性设置为arg2。如果no_new_privs设置为1时，禁止调用系统调用execve()。且该选项一旦设置，无法被取消；还会通过clone和fork传递给子进程。</li>
+<li><strong>PR_SET_PDEATHSIG</strong> : 将调用进程的父线程死亡信号设置为arg2(范围为1~MaxSig, 0代表清除信号)。对于Linux而言，父指的是创建该进程的父线程，对于Unikraft还需再深入了解。</li>
+<li><strong>PR_SET_NAME</strong> : 设定线程的名字。</li>
+</ul>
+<h3 id="exec函数族"><a href="#exec函数族" class="headerlink" title="exec函数族"></a>exec函数族</h3><p>在Unikraft中，提供了六个以exec开头的函数，以及两个对参数进行处理的函数。以及一个系统调用execve。查阅后发现，exec函数基本是尚未实现的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">execvpe</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *file, <span class="type">char</span> *<span class="type">const</span> argv[], <span class="type">char</span> *<span class="type">const</span> envp[])</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execvp</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *file, <span class="type">char</span> *<span class="type">const</span> argv[])</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execv</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *path, <span class="type">char</span> *<span class="type">const</span> argv[])</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execle</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *path, <span class="type">const</span> <span class="type">char</span> *arg, ...</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="comment">/*, (char *) NULL, char * const envp[] */</span>)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execlp</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *file, <span class="type">const</span> <span class="type">char</span> *arg, ...</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="comment">/* (char  *) NULL */</span>)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execl</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *path, <span class="type">const</span> <span class="type">char</span> *arg, ...</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="comment">/* (char  *) NULL */</span>)</span>;</span><br></pre></td></tr></table></figure>
+<p>其中在exec函数族中大量调用了以下两个函数，但是分析发现，以下函数仅仅是在调用内部的print函数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> uk_pr_warn(fmt, ...)  uk_printk(KLVL_WARN,  (fmt), ##__VA_ARGS__)</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">exec_warn_argv_variadic</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *arg, va_list args)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> i = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">char</span> *argi;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    uk_pr_warn(<span class="string">&quot; argv=[%s&quot;</span>, arg);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    argi = va_arg(args, <span class="type">char</span> *);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (argi) &#123;</span><br><span class="line"></span><br><span class="line">        uk_pr_warn(<span class="string">&quot;%s%s&quot;</span>, (i &gt; <span class="number">0</span> ? <span class="string">&quot;, &quot;</span> : <span class="string">&quot;&quot;</span>), argi);</span><br><span class="line"></span><br><span class="line">        i++;</span><br><span class="line"></span><br><span class="line">        argi = va_arg(args, <span class="type">char</span> *);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    uk_pr_warn(<span class="string">&quot;]\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exec_warn_array(<span class="type">const</span> <span class="type">char</span> *name, <span class="type">char</span> *<span class="type">const</span> argv[])</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> i = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    uk_pr_warn(<span class="string">&quot; %s=[&quot;</span>, name);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (argv) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (argv[i]) &#123;</span><br><span class="line"></span><br><span class="line">            uk_pr_warn(<span class="string">&quot;%s%s&quot;</span>, (i &gt; <span class="number">0</span> ? <span class="string">&quot;, &quot;</span> : <span class="string">&quot;&quot;</span>), argv[i]);</span><br><span class="line"></span><br><span class="line">            i++;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    uk_pr_warn(<span class="string">&quot;]\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> exec_warn_argv(values) __exec_warn_array(<span class="string">&quot;argv&quot;</span>, values)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> exec_warn_envp(values) __exec_warn_array(<span class="string">&quot;envp&quot;</span>, values)</span></span><br></pre></td></tr></table></figure>
+<h2 id="声明但未实现的函数"><a href="#声明但未实现的函数" class="headerlink" title="声明但未实现的函数"></a>声明但未实现的函数</h2><p>除了prctl以及exec函数族以外，笔者整理了posix-process中提供了声明但是未实现的函数。以供日后参考。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">system</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *command)</span>;</span><br><span class="line">FILE *<span class="title function_">popen</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *command, <span class="type">const</span> <span class="type">char</span> *type __unused)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">pclose</span><span class="params">(FILE *stream __unused)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">wait</span><span class="params">(<span class="type">int</span> *status __unused)</span>;</span><br><span class="line"><span class="type">pid_t</span> <span class="title function_">waitpid</span><span class="params">(<span class="type">pid_t</span> pid __unused, <span class="type">int</span> *wstatus __unused, <span class="type">int</span> options __unused)</span>;</span><br><span class="line"><span class="type">pid_t</span> <span class="title function_">wait3</span><span class="params">(<span class="type">int</span> *wstatus __unused, <span class="type">int</span> options __unused,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="keyword">struct</span> rusage *rusage __unused)</span>;</span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">pid_t</span>, wait4, <span class="type">pid_t</span>, pid, <span class="type">int</span> *, wstatus,</span><br><span class="line"></span><br><span class="line">            <span class="type">int</span>, options, <span class="keyword">struct</span> rusage *, rusage);</span><br><span class="line"><span class="type">int</span> <span class="title function_">nice</span><span class="params">(<span class="type">int</span> inc)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">tcsetpgrp</span><span class="params">(<span class="type">int</span> fd __unused, <span class="type">pid_t</span> pgrp)</span>;</span><br></pre></td></tr></table></figure>
+<h2 id="已实现的函数"><a href="#已实现的函数" class="headerlink" title="已实现的函数"></a>已实现的函数</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 由于Unikraft特性导致实现很简单或者是无法实现。</span></span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">int</span>, getpid);  <span class="comment">// return 1</span></span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">pid_t</span>, getppid);  <span class="comment">//return 0</span></span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">pid_t</span>, setsid);   </span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">pid_t</span>, getsid, <span class="type">pid_t</span>, pid);</span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">int</span>, setpgid, <span class="type">pid_t</span>, pid, <span class="type">pid_t</span>, pgid);</span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">pid_t</span>, getpgid, <span class="type">pid_t</span>, pid);</span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">pid_t</span>, getpgrp);</span><br><span class="line"></span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">int</span>, getpriority, <span class="type">int</span>, which, <span class="type">id_t</span>, who);</span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">int</span>, setpriority, <span class="type">int</span>, which, <span class="type">id_t</span>, who, <span class="type">int</span>, prio);</span><br><span class="line"></span><br><span class="line"><span class="comment">// getter setter都是用prlimit64构建出来的</span></span><br><span class="line">UK_LLSYSCALL_R_DEFINE(<span class="type">int</span>, prlimit64, <span class="type">int</span>, pid, <span class="type">unsigned</span> <span class="type">int</span>, resource,</span><br><span class="line"></span><br><span class="line">              <span class="keyword">struct</span> rlimit *, new_limit, <span class="keyword">struct</span> rlimit *, old_limit);</span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">int</span>, getrlimit, <span class="type">int</span>, resource, <span class="keyword">struct</span> rlimit *, rlim);</span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">int</span>, setrlimit, <span class="type">int</span>, resource, <span class="type">const</span> <span class="keyword">struct</span> rlimit *, rlim);</span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">int</span>, getrusage, <span class="type">int</span>, who,</span><br><span class="line"></span><br><span class="line">            <span class="keyword">struct</span> rusage *, usage);</span><br><span class="line"><span class="type">int</span> <span class="title function_">prlimit</span><span class="params">(<span class="type">pid_t</span> pid, <span class="type">int</span> resource, <span class="type">const</span> <span class="keyword">struct</span> rlimit *new_limit,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="keyword">struct</span> rlimit *old_limit)</span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="页面管理"><a href="#页面管理" class="headerlink" title="页面管理"></a>页面管理</h2><h3 id="MMU"><a href="#MMU" class="headerlink" title="MMU"></a>MMU</h3><p>MMU(Memory Management Unit)，又叫内存管理单元，MMU是分页技术的硬件实现。CPU通过MMU，将虚拟地址VA转化为物理地址PA。<br>至于MMU采取的地址翻译规则取决于虚拟内存采用的组织机制，包括:分段机制和分页机制。CPU、MMU、主存的交互过程如下图所示，cache并未在图中画出。<br><img src="/images/unikraft-process/MMU.png"><br>TLB是MMU的一部分，TLB的本质就是cache，MMU在进行地址翻译前，会去查询TLB。如果TLB命中，那么就直接获取VA对应的PA，然后访问主存。否则进行地址翻译过程。<br>因此缺页中断也就分为了两种</p>
+<ul>
+<li>软缺页中断：此时进程所需要的页面已经在物理内存中，Page Fault Handler会让MMU建立对应的映射关系。</li>
+<li>硬缺页中断：此时进程所需要的页面不在物理内存中，此时将从磁盘中读取对应的页面，同时建立映射关系。<br>缺页中断发生后，Page Fault Handler会判断缺页类型，然后进行缺页处理。与其他中断不同的是，Page Fault Handler在处理完后，会重新执行发生缺页中断的语句。</li>
+</ul>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/30/POSIX%20process/" title="posix-process" target="_blank" rel="external">http://example.com/2022/10/30/POSIX process/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/" title="unikraft文件系统导览"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/10/30/POSIX%20futex/" title="posix-futex"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

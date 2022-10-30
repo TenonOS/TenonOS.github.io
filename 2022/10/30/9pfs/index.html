@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>9pfs相关结构以及源码分析 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="9pfs 1. 基础数据结构1.1 9pdev12345678910111213141516171819202122&#x2F;** * 9PDEV * A structure used to interact with a 9P device. * 一个专门用来与9p设备进行通信的结构体 *&#x2F;struct uk_9pdev &amp;#123;	&#x2F;* Underlying transport operations">
+<meta property="og:type" content="article">
+<meta property="og:title" content="9pfs相关结构以及源码分析">
+<meta property="og:url" content="http://example.com/2022/10/30/9pfs/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="9pfs 1. 基础数据结构1.1 9pdev12345678910111213141516171819202122&#x2F;** * 9PDEV * A structure used to interact with a 9P device. * 一个专门用来与9p设备进行通信的结构体 *&#x2F;struct uk_9pdev &amp;#123;	&#x2F;* Underlying transport operations">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft-9pfs/9p%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E6%B5%81%E7%A8%8B.png">
+<meta property="article:published_time" content="2022-10-30T10:47:28.986Z">
+<meta property="article:modified_time" content="2022-10-30T10:41:58.419Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-文件系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft-9pfs/9p%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E6%B5%81%E7%A8%8B.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/30/9pfs/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-bus/">unikraft-bus</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-9pfs/">unikraft-libs-9pfs</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-netdev/">unikraft-netdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-virtio/">unikraft-virtio</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-bus/" rel="tag">unikraft-bus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-futex/" rel="tag">unikraft-futex</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-netdev/" rel="tag">unikraft-netdev</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-process/" rel="tag">unikraft-process</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-thread/" rel="tag">unikraft-thread</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/unikraft-bus/" style="font-size: 13px;">unikraft-bus</a> <a href="/tags/unikraft-futex/" style="font-size: 13px;">unikraft-futex</a> <a href="/tags/unikraft-netdev/" style="font-size: 13px;">unikraft-netdev</a> <a href="/tags/unikraft-process/" style="font-size: 13px;">unikraft-process</a> <a href="/tags/unikraft-thread/" style="font-size: 13.33px;">unikraft-thread</a> <a href="/tags/unikraft-virtio/" style="font-size: 13.67px;">unikraft-virtio</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 14px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 14px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13.33px;">unikraft-线程管理</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">18</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/%E5%86%85%E5%AD%98%E7%9B%B8%E5%85%B3%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="title">内存相关基础知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.034Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-virtio/">unikraft-virtio</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/" class="title">virtio-ring与virtio-queue</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.028Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/" class="title">unikraft文件系统导览</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.010Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/POSIX%20process/" class="title">posix-process</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:28.995Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/POSIX%20futex/" class="title">posix-futex</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:28.994Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#9pfs"><span class="toc-number">1.</span> <span class="toc-text">9pfs</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E5%9F%BA%E7%A1%80%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">1.1.</span> <span class="toc-text">1. 基础数据结构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-9pdev"><span class="toc-number">1.1.1.</span> <span class="toc-text">1.1 9pdev</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-9pdev-trans"><span class="toc-number">1.1.2.</span> <span class="toc-text">1.2 9pdev_trans</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-9pfs-mount-data"><span class="toc-number">1.1.3.</span> <span class="toc-text">1.3 9pfs_mount_data</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-4-9pfs-file-data"><span class="toc-number">1.1.4.</span> <span class="toc-text">1.4 9pfs_file_data</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-5-9pfs-node-data"><span class="toc-number">1.1.5.</span> <span class="toc-text">1.5 9pfs_node_data</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-6-%E4%B8%80%E4%BA%9B9P%E5%8D%8F%E8%AE%AE%E8%A7%84%E5%AE%9A%E7%9A%84%E7%B1%BB%E5%9E%8B"><span class="toc-number">1.1.6.</span> <span class="toc-text">1.6 一些9P协议规定的类型</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-6-1-9p-type"><span class="toc-number">1.1.6.1.</span> <span class="toc-text">1.6.1 9p_type</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-6-2-qid-type"><span class="toc-number">1.1.6.2.</span> <span class="toc-text">1.6.2 qid type</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-6-3-open-mode"><span class="toc-number">1.1.6.3.</span> <span class="toc-text">1.6.3 open mode</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-6-4-9p-qid"><span class="toc-number">1.1.6.4.</span> <span class="toc-text">1.6.4 9p_qid</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-6-5-9p-fid"><span class="toc-number">1.1.6.5.</span> <span class="toc-text">1.6.5 9p_fid</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-6-6-9p-str"><span class="toc-number">1.1.6.6.</span> <span class="toc-text">1.6.6 9p_str</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-6-7-9p-stat"><span class="toc-number">1.1.6.7.</span> <span class="toc-text">1.6.7 9p_stat</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-6-8-%E4%B8%80%E4%BA%9B%E5%AE%9A%E4%B9%89"><span class="toc-number">1.1.6.8.</span> <span class="toc-text">1.6.8 一些定义</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-7-9preq-fcall"><span class="toc-number">1.1.7.</span> <span class="toc-text">1.7 9preq_fcall</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-8-9preq"><span class="toc-number">1.1.8.</span> <span class="toc-text">1.8 9preq</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E4%B8%8E%E7%94%9F%E6%88%909preq%E6%9C%89%E5%85%B3%E7%9A%84%E5%9F%BA%E7%A1%80%E6%93%8D%E4%BD%9C"><span class="toc-number">1.2.</span> <span class="toc-text">2. 与生成9preq有关的基础操作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-9preq-init-9preq-c"><span class="toc-number">1.2.1.</span> <span class="toc-text">2.1 9preq_init(9preq.c)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-request-create-9p-c-gt-9pdev-req-create-9pdev-c"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.2 request_create(9p.c)-&gt;9pdev_req_create(9pdev.c)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-9preq-write-read-size-9preq-h-gt-9preq-write-readbuf"><span class="toc-number">1.2.3.</span> <span class="toc-text">2.3 9preq_{write&#x2F;read}[size](9preq.h) -&gt; 9preq_{write&#x2F;readbuf}</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E4%B8%8E9pdev%E7%9B%B8%E5%85%B3%E7%9A%84%E5%9F%BA%E7%A1%80%E6%93%8D%E4%BD%9C"><span class="toc-number">1.3.</span> <span class="toc-text">3. 与9pdev相关的基础操作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-9pdev-trans-register-9pdev-trans-c"><span class="toc-number">1.3.1.</span> <span class="toc-text">3.1 9pdev_trans_register(9pdev_trans.c)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-9pdev-connect-9pdev-c"><span class="toc-number">1.3.2.</span> <span class="toc-text">3.2 9pdev_connect(9pdev.c)</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-9p%E6%95%B4%E4%BD%93%E7%9A%84%E6%93%8D%E4%BD%9C"><span class="toc-number">1.4.</span> <span class="toc-text">4. 9p整体的操作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-send-and-wait-zc-9p-c-gt-9preq-ready-9preq-c-gt-9pdev-request-9pdev-c-gt-9preq-waitreply-9preq-c"><span class="toc-number">1.4.1.</span> <span class="toc-text">4.1 send_and_wait_zc(9p.c) -&gt; 9preq_ready(9preq.c)-&gt; 9pdev_request(9pdev.c)-&gt; 9preq_waitreply(9preq.c)</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#4-1-1-9preq-ready-9preq-c"><span class="toc-number">1.4.1.1.</span> <span class="toc-text">4.1.1 9preq_ready(9preq.c)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-1-2-9pdev-request-9pdev-c"><span class="toc-number">1.4.1.2.</span> <span class="toc-text">4.1.2 9pdev_request(9pdev.c)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-1-3-9preq-waitreply-9preq-c"><span class="toc-number">1.4.1.3.</span> <span class="toc-text">4.1.3 9preq_waitreply(9preq.c)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-9p-read-9p-c%EF%BC%8C%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="toc-number">1.4.2.</span> <span class="toc-text">4.2 9p_read(9p.c，一个例子)</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-9pfs%E7%9A%84%E6%93%8D%E4%BD%9C"><span class="toc-number">1.5.</span> <span class="toc-text">5. 9pfs的操作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-9pfs-mount-9pfs-vfsops-c"><span class="toc-number">1.5.1.</span> <span class="toc-text">5.1 9pfs_mount(9pfs_vfsops.c)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-9pfs-create-9pfs-vnops-c-gt-9pfs-create-generic"><span class="toc-number">1.5.2.</span> <span class="toc-text">5.2 9pfs_create(9pfs_vnops.c)-&gt;9pfs_create_generic</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-9pfs-open-9pfs-vnops-c"><span class="toc-number">1.5.3.</span> <span class="toc-text">5.3 9pfs_open(9pfs_vnops.c)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-9pfs-read-9pfs-vnops-c%EF%BC%8C%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="toc-number">1.5.4.</span> <span class="toc-text">5.4 9pfs_read(9pfs_vnops.c，一个例子)</span></a></li></ol></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-9pfs" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      9pfs相关结构以及源码分析
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/30/9pfs/" class="article-date">
+	  <time datetime="2022-10-30T10:47:28.986Z" itemprop="datePublished">2022-10-30</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-libs-9pfs/">unikraft-libs-9pfs</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/30/9pfs/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="9pfs"><a href="#9pfs" class="headerlink" title="9pfs"></a>9pfs</h1><p><img src="/images/unikraft-9pfs/9p%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E6%B5%81%E7%A8%8B.png" alt="image-20221030142903019"></p>
+<h2 id="1-基础数据结构"><a href="#1-基础数据结构" class="headerlink" title="1. 基础数据结构"></a>1. 基础数据结构</h2><h3 id="1-1-9pdev"><a href="#1-1-9pdev" class="headerlink" title="1.1 9pdev"></a>1.1 9pdev</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 9PDEV</span></span><br><span class="line"><span class="comment"> * A structure used to interact with a 9P device.</span></span><br><span class="line"><span class="comment"> * 一个专门用来与9p设备进行通信的结构体</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev</span> &#123;</span></span><br><span class="line">	<span class="comment">/* Underlying transport operations. */</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev_trans_ops</span> *<span class="title">ops</span>;</span></span><br><span class="line">	<span class="comment">/* Allocator used by this device. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_alloc</span>                 *<span class="title">a</span>;</span> <span class="comment">/* See uk_9pdev_connect(). */</span></span><br><span class="line">	<span class="comment">/* Transport state. */</span></span><br><span class="line">	<span class="class"><span class="keyword">enum</span> <span class="title">uk_9pdev_trans_state</span>       <span class="title">state</span>;</span></span><br><span class="line">	<span class="comment">/* Maximum size of a message. */</span></span><br><span class="line">	<span class="type">uint32_t</span>                        msize;</span><br><span class="line">	<span class="comment">/* Maximum size of a message for the transport. */</span></span><br><span class="line">	<span class="type">uint32_t</span>                        max_msize;</span><br><span class="line">	<span class="comment">/* Transport-allocated data. */</span></span><br><span class="line">	<span class="type">void</span>                            *priv;</span><br><span class="line">	<span class="comment">/* @internal Fid management. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev_fid_mgmt</span>	_<span class="title">fid_mgmt</span>;</span></span><br><span class="line">	<span class="comment">/* @internal Request management. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev_req_mgmt</span>        _<span class="title">req_mgmt</span>;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>ops：设备基础的一些传输操作，包括connect、disconnect、request</li>
+<li>a: 用于connect的内存分配器</li>
+<li>state：设备的状态，包括已连接（默认）和disconnect后的状态，在后者任何的请求都是非法的，当所有的资源都释放后9pdev也会释放</li>
+<li>msize：一个消息最大的大小，这个值可以自己指定</li>
+<li>max_msize：一个消息对于传输的最大大小，这个值是这个dev支持的最大大小</li>
+<li>priv：传输的数据</li>
+<li>_fid_mgmt：内部fid管理，用于描述fid的可用性，里面有自旋锁、下一个可用的fid、和可用的fid的链表、在使用中的fid的链表</li>
+<li>_req_mgmt：内部的request管理，包括自旋锁、可用的tag的位图，已经被分配但是还没有被销毁的request链表，空闲的request链表。</li>
+</ul>
+<h3 id="1-2-9pdev-trans"><a href="#1-2-9pdev-trans" class="headerlink" title="1.2 9pdev_trans"></a>1.2 9pdev_trans</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** 用来描述传输的结构</span></span><br><span class="line"><span class="comment">* A structure used to describe a transport. */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev_trans</span> &#123;</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Transport name (e.g. &quot;virtio&quot;, &quot;xen&quot;). This field is reserved for</span></span><br><span class="line"><span class="comment">	 * future use, when multiple transport options are available on the</span></span><br><span class="line"><span class="comment">	 * same platform, such as RDMA or TCP, in addition to the platform</span></span><br><span class="line"><span class="comment">	 * specific transport.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span>                              *name;</span><br><span class="line">	<span class="comment">/* Supported operations. */</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev_trans_ops</span>         *<span class="title">ops</span>;</span></span><br><span class="line">	<span class="comment">/* Allocator used for devices which use this transport layer. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_alloc</span>                         *<span class="title">a</span>;</span></span><br><span class="line">	<span class="comment">/* @internal Entry in the list of available transports. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span>                     _<span class="title">list</span>;</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>name：传输的名字，例如virtio或者xen</li>
+<li>ops：传输的操作，即connect、disconnect、request</li>
+</ul>
+<h3 id="1-3-9pfs-mount-data"><a href="#1-3-9pfs-mount-data" class="headerlink" title="1.3 9pfs_mount_data"></a>1.3 9pfs_mount_data</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 用来与上层vfs mount绑定的数据，即mount-&gt;m_data = uk_9pfs_mount_data</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfs_mount_data</span> &#123;</span></span><br><span class="line">	<span class="comment">/* 9P device. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev</span>		*<span class="title">dev</span>;</span></span><br><span class="line">	<span class="comment">/* Wanted transport. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev_trans</span>	*<span class="title">trans</span>;</span></span><br><span class="line">	<span class="comment">/* Protocol version used. */</span></span><br><span class="line">	<span class="class"><span class="keyword">enum</span> <span class="title">uk_9pfs_proto</span>	<span class="title">proto</span>;</span></span><br><span class="line">	<span class="comment">/* Username to attempt to mount as on the remote server. */</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span>		*uname;</span><br><span class="line">	<span class="comment">/* File tree to access when offered multiple exported filesystems. */</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span>		*aname;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>dev：即用于传输的9p设备</li>
+<li>trans：传输的具体操作，例如连接、发送等</li>
+<li>proto：即9p具体的协议名，现在unikraft仅实现了9P2000.u</li>
+<li>uname：尝试在远程服务器上挂载的用户名</li>
+<li>aname：当有多个文件系统的时候选择的文件树</li>
+</ul>
+<h3 id="1-4-9pfs-file-data"><a href="#1-4-9pfs-file-data" class="headerlink" title="1.4 9pfs_file_data"></a>1.4 9pfs_file_data</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 对应一个9P文件的结构体，即vfscore_file-&gt;f_data = uk_9pfs_file_data</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfs_file_data</span> &#123;</span></span><br><span class="line">	<span class="comment">/* Fid associated with the 9pfs file. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfid</span>        *<span class="title">fid</span>;</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Buffer for persisting results from a 9P read operation across</span></span><br><span class="line"><span class="comment">	 * readdir() calls.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">char</span>                   *readdir_buf;</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Offset within the buffer where the stat of the next child can</span></span><br><span class="line"><span class="comment">	 * be found.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">int</span>                    readdir_off;</span><br><span class="line">	<span class="comment">/* Total size of the data in the readdir buf. */</span></span><br><span class="line">	<span class="type">int</span>                    readdir_sz;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>fid：和9p文件系统关联的标识符</li>
+<li>readdir_buf：通过readdir()操作获取的9p读取操作的持久化缓冲区</li>
+<li>readdir_off：在缓冲区中的偏移量，在这个偏移量下一个child会被找到</li>
+<li>readdir_sz：缓冲区中数据的大小</li>
+</ul>
+<h3 id="1-5-9pfs-node-data"><a href="#1-5-9pfs-node-data" class="headerlink" title="1.5 9pfs_node_data"></a>1.5 9pfs_node_data</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 对应上层vfs vnode的结构体 即vnode-&gt;v_data = uk_9pfs_node_data</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfs_node_data</span> &#123;</span></span><br><span class="line">	<span class="comment">/* Fid associated with the vfs node. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfid</span>        *<span class="title">fid</span>;</span></span><br><span class="line">	<span class="comment">/* Number of files opened from the vfs node. */</span></span><br><span class="line">	<span class="type">int</span>                    nb_open_files;</span><br><span class="line">	<span class="comment">/* Is a 9P remove call required when nb_open_files reaches 0? */</span></span><br><span class="line">	<span class="type">bool</span>                   removed;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>fid：与vnode关联的fid</li>
+<li>nb_open_files：从这个vnode同时打开的文件数量</li>
+<li>removed：当打开文件数量为0时应该removed掉</li>
+</ul>
+<h3 id="1-6-一些9P协议规定的类型"><a href="#1-6-一些9P协议规定的类型" class="headerlink" title="1.6 一些9P协议规定的类型"></a>1.6 一些9P协议规定的类型</h3><h4 id="1-6-1-9p-type"><a href="#1-6-1-9p-type" class="headerlink" title="1.6.1 9p_type"></a>1.6.1 9p_type</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 9p message的类型</span></span><br><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">uk_9p_type</span> &#123;</span></span><br><span class="line">	UK_9P_TVERSION          = <span class="number">100</span>,	<span class="comment">// 建立连接、确认版本信息</span></span><br><span class="line">	UK_9P_RVERSION,</span><br><span class="line">	UK_9P_TAUTH             = <span class="number">102</span>,	<span class="comment">// 验证信息，交换权限</span></span><br><span class="line">	UK_9P_RAUTH,</span><br><span class="line">	UK_9P_TATTACH           = <span class="number">104</span>,	<span class="comment">// 连接服务端，指定特定文件树</span></span><br><span class="line">	UK_9P_RATTACH,</span><br><span class="line">	UK_9P_TERROR            = <span class="number">106</span>,	<span class="comment">// 报错信息，包括原因</span></span><br><span class="line">	UK_9P_RERROR,</span><br><span class="line">	UK_9P_TFLUSH            = <span class="number">108</span>,	<span class="comment">// 终止某个请求</span></span><br><span class="line">	UK_9P_RFLUSH,</span><br><span class="line">	UK_9P_TWALK             = <span class="number">110</span>,	<span class="comment">// 查询文件、目录</span></span><br><span class="line">	UK_9P_RWALK,</span><br><span class="line">	UK_9P_TOPEN             = <span class="number">112</span>,	<span class="comment">// 打开文件</span></span><br><span class="line">	UK_9P_ROPEN,</span><br><span class="line">	UK_9P_TCREATE           = <span class="number">114</span>,	<span class="comment">// 创建文件</span></span><br><span class="line">	UK_9P_RCREATE,</span><br><span class="line">	UK_9P_TREAD             = <span class="number">116</span>,	<span class="comment">// 读取文件</span></span><br><span class="line">	UK_9P_RREAD,</span><br><span class="line">	UK_9P_TWRITE            = <span class="number">118</span>,	<span class="comment">// 写文件</span></span><br><span class="line">	UK_9P_RWRITE,</span><br><span class="line">	UK_9P_TCLUNK            = <span class="number">120</span>,	<span class="comment">// clunk掉已经不需要的fid</span></span><br><span class="line">	UK_9P_RCLUNK,</span><br><span class="line">	UK_9P_TREMOVE           = <span class="number">122</span>,	<span class="comment">// 删除文件</span></span><br><span class="line">	UK_9P_RREMOVE,</span><br><span class="line">	UK_9P_TSTAT             = <span class="number">124</span>,	<span class="comment">// 获取文件基本信息</span></span><br><span class="line">	UK_9P_RSTAT,</span><br><span class="line">	UK_9P_TWSTAT            = <span class="number">126</span>,	<span class="comment">// 修改文件基本信息</span></span><br><span class="line">	UK_9P_RWSTAT,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-6-2-qid-type"><a href="#1-6-2-qid-type" class="headerlink" title="1.6.2 qid type"></a>1.6.2 qid type</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_QTDIR               0x80	<span class="comment">// 目录</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_QTAPPEND            0x40	<span class="comment">// 仅追加文件（AOF）</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_QTEXCL              0x20	<span class="comment">// 可执行文件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_QTMOUNT             0x10	<span class="comment">// 挂载</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_QTAUTH              0x08	<span class="comment">// 通过auth操作建立的auth权限文件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_QTTMP               0x04	<span class="comment">// 临时文件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_QTSYMLINK           0x02	<span class="comment">// 软链接</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_QTLINK              0x01	<span class="comment">// 硬链接</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_QTFILE              0x00	<span class="comment">// 普通文件</span></span></span><br></pre></td></tr></table></figure>
+
+<h4 id="1-6-3-open-mode"><a href="#1-6-3-open-mode" class="headerlink" title="1.6.3 open mode"></a>1.6.3 open mode</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_OREAD               0x00 	<span class="comment">// 仅读</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_OWRITE              0x01	<span class="comment">// 仅写</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_ORDWR               0x02	<span class="comment">// 可读写</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_OEXEC               0x03	<span class="comment">// 可执行</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_OTRUNC              0x10	<span class="comment">// 截断</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_OREXEC              0x20	<span class="comment">// </span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_ORCLOSE             0x40	<span class="comment">// 关闭</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_OAPPEND             0x80	<span class="comment">// 追加</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_OEXCL               0x1000	<span class="comment">// 如果文件存在就不再打开</span></span></span><br></pre></td></tr></table></figure>
+
+<h4 id="1-6-4-9p-qid"><a href="#1-6-4-9p-qid" class="headerlink" title="1.6.4 9p_qid"></a>1.6.4 9p_qid</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_9p_qid</span> &#123;</span></span><br><span class="line">	<span class="type">uint8_t</span>                 type;		<span class="comment">// 1字节  即1.6.2中的qid类型，代表文件的类型</span></span><br><span class="line">	<span class="type">uint32_t</span>                version;	<span class="comment">// 4字节  代指文件的版本，即每次修改版本都会增加</span></span><br><span class="line">	<span class="type">uint64_t</span>                path;		<span class="comment">// 8字节  层次结构中所有文件中唯一的整数</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="1-6-5-9p-fid"><a href="#1-6-5-9p-fid" class="headerlink" title="1.6.5 9p_fid"></a>1.6.5 9p_fid</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 描述一个被管理的fid</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfid</span> &#123;</span></span><br><span class="line">	<span class="type">uint32_t</span>                fid;	<span class="comment">// fid号码，是唯一的标识</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9p_qid</span>        <span class="title">qid</span>;</span>	<span class="comment">// 与fid关联的服务端的qid，代表客户端的一个文件</span></span><br><span class="line">	<span class="type">uint32_t</span>                iounit;	<span class="comment">// 保证原子传输的最大尺寸，因为9P的实现可能会限制单个消息的大小，所以一次读或写调用可能会产生一个以上的消息。</span></span><br><span class="line">	<span class="type">bool</span> was_removed;	<span class="comment">// 代表是否被移除了</span></span><br><span class="line">	__atomic                refcount;	<span class="comment">// 引用计数，即代表有多少在用这个文件</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev</span>         *_<span class="title">dev</span>;</span>		<span class="comment">// 关联9pdev</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span>     _<span class="title">list</span>;</span>	<span class="comment">// 这个fid所在的list，用于9pdev_fid_mgmt来管理fid，即分配fid</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-6-6-9p-str"><a href="#1-6-6-9p-str" class="headerlink" title="1.6.6 9p_str"></a>1.6.6 9p_str</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_9p_str</span> &#123;</span></span><br><span class="line">	<span class="type">uint16_t</span>                size;		<span class="comment">// 字符串的字节数，即后面size个字节是这个字符串， 占两位</span></span><br><span class="line">	<span class="type">char</span>                    *data;		<span class="comment">// 具体字符串</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-6-7-9p-stat"><a href="#1-6-7-9p-stat" class="headerlink" title="1.6.7 9p_stat"></a>1.6.7 9p_stat</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_9p_stat</span> &#123;</span></span><br><span class="line">	<span class="type">uint16_t</span>                size;		<span class="comment">// 2字节  整个stat所占用的字节数</span></span><br><span class="line">	<span class="type">uint16_t</span>                type;		<span class="comment">// 4字节	类型</span></span><br><span class="line">	<span class="type">uint32_t</span>                dev;		<span class="comment">// 4字节  设备</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9p_qid</span>        <span class="title">qid</span>;</span>		<span class="comment">// 13字节 即上文的qid</span></span><br><span class="line">	<span class="type">uint32_t</span>                mode;		<span class="comment">// 4字节	权限与标志</span></span><br><span class="line">	<span class="type">uint32_t</span>                atime;		<span class="comment">// 4字节	上次访问的时间</span></span><br><span class="line">	<span class="type">uint32_t</span>                mtime;		<span class="comment">// 4字节	上次修改(modification)的时间</span></span><br><span class="line">	<span class="type">uint64_t</span>                length;		<span class="comment">// 8字节	文件所占用的字节数</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9p_str</span>        <span class="title">name</span>;</span>		<span class="comment">// s字节	文件名字，如果是根目录则必须是&quot;/&quot;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9p_str</span>        <span class="title">uid</span>;</span>		<span class="comment">// s字节	文件所有者的名字</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9p_str</span>        <span class="title">gid</span>;</span>		<span class="comment">// s字节	组的名字</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9p_str</span>        <span class="title">muid</span>;</span>		<span class="comment">// s字节	上一次修改的人的名字</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9p_str</span>        <span class="title">extension</span>;</span>	<span class="comment">// </span></span><br><span class="line">	<span class="type">uint32_t</span>                n_uid;</span><br><span class="line">	<span class="type">uint32_t</span>                n_gid;</span><br><span class="line">	<span class="type">uint32_t</span>                n_muid;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-6-8-一些定义"><a href="#1-6-8-一些定义" class="headerlink" title="1.6.8 一些定义"></a>1.6.8 一些定义</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** </span></span><br><span class="line"><span class="comment"> * No tag, used by the Tversion/Rversion pair of request/reply messages.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_NOTAG                    UINT16_MAX <span class="comment">// 用于version相关的请求 16位最大值65535</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/** </span></span><br><span class="line"><span class="comment"> * Maximum available tag for use.</span></span><br><span class="line"><span class="comment"> * UK_9P_NOTAG (~0) is reserved by the 9P RFC for representing no tag.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_MAXTAG                   (UINT16_MAX - 1) <span class="comment">// 最大可用的tag数量 65535-1=65534</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Number of possible tags, including NOTAG.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_NUMTAGS                  ((uint32_t)(UINT16_MAX) + 1) <span class="comment">//所有可能的tag数量65536</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * No fid, used to mark a fid field as unused.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_NOFID                    UINT32_MAX	<span class="comment">// No fid，用于标记一个fid字段为未使用。</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * No n_uname in TATTACH requests, used to mark the field as unused.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> UK_9P_NONUNAME                 UINT32_MAX <span class="comment">// 在TATTACH请求中没有n_uname，用于标记字段为未使用。</span></span></span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="1-7-9preq-fcall"><a href="#1-7-9preq-fcall" class="headerlink" title="1.7 9preq_fcall"></a>1.7 9preq_fcall</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_9preq_fcall</span> &#123;</span></span><br><span class="line">	<span class="comment">/* 请求的数据结构</span></span><br><span class="line"><span class="comment">	 * Total size of the fcall. Initially, this is the buffer size.</span></span><br><span class="line"><span class="comment">	 * After ready (on xmit) or reply (on recv), this will be the size of</span></span><br><span class="line"><span class="comment">	 * the sent/received data.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">uint32_t</span>                        size;</span><br><span class="line">	<span class="comment">/* Type of the fcall. Should be T* for transmit, R* for receive. */</span></span><br><span class="line">	<span class="type">uint8_t</span>                         type;</span><br><span class="line">	<span class="comment">/* Offset while serializing or deserializing. */</span></span><br><span class="line">	<span class="type">uint32_t</span>                        offset;</span><br><span class="line">	<span class="comment">/* Buffer pointer. */</span></span><br><span class="line">	<span class="type">void</span>                            *buf;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Zero-copy buffer pointer. */</span></span><br><span class="line">	<span class="type">void</span>                            *zc_buf;</span><br><span class="line">	<span class="comment">/* Zero-copy buffer size. */</span></span><br><span class="line">	<span class="type">uint32_t</span>                        zc_size;</span><br><span class="line">	<span class="comment">/* Zero-copy buffer offset in the 9P message. */</span></span><br><span class="line">	<span class="type">uint32_t</span>                        zc_offset;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>size：整个fcall的大小，最初是buffer的大小，在传输和接受就绪后将变成发送/接受的消息的大小。</li>
+<li>type：fcall的类型，T就是发送，R就是接受</li>
+<li>offset：序列化或者解序列化的偏移量</li>
+<li>buf：指向9preq中的xmit_buf（发送）/recv_buf（接受）</li>
+<li>zc_buf：零拷贝的缓冲区</li>
+<li>zc_size：零拷贝缓冲区的大小</li>
+<li>zc_offset：在9preq的接受缓冲中的偏移量，即从偏移量开始读入zc</li>
+</ul>
+<h3 id="1-8-9preq"><a href="#1-8-9preq" class="headerlink" title="1.8 9preq"></a>1.8 <strong style="color:#ff0000;">9preq</strong></h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *  描述一个9P的请求，通过uk_9pdev_req_create()来创建，当没有被引用的时候释放。uk_9pdev_req_remove()可以强制性的释放。</span></span><br><span class="line"><span class="comment"> *	整个请求的大小应该限制在一页(4KB)中</span></span><br><span class="line"><span class="comment"> *  Describes a 9P request.</span></span><br><span class="line"><span class="comment"> *	</span></span><br><span class="line"><span class="comment"> *  This gets allocated via uk_9pdev_req_create(), and freed when it is not</span></span><br><span class="line"><span class="comment"> *  referenced anymore. A call to uk_9pdev_req_remove() is mandatory to</span></span><br><span class="line"><span class="comment"> *  correctly free this and remove it from the list of requests managed</span></span><br><span class="line"><span class="comment"> *  by the 9p device.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *  Should fit within one page.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_9preq</span> &#123;</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Fixed-size buffer for transmit, used for most messages.</span></span><br><span class="line"><span class="comment">	 * Large messages will always zero-copy from the user-provided</span></span><br><span class="line"><span class="comment">	 * buffer (on Twrite).</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">uint8_t</span>				xmit_buf[UK_9P_BUFSIZE];</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Fixed-size buffer for receive, used for most messages.</span></span><br><span class="line"><span class="comment">	 * Large messages will always zero-copy into the user-provided</span></span><br><span class="line"><span class="comment">	 * buffer (on Tread).</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">uint8_t</span>				recv_buf[UK_9P_BUFSIZE];</span><br><span class="line">	<span class="comment">/* 2 KB offset in the structure here. */</span></span><br><span class="line">	<span class="comment">/* Transmit fcall. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9preq_fcall</span>           <span class="title">xmit</span>;</span></span><br><span class="line">	<span class="comment">/* Receive fcall. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9preq_fcall</span>           <span class="title">recv</span>;</span></span><br><span class="line">	<span class="comment">/* State of the request. See the state enum for details. */</span></span><br><span class="line">	<span class="class"><span class="keyword">enum</span> <span class="title">uk_9preq_state</span>             <span class="title">state</span>;</span></span><br><span class="line">	<span class="comment">/* Tag allocated to this request. */</span></span><br><span class="line">	<span class="type">uint16_t</span>                        tag;</span><br><span class="line">	<span class="comment">/* Entry into the list of requests (API-internal). */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span>             _<span class="title">list</span>;</span></span><br><span class="line">	<span class="comment">/* @internal 9P device this request belongs to. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev</span>                 *_<span class="title">dev</span>;</span></span><br><span class="line">	<span class="comment">/* @internal Allocator used to allocate this request. */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_alloc</span>                 *_<span class="title">a</span>;</span></span><br><span class="line">	<span class="comment">/* Tracks the number of references to this structure. */</span></span><br><span class="line">	__atomic                        refcount;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>xmit_buf：发送的buffer缓冲区，大小为1024B，用于大多数message，大message是通过从用户提供的缓冲区零拷贝来的。</li>
+<li>recv_buf：接受的buffer缓冲区，同发送。这两个缓冲区占了2KB。</li>
+<li>xmit：用于传输的数据结构</li>
+<li>recv：用于接收的数据结构</li>
+<li>state：代表request的状态，分为五种：NONE（刚刚被创建）、INITIALIZED（初始化了——可以开始接受序列化的数据），READY（准备好了——可以发送了），SENT（已经发送到传输层了）、RECEIVED（从传输层接收到信息并且重要的9P信息例如类型、标签、大小都已经被验证了）</li>
+<li>tag：这个9p request的tag 占2位</li>
+<li>refcount：引用计数</li>
+</ul>
+<h2 id="2-与生成9preq有关的基础操作"><a href="#2-与生成9preq有关的基础操作" class="headerlink" title="2. 与生成9preq有关的基础操作"></a>2. 与生成9preq有关的基础操作</h2><h3 id="2-1-9preq-init-9preq-c"><a href="#2-1-9preq-init-9preq-c" class="headerlink" title="2.1 9preq_init(9preq.c)"></a>2.1 9preq_init(9preq.c)</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 初始化一个9preq的操作</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">uk_9preq_init</span><span class="params">(<span class="keyword">struct</span> uk_9preq *req)</span></span><br><span class="line">&#123;	</span><br><span class="line">    <span class="comment">// 将req下的xmit和recv的buf指针指向req的xmit_buf和recv_buf，即xmit和recv的buf缓冲区指针有了真正的缓冲区</span></span><br><span class="line">	req-&gt;xmit.buf = req-&gt;xmit_buf;		</span><br><span class="line">	req-&gt;recv.buf = req-&gt;recv_buf;</span><br><span class="line">    </span><br><span class="line">	req-&gt;xmit.size = req-&gt;recv.size = UK_9P_BUFSIZE;	<span class="comment">// 传输和接受的初始大小都是1024B即1KB</span></span><br><span class="line">	req-&gt;xmit.zc_buf = req-&gt;recv.zc_buf = <span class="literal">NULL</span>;	<span class="comment">// zc_buf初始都是空</span></span><br><span class="line">	req-&gt;xmit.zc_size = req-&gt;recv.zc_size = <span class="number">0</span>;	<span class="comment">// zc_size初始都是0</span></span><br><span class="line">	req-&gt;xmit.zc_offset = req-&gt;recv.zc_offset = <span class="number">0</span>;	<span class="comment">// zc_offset初始都是0</span></span><br><span class="line"></span><br><span class="line">	req-&gt;xmit.offset = UK_9P_HEADER_SIZE;	<span class="comment">// 发送的初始偏移量是7（size[4]+type[1]+tag[2]）</span></span><br><span class="line">	req-&gt;recv.offset = <span class="number">0</span>;		<span class="comment">// 接受的初始偏移量是0，因为服务端那边写总是从最开始写的</span></span><br><span class="line"></span><br><span class="line">	UK_INIT_LIST_HEAD(&amp;req-&gt;_list);</span><br><span class="line">	uk_refcount_init(&amp;req-&gt;refcount, <span class="number">1</span>);</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKSCHED</span></span><br><span class="line">	uk_waitq_init(&amp;req-&gt;wq);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="2-2-request-create-9p-c-gt-9pdev-req-create-9pdev-c"><a href="#2-2-request-create-9p-c-gt-9pdev-req-create-9pdev-c" class="headerlink" title="2.2 request_create(9p.c)-&gt;9pdev_req_create(9pdev.c)"></a>2.2 request_create(9p.c)-&gt;9pdev_req_create(9pdev.c)</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建一个与9pdev绑定的req， type是9p消息的类型</span></span><br><span class="line"><span class="keyword">struct</span> uk_9preq *<span class="title function_">uk_9pdev_req_create</span><span class="params">(<span class="keyword">struct</span> uk_9pdev *dev, <span class="type">uint8_t</span> type)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9preq</span> *<span class="title">req</span>;</span></span><br><span class="line">	<span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">	<span class="type">uint16_t</span> tag;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> flags;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(dev);</span><br><span class="line"></span><br><span class="line">	ukplat_spin_lock_irqsave(&amp;dev-&gt;_req_mgmt.spinlock, flags);	<span class="comment">// 上自旋锁</span></span><br><span class="line">	<span class="keyword">if</span> (!(req = _req_mgmt_from_freelist_locked(&amp;dev-&gt;_req_mgmt))) &#123;</span><br><span class="line">		ukplat_spin_unlock_irqrestore(&amp;dev-&gt;_req_mgmt.spinlock, flags);</span><br><span class="line">		req = uk_calloc(dev-&gt;a, <span class="number">1</span>, <span class="keyword">sizeof</span>(*req));</span><br><span class="line">		<span class="keyword">if</span> (req == <span class="literal">NULL</span>) &#123;</span><br><span class="line">			rc = -ENOMEM;</span><br><span class="line">			<span class="keyword">goto</span> out;</span><br><span class="line">		&#125;</span><br><span class="line">		req-&gt;_dev = dev;	<span class="comment">// 将9preq和设备dev进行绑定</span></span><br><span class="line">		req-&gt;_a = dev-&gt;a;</span><br><span class="line">		ukplat_spin_lock_irqsave(&amp;dev-&gt;_req_mgmt.spinlock, flags);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	uk_9preq_init(req);	<span class="comment">// 初始化9preq</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	UK_ASSERT(req-&gt;_dev == dev);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	req-&gt;recv.size = MIN(req-&gt;recv.size, dev-&gt;msize);<span class="comment">// 1024B和设备最大的message大小进行取小</span></span><br><span class="line">	req-&gt;xmit.size = MIN(req-&gt;xmit.size, dev-&gt;msize);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (type == UK_9P_TVERSION)</span><br><span class="line">		tag = UK_9P_NOTAG;		<span class="comment">// 如果是version的req就将tag赋值为notag</span></span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		tag = _req_mgmt_next_tag_locked(&amp;dev-&gt;_req_mgmt); <span class="comment">// 从位图中找一个还未使用的tag</span></span><br><span class="line"></span><br><span class="line">	req-&gt;tag = tag;	<span class="comment">// 赋值tag</span></span><br><span class="line">	req-&gt;xmit.type = type;	<span class="comment">// 发送的type确定</span></span><br><span class="line"></span><br><span class="line">	_req_mgmt_add_req_locked(&amp;dev-&gt;_req_mgmt, req); <span class="comment">// 更新位图、req链表</span></span><br><span class="line">	ukplat_spin_unlock_irqrestore(&amp;dev-&gt;_req_mgmt.spinlock, flags);</span><br><span class="line"></span><br><span class="line">	req-&gt;state = UK_9PREQ_INITIALIZED;	<span class="comment">// 将req的状态更新为初始化完毕了，即可以写具体的request了</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> req;</span><br><span class="line"></span><br><span class="line">out:</span><br><span class="line">	<span class="keyword">return</span> ERR2PTR(rc);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-3-9preq-write-read-size-9preq-h-gt-9preq-write-readbuf"><a href="#2-3-9preq-write-read-size-9preq-h-gt-9preq-write-readbuf" class="headerlink" title="2.3 9preq_{write/read}[size](9preq.h) -&gt; 9preq_{write/readbuf}"></a>2.3 9preq_{write/read}[size](9preq.h) -&gt; 9preq_{write/readbuf}</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将从buf地址开始的size字节长度的信息写入req的发送缓存中</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">uk_9preq_writebuf</span><span class="params">(<span class="keyword">struct</span> uk_9preq *req, <span class="type">const</span> <span class="type">void</span> *buf,</span></span><br><span class="line"><span class="params">		<span class="type">uint32_t</span> size)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">if</span> (req-&gt;xmit.offset + size &gt; req-&gt;xmit.size)	<span class="comment">// 如果发送的开始写地址加长度大于发送缓冲区的大小就报错</span></span><br><span class="line">		<span class="keyword">return</span> -ENOBUFS;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">memcpy</span>((<span class="type">char</span> *)req-&gt;xmit.buf + req-&gt;xmit.offset, buf, size); <span class="comment">// 拷贝</span></span><br><span class="line">	req-&gt;xmit.offset += size; <span class="comment">// 缓冲区的开始写地址加信息长度</span></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 从req中的接受缓存中将信息读size大小到buf中</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">uk_9preq_readbuf</span><span class="params">(<span class="keyword">struct</span> uk_9preq *req, <span class="type">void</span> *buf,</span></span><br><span class="line"><span class="params">		<span class="type">uint32_t</span> size)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">if</span> (req-&gt;recv.offset + size &gt; req-&gt;recv.size)</span><br><span class="line">		<span class="keyword">return</span> -ENOBUFS;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">memcpy</span>(buf, (<span class="type">char</span> *)req-&gt;recv.buf + req-&gt;recv.offset, size);</span><br><span class="line">	req-&gt;recv.offset += size;	<span class="comment">// 读缓冲区的地址加上大小，即下次读可以从上次读完的地方开始读</span></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="3-与9pdev相关的基础操作"><a href="#3-与9pdev相关的基础操作" class="headerlink" title="3. 与9pdev相关的基础操作"></a>3. 与9pdev相关的基础操作</h2><h3 id="3-1-9pdev-trans-register-9pdev-trans-c"><a href="#3-1-9pdev-trans-register-9pdev-trans-c" class="headerlink" title="3.1 9pdev_trans_register(9pdev_trans.c)"></a>3.1 9pdev_trans_register(9pdev_trans.c)</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev_trans</span> *<span class="title">uk_9pdev_trans_saved_default</span>;</span> <span class="comment">// 先定义了一个默认的trans</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 注册函数 在低一层的virtio_9p里有调用这个函数，即将trans注册进默认的trans里</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_9pdev_trans_register</span><span class="params">(<span class="keyword">struct</span> uk_9pdev_trans *trans)</span></span><br><span class="line">&#123;</span><br><span class="line">	UK_ASSERT(trans);</span><br><span class="line">	UK_ASSERT(trans-&gt;name);</span><br><span class="line">	UK_ASSERT(trans-&gt;ops);</span><br><span class="line">	UK_ASSERT(trans-&gt;ops-&gt;connect);</span><br><span class="line">	UK_ASSERT(trans-&gt;ops-&gt;disconnect);</span><br><span class="line">	UK_ASSERT(trans-&gt;ops-&gt;request);</span><br><span class="line">	UK_ASSERT(trans-&gt;a);</span><br><span class="line"></span><br><span class="line">	uk_list_add_tail(&amp;trans-&gt;_list, &amp;uk_9pdev_trans_list);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!uk_9pdev_trans_saved_default)</span><br><span class="line">		uk_9pdev_trans_saved_default = trans;	<span class="comment">// 注册进来</span></span><br><span class="line"></span><br><span class="line">	uk_pr_info(<span class="string">&quot;Registered transport %s\n&quot;</span>, trans-&gt;name);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="3-2-9pdev-connect-9pdev-c"><a href="#3-2-9pdev-connect-9pdev-c" class="headerlink" title="3.2 9pdev_connect(9pdev.c)"></a>3.2 9pdev_connect(9pdev.c)</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建一个9pdev，并且这个dev拥有一些传输相关的操作</span></span><br><span class="line"><span class="keyword">struct</span> uk_9pdev *<span class="title function_">uk_9pdev_connect</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> uk_9pdev_trans *trans,</span></span><br><span class="line"><span class="params">				<span class="type">const</span> <span class="type">char</span> *device_identifier,</span></span><br><span class="line"><span class="params">				<span class="type">const</span> <span class="type">char</span> *mount_args,</span></span><br><span class="line"><span class="params">				<span class="keyword">struct</span> uk_alloc *a)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev</span> *<span class="title">dev</span>;</span></span><br><span class="line">	<span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(trans);</span><br><span class="line">	UK_ASSERT(device_identifier);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (a == <span class="literal">NULL</span>)</span><br><span class="line">		a = trans-&gt;a;	<span class="comment">// 如果没有内存分配器就直接用trans的分配器</span></span><br><span class="line"></span><br><span class="line">	dev = uk_calloc(a, <span class="number">1</span>, <span class="keyword">sizeof</span>(*dev));	<span class="comment">// 给具体的dev分配内存</span></span><br><span class="line">	<span class="keyword">if</span> (dev == <span class="literal">NULL</span>) &#123;</span><br><span class="line">		rc = -ENOMEM;</span><br><span class="line">		<span class="keyword">goto</span> out;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	dev-&gt;ops = trans-&gt;ops;	<span class="comment">// 给dev的操作赋值，即下层实现在这里注册进dev了</span></span><br><span class="line">	dev-&gt;a = a;	<span class="comment">// 给dev的内存分配器</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKSCHED</span></span><br><span class="line">	uk_waitq_init(&amp;dev-&gt;xmit_wq);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	_req_mgmt_init(&amp;dev-&gt;_req_mgmt);	<span class="comment">// 初始化9preq管理器，即初始化自旋锁、tag位图、加入req链表</span></span><br><span class="line">	_fid_mgmt_init(&amp;dev-&gt;_fid_mgmt);	<span class="comment">// 初始化fid管理器，因为要保证fid唯一，和上述req管理器一样有自旋锁、fid位图、链表</span></span><br><span class="line"></span><br><span class="line">	rc = dev-&gt;ops-&gt;connect(dev, device_identifier, mount_args);	<span class="comment">// 底层virtio的connect实现，即连接到virtio_9p_dev设备</span></span><br><span class="line">	<span class="keyword">if</span> (rc &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">goto</span> free_dev;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(dev-&gt;max_msize != <span class="number">0</span>);</span><br><span class="line">	dev-&gt;msize = dev-&gt;max_msize;	<span class="comment">// 设置msize为max_msize</span></span><br><span class="line">	dev-&gt;state = UK_9PDEV_CONNECTED;	<span class="comment">// 设置dev的状态为已连接</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> dev;</span><br><span class="line"></span><br><span class="line">free_dev:</span><br><span class="line">	_fid_mgmt_cleanup(&amp;dev-&gt;_fid_mgmt);</span><br><span class="line">	_req_mgmt_cleanup(&amp;dev-&gt;_req_mgmt);</span><br><span class="line">	uk_free(a, dev);</span><br><span class="line">out:</span><br><span class="line">	<span class="keyword">return</span> ERR2PTR(rc);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="4-9p整体的操作"><a href="#4-9p整体的操作" class="headerlink" title="4. 9p整体的操作"></a>4. 9p整体的操作</h2><h3 id="4-1-send-and-wait-zc-9p-c-gt-9preq-ready-9preq-c-gt-9pdev-request-9pdev-c-gt-9preq-waitreply-9preq-c"><a href="#4-1-send-and-wait-zc-9p-c-gt-9preq-ready-9preq-c-gt-9pdev-request-9pdev-c-gt-9preq-waitreply-9preq-c" class="headerlink" title="4.1 send_and_wait_zc(9p.c) -&gt; 9preq_ready(9preq.c)-&gt; 9pdev_request(9pdev.c)-&gt; 9preq_waitreply(9preq.c)"></a>4.1 <strong style="color:#ff0000;">send_and_wait_zc</strong>(9p.c) -&gt; 9preq_ready(9preq.c)-&gt; 9pdev_request(9pdev.c)-&gt; 9preq_waitreply(9preq.c)</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 构造Tmessage并且发送、等待Rmessage的最主要函数，一共有三个步骤：构造-&gt;发送-&gt;等待回复</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">send_and_wait_zc</span><span class="params">(<span class="keyword">struct</span> uk_9pdev *dev, <span class="keyword">struct</span> uk_9preq *req,</span></span><br><span class="line"><span class="params">		<span class="keyword">enum</span> uk_9preq_zcdir zc_dir, <span class="type">void</span> *zc_buf, <span class="type">uint32_t</span> zc_size,</span></span><br><span class="line"><span class="params">		<span class="type">uint32_t</span> zc_offset)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ((rc = uk_9preq_ready(req, zc_dir, zc_buf, zc_size, zc_offset)))		<span class="comment">// 准备9preq</span></span><br><span class="line">		<span class="keyword">return</span> rc;</span><br><span class="line">	uk_9p_trace_ready(req-&gt;tag);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ((rc = uk_9pdev_request(dev, req)))									<span class="comment">// 发送通过9pdev发送9preq</span></span><br><span class="line">		<span class="keyword">return</span> rc;</span><br><span class="line">	uk_9p_trace_sent(req-&gt;tag);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ((rc = uk_9preq_waitreply(req)))										<span class="comment">// 等待9pdev收到消息</span></span><br><span class="line">		<span class="keyword">return</span> rc;</span><br><span class="line">	uk_9p_trace_received(req-&gt;tag);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="4-1-1-9preq-ready-9preq-c"><a href="#4-1-1-9preq-ready-9preq-c" class="headerlink" title="4.1.1 9preq_ready(9preq.c)"></a>4.1.1 9preq_ready(9preq.c)</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 构造message，并且准备好缓存区域 zc(零拷贝，即需要读/写的外部缓存区域) </span></span><br><span class="line"><span class="comment">// zc_dir是这个外部缓冲区的类型，有三种：NONE（即不需要这个缓冲区）、READ(这个缓冲区用来存储读的信息)、WRITE（要用这个缓冲区里面的信息写入到文件里）</span></span><br><span class="line"><span class="comment">// zc_offset: 表示要读入zc或者从zc写出去的时候应该从9preq内部buf的第几位开始读/写入。</span></span><br><span class="line"><span class="comment">// 	如果是read读就是11 	(size[4]+Rread[1]+tag[2]+count[4] &#123;data[count]&#125; -&gt; 4+1+2+4=11)</span></span><br><span class="line"><span class="comment">// 	如果是write写就是23 	(size[4]+Twrite[1]+tag[2]+fid[4]+offset[8]+count[4] &#123;data[count]&#125; -&gt; 4+1+2+4+8+4=23)</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_9preq_ready</span><span class="params">(<span class="keyword">struct</span> uk_9preq *req, <span class="keyword">enum</span> uk_9preq_zcdir zc_dir,</span></span><br><span class="line"><span class="params">		<span class="type">void</span> *zc_buf, <span class="type">uint32_t</span> zc_size, <span class="type">uint32_t</span> zc_offset)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line">	<span class="type">uint32_t</span> total_size;</span><br><span class="line">	<span class="type">uint32_t</span> total_size_with_zc;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(req);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (UK_READ_ONCE(req-&gt;state) != UK_9PREQ_INITIALIZED)	<span class="comment">// 确保9preq的状态是初始化完毕才能进行构造</span></span><br><span class="line">		<span class="keyword">return</span> -EIO;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 初始化大小信息 */</span></span><br><span class="line">	total_size = req-&gt;xmit.offset;	<span class="comment">// 在发送缓存里有初始的7个字节的头信息加上根据message类型的信息，即（size[4]+type[1]+tag[2]+x[n]），7+n作为初始的总共大小。如果是写的话7+n就是23，和zc_offset相等。</span></span><br><span class="line"></span><br><span class="line">	total_size_with_zc = total_size;	<span class="comment">// 带着zc的总大小，初始和总大小一样，都是7+n字节</span></span><br><span class="line">	<span class="keyword">if</span> (zc_dir == UK_9PREQ_ZCDIR_WRITE)	<span class="comment">// 如果是要把zc缓冲区内的信息写入文件的话</span></span><br><span class="line">		total_size_with_zc += zc_size;	<span class="comment">// 	则缓冲区的总大小加上zc缓冲区的大小</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 将请求头序列化. */</span></span><br><span class="line">	req-&gt;xmit.offset = <span class="number">0</span>;	<span class="comment">// 将写的偏移量放到0，即从最开始写</span></span><br><span class="line">    <span class="comment">// 写最基础的七个字节的请求头</span></span><br><span class="line">	<span class="keyword">if</span> ((rc = uk_9preq_write32(req, total_size_with_zc)) &lt; <span class="number">0</span> ||	<span class="comment">// 写总共的大小size[4]，即7+n+(zc_size)</span></span><br><span class="line">		(rc = uk_9preq_write8(req, req-&gt;xmit.type)) &lt; <span class="number">0</span> ||	<span class="comment">// 写类型type[1]</span></span><br><span class="line">		(rc = uk_9preq_write16(req, req-&gt;tag)) &lt; <span class="number">0</span>)	<span class="comment">// 写tag[2]，在init阶段就已经初始化好了</span></span><br><span class="line">		<span class="keyword">return</span> rc;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Reset offset and size to sane values. */</span></span><br><span class="line">	req-&gt;xmit.offset = <span class="number">0</span>;	<span class="comment">// 将写的偏移量置0</span></span><br><span class="line">	req-&gt;xmit.size = total_size;	<span class="comment">// 将message的大小设置为7+n(原来是1024)</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Update zero copy buffers. */</span></span><br><span class="line">	<span class="keyword">if</span> (zc_dir == UK_9PREQ_ZCDIR_WRITE) &#123;	<span class="comment">// 如果是将zc缓存中的写入文件的话</span></span><br><span class="line">		req-&gt;xmit.zc_buf = zc_buf;				<span class="comment">// 将发送缓冲中的zc缓冲区与外部zc缓冲区进行绑定，即指针赋值</span></span><br><span class="line">		req-&gt;xmit.zc_size = zc_size;			<span class="comment">// 发送缓冲区的zc缓冲区大小为外部缓冲区的大小</span></span><br><span class="line">		<span class="comment">/* Zero-copy offset for writes must start at the end of buf. */</span></span><br><span class="line">		req-&gt;xmit.zc_offset = req-&gt;xmit.size;	<span class="comment">// 发送缓冲区的写的偏移量变为7+n，即在头的后面开始写</span></span><br><span class="line">        </span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span> (zc_dir == UK_9PREQ_ZCDIR_READ) &#123;	<span class="comment">// 如果是将req缓冲区的文件读入zc缓冲区的话</span></span><br><span class="line">		req-&gt;recv.zc_buf = zc_buf;					<span class="comment">// 将接受缓冲中的zc缓冲区与外部zc缓冲区进行绑定</span></span><br><span class="line">		req-&gt;recv.zc_size = zc_size;				<span class="comment">// 接受缓冲区的zc缓冲区大小为外部缓冲区的大小</span></span><br><span class="line">		req-&gt;recv.zc_offset = zc_offset;			<span class="comment">// 要读的话从req接受缓冲区的第11位开始读入zc缓冲区</span></span><br><span class="line">		<span class="comment">/* The receive buffer must end before the zc buf. */</span></span><br><span class="line">		req-&gt;recv.size = zc_offset;					<span class="comment">// req接受缓冲区必须在zc缓冲区之前结束，即size=11</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 更新一下req的状态为READY即可发送状态 */</span></span><br><span class="line">	UK_WRITE_ONCE(req-&gt;state, UK_9PREQ_READY);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="4-1-2-9pdev-request-9pdev-c"><a href="#4-1-2-9pdev-request-9pdev-c" class="headerlink" title="4.1.2 9pdev_request(9pdev.c)"></a>4.1.2 9pdev_request(9pdev.c)</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 发送READY的请求</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_9pdev_request</span><span class="params">(<span class="keyword">struct</span> uk_9pdev *dev, <span class="keyword">struct</span> uk_9preq *req)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line">	UK_ASSERT(dev);</span><br><span class="line">	UK_ASSERT(req);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (UK_READ_ONCE(req-&gt;state) != UK_9PREQ_READY) &#123; <span class="comment">// 检查9preq是否已经处于READY状态</span></span><br><span class="line">		rc = -EINVAL;</span><br><span class="line">		<span class="keyword">goto</span> out;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (dev-&gt;state != UK_9PDEV_CONNECTED) &#123;	<span class="comment">// 检查9pdev是否已经处于连接状态</span></span><br><span class="line">		rc = -EIO;</span><br><span class="line">		<span class="keyword">goto</span> out;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKSCHED</span></span><br><span class="line">	uk_waitq_wait_event(&amp;dev-&gt;xmit_wq,	<span class="comment">// 如果用了调度库的话就放入调度队列中</span></span><br><span class="line">		(rc = dev-&gt;ops-&gt;request(dev, req)) != -ENOSPC);</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">	<span class="keyword">do</span> &#123;</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Retry the request while it has no space available on the</span></span><br><span class="line"><span class="comment">		 * transport layer.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		rc = dev-&gt;ops-&gt;request(dev, req);<span class="comment">// 当传输层已经没有空间发送的时候就一直发送直到有位置了，发送方式实现在virtio层</span></span><br><span class="line">	&#125; <span class="keyword">while</span> (rc == -ENOSPC);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">out:</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="4-1-3-9preq-waitreply-9preq-c"><a href="#4-1-3-9preq-waitreply-9preq-c" class="headerlink" title="4.1.3 9preq_waitreply(9preq.c)"></a>4.1.3 9preq_waitreply(9preq.c)</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 等待下层vritio的回复</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_9preq_waitreply</span><span class="params">(<span class="keyword">struct</span> uk_9preq *req)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKSCHED</span></span><br><span class="line">	uk_waitq_wait_event(&amp;req-&gt;wq, req-&gt;state == UK_9PREQ_RECEIVED);</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">	<span class="keyword">while</span> (UK_READ_ONCE(req-&gt;state) != UK_9PREQ_RECEIVED)	<span class="comment">// 等到9preq的状态到RECEIVED接受了就说明已经完成了</span></span><br><span class="line">		;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Check for 9P server-side errors. */</span></span><br><span class="line">	rc = uk_9preq_error(req);		<span class="comment">// 检查req是否存在错误，如果存在错误就获取其错误信息。</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="4-2-9p-read-9p-c，一个例子"><a href="#4-2-9p-read-9p-c，一个例子" class="headerlink" title="4.2 9p_read(9p.c，一个例子)"></a>4.2 9p_read(9p.c，一个例子)</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//	请求：size[4] Tread tag[2] fid[4] offset[8] count[4]</span></span><br><span class="line"><span class="comment">//	回复：size[4] Rread tag[2] count[4] data[count]</span></span><br><span class="line"><span class="comment">// 就是上层9pfs中uk_9pfs的核心实现</span></span><br><span class="line"><span class="comment">// offset是从文件的哪里开始读，count是读的数量，buf是想要读进去的缓存位置</span></span><br><span class="line"><span class="type">int64_t</span> <span class="title function_">uk_9p_read</span><span class="params">(<span class="keyword">struct</span> uk_9pdev *dev, <span class="keyword">struct</span> uk_9pfid *fid,</span></span><br><span class="line"><span class="params">		<span class="type">uint64_t</span> offset, <span class="type">uint32_t</span> count, <span class="type">char</span> *buf)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9preq</span> *<span class="title">req</span>;</span></span><br><span class="line">	<span class="type">int64_t</span> rc;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (fid-&gt;iounit != <span class="number">0</span>)</span><br><span class="line">		count = MIN(count, fid-&gt;iounit);	<span class="comment">// 读的数量不能大于这个fid文件的一次允许的最大量</span></span><br><span class="line">	count = MIN(count, dev-&gt;msize - <span class="number">11</span>);	<span class="comment">// 读的数量不能大于设备的通信最大量减去11(回复头的大小)</span></span><br><span class="line"></span><br><span class="line">	uk_pr_debug(<span class="string">&quot;TREAD fid %u offset %lu count %u\n&quot;</span>, fid-&gt;fid,</span><br><span class="line">			offset, count);</span><br><span class="line"></span><br><span class="line">	req = request_create(dev, UK_9P_TREAD);	<span class="comment">// 创建并且初始化请求</span></span><br><span class="line">	<span class="keyword">if</span> (PTRISERR(req))</span><br><span class="line">		<span class="keyword">return</span> PTR2ERR(req);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ((rc = uk_9preq_write32(req, fid-&gt;fid)) ||	<span class="comment">// 把fid写入请求头中</span></span><br><span class="line">		(rc = uk_9preq_write64(req, offset)) ||		<span class="comment">// 把偏移量写入请求头中</span></span><br><span class="line">		(rc = uk_9preq_write32(req, count)) ||		<span class="comment">// 把要读的数量写入请求头中</span></span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 写入最开始的7个请求头(size[4]+type[1]+tag[2]), 发送请求，并且等待回复</span></span><br><span class="line">		(rc = send_and_wait_zc(dev, req, UK_9PREQ_ZCDIR_READ, buf, count, <span class="number">11</span>)) ||</span><br><span class="line">		(rc = uk_9preq_read32(req, &amp;count)))	<span class="comment">// 将回复的具体读了多少的数量赋值给count</span></span><br><span class="line">		<span class="keyword">goto</span> out;</span><br><span class="line"></span><br><span class="line">	uk_pr_debug(<span class="string">&quot;RREAD count %u\n&quot;</span>, count);</span><br><span class="line"></span><br><span class="line">	rc = count;	<span class="comment">// 返回具体读了多少的count</span></span><br><span class="line"></span><br><span class="line">out:</span><br><span class="line">	uk_9pdev_req_remove(dev, req);</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="5-9pfs的操作"><a href="#5-9pfs的操作" class="headerlink" title="5. 9pfs的操作"></a>5. 9pfs的操作</h2><h3 id="5-1-9pfs-mount-9pfs-vfsops-c"><a href="#5-1-9pfs-mount-9pfs-vfsops-c" class="headerlink" title="5.1 9pfs_mount(9pfs_vfsops.c)"></a>5.1 9pfs_mount(9pfs_vfsops.c)</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 注册为上层的vfsops.vfs_mount，即挂载9p文件系统</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">uk_9pfs_mount</span><span class="params">(<span class="keyword">struct</span> mount *mp, <span class="type">const</span> <span class="type">char</span> *dev,</span></span><br><span class="line"><span class="params">			<span class="type">int</span> flags __unused, <span class="type">const</span> <span class="type">void</span> *data)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfs_mount_data</span> *<span class="title">md</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9preq</span> *<span class="title">version_req</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9p_str</span> <span class="title">rcvd_version</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfid</span> *<span class="title">rootfid</span>;</span></span><br><span class="line">	<span class="type">int</span> version_accepted;</span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 先把挂载根目录对应的目录项的vnode设置为空 */</span></span><br><span class="line">	mp-&gt;m_root-&gt;d_vnode-&gt;v_data = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Allocate mount data, parse options. */</span></span><br><span class="line">	md = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(*md));</span><br><span class="line">	<span class="keyword">if</span> (!md)</span><br><span class="line">		<span class="keyword">return</span> ENOMEM;</span><br><span class="line"></span><br><span class="line">	rc = uk_9pfs_parse_options(md, data);	<span class="comment">// 给md传递传输操作trans参数</span></span><br><span class="line">	<span class="keyword">if</span> (rc)</span><br><span class="line">		<span class="keyword">goto</span> out_free_mdata;</span><br><span class="line"></span><br><span class="line">	mp-&gt;m_data = md;	<span class="comment">// 将挂载的私有数据与md进行绑定</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 与给定的9P端点建立连接， 即把md的传输操作注册进dev里，并且dev会与下层的vritio_dev进行连接*/</span></span><br><span class="line">	md-&gt;dev = uk_9pdev_connect(md-&gt;trans, dev, data, <span class="literal">NULL</span>);</span><br><span class="line">	<span class="keyword">if</span> (PTRISERR(md-&gt;dev)) &#123;</span><br><span class="line">		rc = -PTR2ERR(md-&gt;dev);</span><br><span class="line">		<span class="keyword">goto</span> out_free_mdata;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 通过9p_version操作可以与9p服务端建立一个会话(session) */</span></span><br><span class="line">	version_req = uk_9p_version(md-&gt;dev, uk_9pfs_proto_str[md-&gt;proto],</span><br><span class="line">			&amp;rcvd_version);</span><br><span class="line">	<span class="keyword">if</span> (PTRISERR(version_req)) &#123;</span><br><span class="line">		rc = -PTR2ERR(version_req);</span><br><span class="line">		<span class="keyword">goto</span> out_disconnect;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	version_accepted = uk_9p_str_equal(&amp;rcvd_version,</span><br><span class="line">			uk_9pfs_proto_str[md-&gt;proto]);``<span class="comment">//检查version是不是和发送时的协议一样</span></span><br><span class="line">	uk_9pdev_req_remove(md-&gt;dev, version_req);	<span class="comment">// 把请求版本的req删除</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!version_accepted) &#123;</span><br><span class="line">		rc = EIO;</span><br><span class="line">		uk_pr_warn(<span class="string">&quot;Could not negotiate protocol %s\n&quot;</span>,</span><br><span class="line">				uk_9pfs_proto_str[md-&gt;proto]);</span><br><span class="line">		<span class="keyword">goto</span> out_disconnect;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Create root fid. */</span></span><br><span class="line">	rootfid = uk_9p_attach(md-&gt;dev, UK_9P_NOFID, md-&gt;uname,		<span class="comment">// attach操作连接服务器并且创建一个根目录的fid</span></span><br><span class="line">			md-&gt;aname, UK_9P_NONUNAME);</span><br><span class="line">	<span class="keyword">if</span> (PTRISERR(rootfid)) &#123;</span><br><span class="line">		rc = -PTR2ERR(rootfid);</span><br><span class="line">		<span class="keyword">goto</span> out_disconnect;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	rc = uk_9pfs_allocate_vnode_data(mp-&gt;m_root-&gt;d_vnode, rootfid);	<span class="comment">// 给根目录分配一个与fid绑定的vnode</span></span><br><span class="line">	<span class="keyword">if</span> (rc != <span class="number">0</span>) &#123;</span><br><span class="line">		rc = -rc;</span><br><span class="line">		<span class="keyword">goto</span> out_disconnect;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">out_disconnect:</span><br><span class="line">	uk_9pdev_disconnect(md-&gt;dev);</span><br><span class="line">out_free_mdata:</span><br><span class="line">	<span class="built_in">free</span>(md);</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="5-2-9pfs-create-9pfs-vnops-c-gt-9pfs-create-generic"><a href="#5-2-9pfs-create-9pfs-vnops-c-gt-9pfs-create-generic" class="headerlink" title="5.2 9pfs_create(9pfs_vnops.c)-&gt;9pfs_create_generic"></a>5.2 9pfs_create(9pfs_vnops.c)-&gt;9pfs_create_generic</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 是上层vops-&gt;vop_create的实现，即vnode的创建</span></span><br><span class="line"><span class="comment">// dvp是要创建的文件vnode所在目录的的vnode</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">uk_9pfs_create_generic</span><span class="params">(<span class="keyword">struct</span> vnode *dvp, <span class="type">char</span> *name, <span class="type">mode_t</span> mode)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev</span> *<span class="title">dev</span> =</span> UK_9PFS_MD(dvp-&gt;v_mount)-&gt;dev;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfid</span> *<span class="title">fid</span>;</span></span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">strlen</span>(name) &gt; NAME_MAX)</span><br><span class="line">		<span class="keyword">return</span> ENAMETOOLONG;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Clone parent fid. */</span></span><br><span class="line">	fid = uk_9p_walk(dev, UK_9PFS_VFID(dvp), <span class="literal">NULL</span>);	<span class="comment">// 根据父目录的fid来创建一个fid</span></span><br><span class="line"></span><br><span class="line">	rc = uk_9p_create(dev, fid, name, uk_9pfs_perm_from_posix_mode(mode),	<span class="comment">// 通过mode来创建一个新文件并且与fid关联</span></span><br><span class="line">			UK_9P_OTRUNC | UK_9P_OWRITE, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">	uk_9pfid_put(fid);</span><br><span class="line">	<span class="keyword">return</span> -rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="5-3-9pfs-open-9pfs-vnops-c"><a href="#5-3-9pfs-open-9pfs-vnops-c" class="headerlink" title="5.3 9pfs_open(9pfs_vnops.c)"></a>5.3 9pfs_open(9pfs_vnops.c)</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 注册为上层的vnops中vop_open = uk_9pfs_open</span></span><br><span class="line"><span class="comment">// 传进来的vfscore_file的目录项已经绑定</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">uk_9pfs_open</span><span class="params">(<span class="keyword">struct</span> vfscore_file *file)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev</span> *<span class="title">dev</span> =</span> UK_9PFS_MD(file-&gt;f_dentry-&gt;d_mount)-&gt;dev;	<span class="comment">// 获取9pdev</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfid</span> *<span class="title">openedfid</span>;</span>		<span class="comment">// 创建打开文件的fid指针</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfs_file_data</span> *<span class="title">fd</span>;</span>	<span class="comment">// 创建给vfscore_file绑定的9pfs_file_data，主要是为了获取其fid</span></span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 给fd分配内存. */</span></span><br><span class="line">	fd = <span class="built_in">calloc</span>(<span class="number">1</span>, <span class="keyword">sizeof</span>(*fd));</span><br><span class="line">	<span class="keyword">if</span> (!fd)</span><br><span class="line">		<span class="keyword">return</span> ENOMEM;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Clone fid. */</span></span><br><span class="line">	openedfid = uk_9p_walk(dev, UK_9PFS_VFID(file-&gt;f_dentry-&gt;d_vnode),	<span class="comment">// 创建一个新fid，这个fid和老vnode的fid指向的是同一个文件，但是这个fid可以代表这个文件的打开的fid</span></span><br><span class="line">			<span class="literal">NULL</span>);</span><br><span class="line">	<span class="keyword">if</span> (PTRISERR(openedfid)) &#123;</span><br><span class="line">		rc = PTR2ERR(openedfid);</span><br><span class="line">		<span class="keyword">goto</span> out;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Open cloned fid. */</span></span><br><span class="line">	rc = uk_9p_open(dev, openedfid,</span><br><span class="line">		uk_9pfs_open_mode_from_posix_flags(file-&gt;f_flags));	<span class="comment">// 打开这个新创建的fid，返回的qid表示文件类型、版本等信息</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (rc)</span><br><span class="line">		<span class="keyword">goto</span> out_err;</span><br><span class="line"></span><br><span class="line">	fd-&gt;fid = openedfid;	<span class="comment">// 这个打开文件的vfscore_file与fid绑定</span></span><br><span class="line">	file-&gt;f_data = fd;</span><br><span class="line"> 	UK_9PFS_ND(file-&gt;f_dentry-&gt;d_vnode)-&gt;nb_open_files++;	<span class="comment">// vnode打开文件的数量加一</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">out_err:</span><br><span class="line">	uk_9pfid_put(openedfid);</span><br><span class="line">out:</span><br><span class="line">	<span class="built_in">free</span>(fd);</span><br><span class="line">	<span class="keyword">return</span> -rc;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="5-4-9pfs-read-9pfs-vnops-c，一个例子"><a href="#5-4-9pfs-read-9pfs-vnops-c，一个例子" class="headerlink" title="5.4 9pfs_read(9pfs_vnops.c，一个例子)"></a>5.4 9pfs_read(9pfs_vnops.c，一个例子)</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 通过打开的文件fp、文件的vnode、要写入的缓存uio来读文件</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">uk_9pfs_read</span><span class="params">(<span class="keyword">struct</span> vnode *vp, <span class="keyword">struct</span> vfscore_file *fp,</span></span><br><span class="line"><span class="params">			<span class="keyword">struct</span> uio *uio, <span class="type">int</span> ioflag __unused)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pdev</span> *<span class="title">dev</span> =</span> UK_9PFS_MD(vp-&gt;v_mount)-&gt;dev;	<span class="comment">// 找到挂载的设备</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9pfid</span> *<span class="title">fid</span> =</span> UK_9PFS_FD(fp)-&gt;fid;				<span class="comment">// 找到要读文件的打开文件fd的fid</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">iovec</span> *<span class="title">iov</span>;</span></span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (vp-&gt;v_type == VDIR)</span><br><span class="line">		<span class="keyword">return</span> EISDIR;</span><br><span class="line">	<span class="keyword">if</span> (vp-&gt;v_type != VREG)						<span class="comment">// 读的文件类型一定要是普通文件</span></span><br><span class="line">		<span class="keyword">return</span> EINVAL;</span><br><span class="line">	<span class="keyword">if</span> (uio-&gt;uio_offset &lt; <span class="number">0</span>)					<span class="comment">// 要读的地方要大于0</span></span><br><span class="line">		<span class="keyword">return</span> EINVAL;</span><br><span class="line">	<span class="keyword">if</span> (uio-&gt;uio_offset &gt;= (<span class="type">off_t</span>) vp-&gt;v_size)	<span class="comment">// 要读的地方要小于文件的大小</span></span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!uio-&gt;uio_resid)						<span class="comment">// 要读入的缓存大小不足了</span></span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	iov = uio-&gt;uio_iov;							<span class="comment">// 真正要读入的缓存</span></span><br><span class="line">	<span class="keyword">while</span> (!iov-&gt;iov_len) &#123;					<span class="comment">// 寻找下一个可用的缓存区域</span></span><br><span class="line">		uio-&gt;uio_iov++;							<span class="comment">// 下一个缓存区域</span></span><br><span class="line">		uio-&gt;uio_iovcnt--;						<span class="comment">// 可用的缓存数量减一</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	rc = uk_9p_read(dev, fid, uio-&gt;uio_offset,	<span class="comment">// 调用下层的具体read实现，即准备req、发送req、接受req等等，返回rc是具体读到的信息大小，iov_len是要读入的长度，iov_base是要读入缓存的地址</span></span><br><span class="line">			   iov-&gt;iov_len, iov-&gt;iov_base);</span><br><span class="line">	<span class="keyword">if</span> (rc &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">return</span> -rc;</span><br><span class="line"></span><br><span class="line">	iov-&gt;iov_base = (<span class="type">char</span> *)iov-&gt;iov_base + rc;	<span class="comment">// 缓存的地址加上具体读了多少字符</span></span><br><span class="line">	iov-&gt;iov_len -= rc;		<span class="comment">// 要读入的长度减去真正读的长度</span></span><br><span class="line">	uio-&gt;uio_resid -= rc;	<span class="comment">// 缓存的剩余大小减去长度</span></span><br><span class="line">	uio-&gt;uio_offset += rc;	<span class="comment">// 文件中的指针加上真实读入的长度</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/30/9pfs/" title="9pfs相关结构以及源码分析" target="_blank" rel="external">http://example.com/2022/10/30/9pfs/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/10/30/9p%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" title="9p相关基础知识"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/10/24/virtio%E8%83%8C%E6%99%AF/" title="virtio背景介绍"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

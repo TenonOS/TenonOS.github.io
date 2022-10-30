@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>posix-futex | TenonOS-unikraft-learning</title>
+  <meta name="description" content="posix-futex解析Futex(Fast Userspace muTEX),又名快速用户区互斥，是一个在Linux上实现锁定和构建高级抽象锁如信号量和POSIX互斥的基本工具。在Unikraft中，也基本实现了该功能。本模块基本实现了wait、wake、requeue基本操作，同时提供了futex系统调用。 数据结构1234567891011121314151617struct uk_fut">
+<meta property="og:type" content="article">
+<meta property="og:title" content="posix-futex">
+<meta property="og:url" content="http://example.com/2022/10/30/POSIX%20futex/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="posix-futex解析Futex(Fast Userspace muTEX),又名快速用户区互斥，是一个在Linux上实现锁定和构建高级抽象锁如信号量和POSIX互斥的基本工具。在Unikraft中，也基本实现了该功能。本模块基本实现了wait、wake、requeue基本操作，同时提供了futex系统调用。 数据结构1234567891011121314151617struct uk_fut">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-10-30T10:47:28.994Z">
+<meta property="article:modified_time" content="2022-10-30T10:41:58.420Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-futex">
+<meta property="article:tag" content="unikraft-thread">
+<meta name="twitter:card" content="summary">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/30/POSIX%20futex/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-bus/">unikraft-bus</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-9pfs/">unikraft-libs-9pfs</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-netdev/">unikraft-netdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-virtio/">unikraft-virtio</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-bus/" rel="tag">unikraft-bus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-futex/" rel="tag">unikraft-futex</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-netdev/" rel="tag">unikraft-netdev</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-process/" rel="tag">unikraft-process</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-thread/" rel="tag">unikraft-thread</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/unikraft-bus/" style="font-size: 13px;">unikraft-bus</a> <a href="/tags/unikraft-futex/" style="font-size: 13px;">unikraft-futex</a> <a href="/tags/unikraft-netdev/" style="font-size: 13px;">unikraft-netdev</a> <a href="/tags/unikraft-process/" style="font-size: 13px;">unikraft-process</a> <a href="/tags/unikraft-thread/" style="font-size: 13.33px;">unikraft-thread</a> <a href="/tags/unikraft-virtio/" style="font-size: 13.67px;">unikraft-virtio</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 14px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 14px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13.33px;">unikraft-线程管理</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">18</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/%E5%86%85%E5%AD%98%E7%9B%B8%E5%85%B3%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="title">内存相关基础知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.034Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-virtio/">unikraft-virtio</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/" class="title">virtio-ring与virtio-queue</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.028Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/" class="title">unikraft文件系统导览</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.010Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/POSIX%20process/" class="title">posix-process</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:28.995Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/POSIX%20futex/" class="title">posix-futex</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:28.994Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#posix-futex%E8%A7%A3%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">posix-futex解析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">1.1.</span> <span class="toc-text">数据结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#futex-wait"><span class="toc-number">1.2.</span> <span class="toc-text">futex_wait</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#futex-wake"><span class="toc-number">1.3.</span> <span class="toc-text">futex_wake</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#futex-cmp-requeue"><span class="toc-number">1.4.</span> <span class="toc-text">futex_cmp_requeue</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-POSIX futex" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      posix-futex
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/30/POSIX%20futex/" class="article-date">
+	  <time datetime="2022-10-30T10:47:28.994Z" itemprop="datePublished">2022-10-30</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-futex/" rel="tag">unikraft-futex</a>, <a class="article-tag-link-link" href="/tags/unikraft-thread/" rel="tag">unikraft-thread</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/30/POSIX%20futex/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="posix-futex解析"><a href="#posix-futex解析" class="headerlink" title="posix-futex解析"></a>posix-futex解析</h1><p>Futex(Fast Userspace muTEX),又名快速用户区互斥，是一个在Linux上实现锁定和构建高级抽象锁如信号量和POSIX互斥的基本工具。在Unikraft中，也基本实现了该功能。<br>本模块基本实现了wait、wake、requeue基本操作，同时提供了futex系统调用。</p>
+<h2 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_futex</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint32_t</span> *uaddr; <span class="comment">/** The futex address. */</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_thread</span> *<span class="title">thread</span>;</span> <span class="comment">/** The thread waiting on the futex. */</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> <span class="title">list_node</span>;</span> <span class="comment">/** The list containing all the futexes</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">                     * on which the threads are waiting.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">                     */</span></span><br><span class="line"></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="title function_">UK_LIST_HEAD</span><span class="params">(futex_list)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> uk_spinlock futex_list_lock = UK_SPINLOCK_INITIALIZER();</span><br></pre></td></tr></table></figure>
+<ul>
+<li>uaddr : 锁地址</li>
+<li>thread : 等待该锁的线程</li>
+<li>list_node : List包括所有等待中的线程的锁</li>
+<li>futex_list : 存放futex的List</li>
+<li>futex_list_lock : List的自旋锁。</li>
+</ul>
+<h2 id="futex-wait"><a href="#futex-wait" class="headerlink" title="futex_wait"></a>futex_wait</h2><p>输入的三个参数说明如下所示。</p>
+<ul>
+<li>uaddr : futex用户空间地址</li>
+<li>val : 期望的值</li>
+<li>tm : timespec结构体，包含线程被阻塞后的超时时间。如果为空，则线程无限期阻塞。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">futex_wait</span><span class="params">(<span class="type">uint32_t</span> *uaddr, <span class="type">uint32_t</span> val, <span class="type">const</span> <span class="keyword">struct</span> timespec *tm)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// irqf : 中断标志位 用于保存中断标志</span></span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> irqf;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// itr, tmp : List头</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> *<span class="title">itr</span>, *<span class="title">tmp</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// futex : 锁</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_futex</span> *<span class="title">f_tmp</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// current : 当前调用的线程</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_thread</span> *<span class="title">current</span> =</span> uk_thread_current();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// f : 锁</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_futex</span> <span class="title">f</span> =</span> &#123;.uaddr = uaddr, .thread = current&#125;;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 从指定内存读取变量</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (ukarch_load_n(uaddr) == val) &#123;</span><br><span class="line"></span><br><span class="line">        irqf = ukplat_lcpu_save_irqf(); <span class="comment">// 关中断，保存标志位</span></span><br><span class="line"></span><br><span class="line">        uk_spin_lock(&amp;futex_list_lock); <span class="comment">// 对futex_List上锁</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="comment">/* Enqueue thread to wait list */</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 将f添加到futex_list的队尾, f.list_node在哪被赋值？</span></span><br><span class="line"></span><br><span class="line">        uk_list_add_tail(&amp;f.list_node, &amp;futex_list);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 有始有终</span></span><br><span class="line"></span><br><span class="line">        uk_spin_unlock(&amp;futex_list_lock);</span><br><span class="line"></span><br><span class="line">        ukplat_lcpu_restore_irqf(irqf);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (tm)</span><br><span class="line"></span><br><span class="line">            <span class="comment">/* Block for at most timeout nanosecs */</span></span><br><span class="line"></span><br><span class="line">            uk_thread_block_timeout(current, tm-&gt;tv_nsec);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line"></span><br><span class="line">            <span class="comment">/* Block indefinitely */</span></span><br><span class="line"></span><br><span class="line">            uk_thread_block(current);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="comment">// 让出CPU</span></span><br><span class="line"></span><br><span class="line">        uk_sched_yield();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 如果没回来，说明等待的条件已经满足</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 此时过了一定时间，回到该阻塞线程内 说明已经超时</span></span><br><span class="line"></span><br><span class="line">        irqf = ukplat_lcpu_save_irqf();</span><br><span class="line"></span><br><span class="line">        uk_spin_lock(&amp;futex_list_lock);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="comment">/* If the futex is still in the wait list, then it timed out */</span></span><br><span class="line"></span><br><span class="line">        uk_list_for_each_safe(itr, tmp, &amp;futex_list) &#123;</span><br><span class="line"></span><br><span class="line">            f_tmp = uk_list_entry(itr, <span class="keyword">struct</span> uk_futex, list_node);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (f_tmp-&gt;uaddr == uaddr &amp;&amp; f_tmp-&gt;thread == current) &#123;</span><br><span class="line"></span><br><span class="line">                <span class="comment">/* Remove the thread from the futex list */</span></span><br><span class="line"></span><br><span class="line">                uk_list_del(&amp;f_tmp-&gt;list_node);</span><br><span class="line"></span><br><span class="line">                uk_spin_unlock(&amp;futex_list_lock);</span><br><span class="line"></span><br><span class="line">                ukplat_lcpu_restore_irqf(irqf);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">                <span class="keyword">return</span> -ETIMEDOUT;</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        uk_spin_unlock(&amp;futex_list_lock);</span><br><span class="line"></span><br><span class="line">        ukplat_lcpu_restore_irqf(irqf);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Futex word does not contain expected val */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> -EAGAIN;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+总结一下futex_wait流程。</li>
+<li>检查*uaddr的值是否等于val，如果不相等则立刻返回。</li>
+<li>对队列上自旋锁</li>
+<li>将futex加入到等待队列</li>
+<li>阻塞对应线程</li>
+<li>等待阻塞时间结束，唤醒线程。<br>与Linux的futex_wait相比，unikraft简单很多，全局的等待队列也不是使用hash实现。</li>
+</ul>
+<h2 id="futex-wake"><a href="#futex-wake" class="headerlink" title="futex_wake"></a>futex_wake</h2><p>futex_wake就比较简单，uaddr是对应期望值的地址，val是最大唤醒线程数(与wait函数中的不一样)。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">futex_wake</span><span class="params">(<span class="type">uint32_t</span> *uaddr, <span class="type">uint32_t</span> val)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 相关变量声明</span></span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> irqf;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> *<span class="title">itr</span>, *<span class="title">tmp</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_futex</span> *<span class="title">f</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint32_t</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    irqf = ukplat_lcpu_save_irqf();</span><br><span class="line"></span><br><span class="line">    uk_spin_lock(&amp;futex_list_lock);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 遍历等待List</span></span><br><span class="line"></span><br><span class="line">    uk_list_for_each_safe(itr, tmp, &amp;futex_list) &#123;</span><br><span class="line"></span><br><span class="line">        f = uk_list_entry(itr, <span class="keyword">struct</span> uk_futex, list_node);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="comment">// 若当前等待thread f-&gt;uaddr等于uaddr, 即等待函数参数指定的val。</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (f-&gt;uaddr == uaddr) &#123;</span><br><span class="line"></span><br><span class="line">            <span class="comment">/* Remove the thread from the futex list */</span></span><br><span class="line"></span><br><span class="line">            uk_list_del(&amp;f-&gt;list_node);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">            <span class="comment">/* <span class="doctag">TODO:</span> Replace with uk_thread_wakeup when the new</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">             * scheduler API is ready</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line"></span><br><span class="line">            uk_thread_wake(f-&gt;thread);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">            <span class="comment">// val 限制了最大唤醒线程数量</span></span><br><span class="line"></span><br><span class="line">            <span class="comment">/* Wake at most val threads */</span></span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (++count &gt;= val)</span><br><span class="line"></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    uk_spin_unlock(&amp;futex_list_lock);</span><br><span class="line"></span><br><span class="line">    ukplat_lcpu_restore_irqf(irqf);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> (<span class="type">int</span>) count;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="futex-cmp-requeue"><a href="#futex-cmp-requeue" class="headerlink" title="futex_cmp_requeue"></a>futex_cmp_requeue</h2><p>futex_cmp_requeue函数比较复杂。参数说明如下所示。</p>
+<ul>
+<li>uaddr : 源futex用户地址</li>
+<li>val : 唤醒等待线程的数量</li>
+<li>val2 : 需要重排的线程数量</li>
+<li>uaddr2 : 目的futex用户地址</li>
+<li>val3 : uaddr地址期待的变量值<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">futex_cmp_requeue</span><span class="params">(<span class="type">uint32_t</span> *uaddr, <span class="type">uint32_t</span> val, <span class="type">uint32_t</span> val2,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">                 <span class="type">uint32_t</span> *uaddr2, <span class="type">uint32_t</span> val3)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 相关变量的初始化</span></span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> irqf;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> *<span class="title">itr</span>, *<span class="title">tmp</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_futex</span> *<span class="title">f</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 唤醒线程数 目的数是val</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> woken_uaddr1;</span><br><span class="line"></span><br><span class="line">    <span class="type">uint32_t</span> waiters_uaddr2 = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// val3 != *(uaddr) 立刻返回</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!((<span class="type">uint32_t</span>)val3 == ukarch_load_n(uaddr)))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> -EAGAIN;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 唤醒val个等待的线程</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Wake up val waiters on uaddr */</span></span><br><span class="line"></span><br><span class="line">    woken_uaddr1 = futex_wake(uaddr, val);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果val2 == 0 则不需要requeue 该函数的任务到此结束 返回</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!val2)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> woken_uaddr1;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 保存中断标志 对futex_list_lock上锁</span></span><br><span class="line"></span><br><span class="line">    irqf = ukplat_lcpu_save_irqf();</span><br><span class="line"></span><br><span class="line">    uk_spin_lock(&amp;futex_list_lock);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 将avl2个等待的线程 将其等待的futex锁从uaddr更改为uaddr2</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Requeue val2 waiters on uaddr2 */</span></span><br><span class="line"></span><br><span class="line">    uk_list_for_each_safe(itr, tmp, &amp;futex_list) &#123;</span><br><span class="line"></span><br><span class="line">        f = uk_list_entry(itr, <span class="keyword">struct</span> uk_futex, list_node);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (f-&gt;uaddr == uaddr) &#123;</span><br><span class="line"></span><br><span class="line">            <span class="comment">/* Requeue thread to uaddr2 */</span></span><br><span class="line"></span><br><span class="line">            uk_list_del(&amp;f-&gt;list_node);</span><br><span class="line"></span><br><span class="line">            f-&gt;uaddr = uaddr2;</span><br><span class="line"></span><br><span class="line">            uk_list_add_tail(&amp;f-&gt;list_node, &amp;futex_list);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">            <span class="comment">/* Requeue at most val2 threads */</span></span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (++waiters_uaddr2 &gt;= val2)</span><br><span class="line"></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    uk_spin_unlock(&amp;futex_list_lock);</span><br><span class="line"></span><br><span class="line">    ukplat_lcpu_restore_irqf(irqf);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 返回 唤醒线程数和重排数 一定是&gt;=0 代表执行成功</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> woken_uaddr1 + waiters_uaddr2;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p>最后则是对三个函数封装出同一个接口，通过futex_op进行选择操作。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">UK_LLSYSCALL_R_DEFINE(<span class="type">int</span>, futex, <span class="type">uint32_t</span> *, uaddr, <span class="type">int</span>, futex_op,</span><br><span class="line"></span><br><span class="line">              <span class="type">uint32_t</span>, val, <span class="type">const</span> <span class="keyword">struct</span> timespec *, timeout,</span><br><span class="line"></span><br><span class="line">              <span class="type">uint32_t</span> *, uaddr2, <span class="type">uint32_t</span>, val3)</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> (futex_op) &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> FUTEX_WAIT:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> FUTEX_WAIT_PRIVATE:</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> futex_wait(uaddr, val, timeout);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> FUTEX_WAKE:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> FUTEX_WAKE_PRIVATE:</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> futex_wake(uaddr, val);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> FUTEX_FD:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> FUTEX_REQUEUE:</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> -ENOSYS;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> FUTEX_CMP_REQUEUE:</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> futex_cmp_requeue(uaddr, val, (<span class="type">unsigned</span> <span class="type">long</span>)timeout,</span><br><span class="line"></span><br><span class="line">                     uaddr2, val3);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> -ENOSYS;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* <span class="doctag">TODO:</span> other operations? */</span></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/30/POSIX%20futex/" title="posix-futex" target="_blank" rel="external">http://example.com/2022/10/30/POSIX futex/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/10/30/POSIX%20process/" title="posix-process"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/10/30/9p%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" title="9p相关基础知识"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

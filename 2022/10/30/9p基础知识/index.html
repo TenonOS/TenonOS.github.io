@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>9p相关基础知识 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="9p基础知识intro(9P) - Plan 9 from User Space (9fans.github.io) 9fans&#x2F;plan9port: Plan 9 from User Space (github.com) 1. 简介Plan 9 服务器是提供一个或多个分层文件系统（文件树）的代理，Plan 9 进程可以访问这些文件系统。服务器响应客户端层次结构以及创建、删除、读取和写入文件的请求">
+<meta property="og:type" content="article">
+<meta property="og:title" content="9p相关基础知识">
+<meta property="og:url" content="http://example.com/2022/10/30/9p%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="9p基础知识intro(9P) - Plan 9 from User Space (9fans.github.io) 9fans&#x2F;plan9port: Plan 9 from User Space (github.com) 1. 简介Plan 9 服务器是提供一个或多个分层文件系统（文件树）的代理，Plan 9 进程可以访问这些文件系统。服务器响应客户端层次结构以及创建、删除、读取和写入文件的请求">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-10-30T10:47:28.988Z">
+<meta property="article:modified_time" content="2022-10-30T10:41:58.420Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-文件系统">
+<meta name="twitter:card" content="summary">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/10/30/9p%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-bus/">unikraft-bus</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-9pfs/">unikraft-libs-9pfs</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-netdev/">unikraft-netdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-virtio/">unikraft-virtio</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-bus/" rel="tag">unikraft-bus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-futex/" rel="tag">unikraft-futex</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-netdev/" rel="tag">unikraft-netdev</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-process/" rel="tag">unikraft-process</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-thread/" rel="tag">unikraft-thread</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/unikraft-bus/" style="font-size: 13px;">unikraft-bus</a> <a href="/tags/unikraft-futex/" style="font-size: 13px;">unikraft-futex</a> <a href="/tags/unikraft-netdev/" style="font-size: 13px;">unikraft-netdev</a> <a href="/tags/unikraft-process/" style="font-size: 13px;">unikraft-process</a> <a href="/tags/unikraft-thread/" style="font-size: 13.33px;">unikraft-thread</a> <a href="/tags/unikraft-virtio/" style="font-size: 13.67px;">unikraft-virtio</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 14px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 14px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13.33px;">unikraft-线程管理</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">18</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/%E5%86%85%E5%AD%98%E7%9B%B8%E5%85%B3%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="title">内存相关基础知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.034Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-virtio/">unikraft-virtio</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/virtio-ring%E5%8F%8Avirtio-queue/" class="title">virtio-ring与virtio-queue</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.028Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/unikraft%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%A7%88/" class="title">unikraft文件系统导览</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:29.010Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/POSIX%20process/" class="title">posix-process</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:28.995Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/POSIX%20futex/" class="title">posix-futex</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T10:47:28.994Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#9p%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86"><span class="toc-number">1.</span> <span class="toc-text">9p基础知识</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E7%AE%80%E4%BB%8B"><span class="toc-number">1.1.</span> <span class="toc-text">1. 简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E4%BE%8B%E5%AD%90"><span class="toc-number">1.2.</span> <span class="toc-text">2. 例子</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-9p基础知识" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      9p相关基础知识
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/10/30/9p%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="article-date">
+	  <time datetime="2022-10-30T10:47:28.988Z" itemprop="datePublished">2022-10-30</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/10/30/9p%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="9p基础知识"><a href="#9p基础知识" class="headerlink" title="9p基础知识"></a>9p基础知识</h1><p><a target="_blank" rel="noopener" href="https://9fans.github.io/plan9port/man/man9/intro.html">intro(9P) - Plan 9 from User Space (9fans.github.io)</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/9fans/plan9port">9fans/plan9port: Plan 9 from User Space (github.com)</a></p>
+<h2 id="1-简介"><a href="#1-简介" class="headerlink" title="1. 简介"></a>1. 简介</h2><p>Plan 9 服务器是提供一个或多个分层文件系统（文件树）的代理，Plan 9 进程可以访问这些文件系统。服务器响应客户端层次结构以及创建、删除、读取和写入文件的请求。</p>
+<p>客户端传输请求(<em>T-message</em>)，然后服务器返回回复(<em>R-messages</em>)。</p>
+<p>传输的信息message均由n个字节组成，其中用两字节表示数据长度n，即后面n字节都是数据。字符串用UTF-8编码，并且字符串不用空字符作为结尾，空字符在9p中是非法的。</p>
+<p>以下七个字节是每个message中最基础的七个字节：</p>
+<ul>
+<li><em>size</em>[4]：每个message开始都是一个4字节的代表整个message的长度，这个长度包括4字节自己。</li>
+<li><em>type</em>[1]：接下来一个字节代表这个message的类型，在<code>fcall.h</code>这个头文件中可以看到有哪些类型</li>
+<li><em>tag</em>[2]：接下来两个字节代表这个message的标签，用来标识验证，即返回的R-message和发送的T-message的tag应该相同</li>
+</ul>
+<p>剩下的字节是不同大小的参数，例如有一个参数<em>parameter</em>[n]，则具体表现为<em>n</em>[2]+<em>parameter</em>[n]，即两个字节描述参数长度n，后面n个字节是参数本身。字符串<em>string</em>[s]同理是<em>s</em>[2]后面跟上s个字符。9p 名称可以包含除斜杠之外的任何可打印字符（即十六进制 00-1F 和 80-9F 之外的任何字符。）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">MESSAGES</span><br><span class="line">size[4] Tversion tag[2] msize[4] version[s]</span><br><span class="line">size[4] Rversion tag[2] msize[4] version[s]</span><br><span class="line">size[4] Tauth tag[2] afid[4] uname[s] aname[s]</span><br><span class="line">size[4] Rauth tag[2] aqid[13]</span><br><span class="line">size[4] Rerror tag[2] ename[s]</span><br><span class="line">size[4] Tflush tag[2] oldtag[2]</span><br><span class="line">size[4] Rflush tag[2]</span><br><span class="line">size[4] Tattach tag[2] fid[4] afid[4] uname[s] aname[s]</span><br><span class="line">size[4] Rattach tag[2] qid[13]</span><br><span class="line">size[4] Twalk tag[2] fid[4] newfid[4] nwname[2] nwname*(wname[s])</span><br><span class="line">size[4] Rwalk tag[2] nwqid[2] nwqid*(wqid[13])</span><br><span class="line">size[4] Topen tag[2] fid[4] mode[1]</span><br><span class="line">size[4] Ropen tag[2] qid[13] iounit[4]</span><br><span class="line">size[4] Topenfd tag[2] fid[4] mode[1]</span><br><span class="line">size[4] Ropenfd tag[2] qid[13] iounit[4] unixfd[4]</span><br><span class="line">size[4] Tcreate tag[2] fid[4] name[s] perm[4] mode[1]</span><br><span class="line">size[4] Rcreate tag[2] qid[13] iounit[4]</span><br><span class="line">size[4] Tread tag[2] fid[4] offset[8] count[4]</span><br><span class="line">size[4] Rread tag[2] count[4] data[count]</span><br><span class="line">size[4] Twrite tag[2] fid[4] offset[8] count[4] data[count]</span><br><span class="line">size[4] Rwrite tag[2] count[4]</span><br><span class="line">size[4] Tclunk tag[2] fid[4]</span><br><span class="line">size[4] Rclunk tag[2]</span><br><span class="line">size[4] Tremove tag[2] fid[4]</span><br><span class="line">size[4] Rremove tag[2]</span><br><span class="line">size[4] Tstat tag[2] fid[4]</span><br><span class="line">size[4] Rstat tag[2] stat[n]</span><br><span class="line">size[4] Twstat tag[2] fid[4] stat[n]</span><br><span class="line">size[4] Rwstat tag[2]</span><br></pre></td></tr></table></figure>
+
+
+
+<ul>
+<li>如果R-message的返回的tag比T-message大1或者是Rerror的话说明请求失败了，如果标签是Rerror后面ename字段还会包含一个描述失败原因的字符串。</li>
+<li>version的message代表协议版本并且表明了系统最大的可处理的消息大小。它还初始化连接并中止连接上所有未完成的 I/O。版本请求之间的消息集称为会话（session）。</li>
+<li>大部分T-message包括fid，一个四字节32位，标志一个在服务器上的当前文件。fid和fd即文件描述符有些类似，但是fid不限于为I/O打开的文件：正在检查的目录、被 stat 调用访问的文件等等——所有被操作系统操作的文件都由 fids 标识。fid由客户端决定，一个连接上的所有请求共享同一个fid空间；当多个客户端共享一个连接时，管理共享的代理必须保证没有两个客户端选择相同的fid。</li>
+<li>在attach类型的message中提供的fid会被服务端指向文件树的根。attach操作将用户标识到服务器，并且可以指定由服务器提供的特定文件树（对于拥有多个文件树的服务器）。</li>
+<li>在attach中有个afid是用来代表权限的，afid是在auth阶段进行建立的，随后通过读写操作进行交换验证信息（不是由9p明确定义的），一旦验证协议完成了，在attach中使用afid就能获得访问权限。</li>
+<li>walk类型的message中使服务器将与 fid 关联的当前文件走到旧当前文件或其子目录之一的目录中的文件。Walk 返回一个指向结果文件的新 fid，通常客户端会保持一个根的fid，然后从这个根的fid去walk作为导航。</li>
+<li>一个客户端可以同时发送多个T-message，不用等待R-message回复。但是不同的T-message必须要有不同的标签tags。</li>
+<li>对auth、attach、walk、open、create请求的回复R-message都会包含一个qid，qid代表在服务端对于一个文件的独一无二的id，当且仅当它们的 qid 相同时，同一服务器层次结构上的两个文件才是相同的。（服务端可以用多个fid去指向服务器上的一个文件）。<em>qid</em>[13]是一个拥有13字节的标志，第一个字节代表这个文件是目录、仅追加文件（AOF）、等等。接下来是两个无符号整数，一共4+8字节，前4个字节代表qid的版本，版本代表这个文件的版本，即修改后文件的版本会增加；后8个字节代表qid的path路径，path路径是层次结构中所有文件中唯一的整数。如果在同一目录中删除并重新创建同名文件，则qids的新旧路径组件应该不同。</li>
+<li>在当前目录一个已经存在的文件可以被打开open，或者一个新文件可以被创建create。在打开文件的给定偏移量处（offset）的字节数（count）操作的 I/O 是通过读取（read）和写入（write）完成的。</li>
+<li>客户端需要clunk掉任何不需要的fid，remove操作是用来删除文件的。</li>
+<li>Openfd 是 Unix 实用程序使用的扩展，它允许传统的 Unix 程序将其输入或输出附加到 9P 服务器上的 fid。</li>
+<li>stat操作获得文件的信息，包括文件名字，访问权限（读、写、执行对于所有者、组、所有人的权限），访问和修改时间，以及所有者和组标识。所有者和组标识是文本名称。wstat操作允许修改文件的某些信息。</li>
+<li>flush操作是用来终止请求的，当客户端发送了一个Tflush请求时，服务端需要立刻回复一个Rflush，客户端必须等到Rflush回复到达才能重新使用旧的标签old tag。</li>
+<li>因为message的大小是可变的，所以会出现message大小过长的情况（比如当文件名太长的时候），在大多数此类情况下，服务器应该生成错误而不是修改数据以适应，例如通过截断文件名。例外情况是，如果需要，应该截断 Rerror 消息中的长错误字符串，因为该字符串只是建议性的，并且在某种意义上是任意的。</li>
+<li>大多数程序看不到9p协议，9p是在内核中将访问转为9p message。</li>
+</ul>
+<p>目录 </p>
+<p>目录是通过在权限参数中设置 DMDIR 的 create 创建的。可以使用 read(9P) 找到目录的成员。所有目录都必须支持遍历目录 ..表示父目录，按照惯例，目录不包含 .. 或 . 的显式条目。 服务器树的根目录的父级是它自己。</p>
+<h2 id="2-例子"><a href="#2-例子" class="headerlink" title="2. 例子"></a>2. 例子</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">与9p建立连接</span></span><br><span class="line">→ Tversion &lt;msize&gt; 9P2000</span><br><span class="line">← Rversion &lt;msize&gt; 9P2000</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">把根目录与fid <span class="comment">#1 进行绑定</span></span></span><br><span class="line">→ Tattach 1 &quot;fs0&quot; &quot;/home/usr0/fs0&quot;</span><br><span class="line">← Rattach &lt;qid&gt;</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">从 fid <span class="comment">#1 (/home/usr0/fs0) 到 “notes.txt” (一个文件!)</span></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">并且将文件关联到 fid <span class="comment">#2</span></span></span><br><span class="line">→ Twalk 1 2 &quot;notes.txt&quot;</span><br><span class="line">← Rwalk &lt;qid...&gt;</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">通过fid <span class="comment">#2 打开文件</span></span></span><br><span class="line">→ Topen 2 OWRITE|OREAD</span><br><span class="line">← Ropen &lt;qid&gt; &lt;iounit&gt;</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">读写文件。。。</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">关闭fid <span class="comment">#2 文件</span></span></span><br><span class="line">→ Tclunk 2</span><br><span class="line">← Rclunk</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/10/30/9p%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" title="9p相关基础知识" target="_blank" rel="external">http://example.com/2022/10/30/9p基础知识/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/10/30/POSIX%20futex/" title="posix-futex"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/10/30/9pfs/" title="9pfs相关结构以及源码分析"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>
