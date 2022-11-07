@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>Unikraft函数调用 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="Unikraft函数调用1、论文相关 每个实现系统调用处理程序的库，都通过宏注册到syscall shim这个库中，然后shim层生成lib级别的系统调用接口，当使用unikraft本地编译应用程序源文件时，直接链接到系统调用，从而将系统调用转化为廉价的函数调用  2、源码相关1、lib&#x2F;syscall_shim1、syscall_shim&#x2F;syscall.h.in 与Linux相似，unikra">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unikraft函数调用">
+<meta property="og:url" content="http://example.com/2022/11/07/Unikraft%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Unikraft函数调用1、论文相关 每个实现系统调用处理程序的库，都通过宏注册到syscall shim这个库中，然后shim层生成lib级别的系统调用接口，当使用unikraft本地编译应用程序源文件时，直接链接到系统调用，从而将系统调用转化为廉价的函数调用  2、源码相关1、lib&#x2F;syscall_shim1、syscall_shim&#x2F;syscall.h.in 与Linux相似，unikra">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft-syscall/awk.png">
+<meta property="og:image" content="http://example.com/images/unikraft-syscall/sys_makefile.png">
+<meta property="og:image" content="http://example.com/images/unikraft-syscall/vfs_main.png">
+<meta property="article:published_time" content="2022-11-07T03:21:35.438Z">
+<meta property="article:modified_time" content="2022-11-07T03:19:37.038Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-函数调用">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft-syscall/awk.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/11/07/Unikraft%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-bus/">unikraft-bus</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-liblwip/">unikraft-liblwip</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-9pfs/">unikraft-libs-9pfs</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-netdev/">unikraft-netdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-syscall/">unikraft-syscall</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-uknetdev/">unikraft-uknetdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-virtio/">unikraft-virtio</a><span class="category-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">Linux系统调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-bus/" rel="tag">unikraft-bus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-futex/" rel="tag">unikraft-futex</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-netdev/" rel="tag">unikraft-netdev</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-process/" rel="tag">unikraft-process</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-thread/" rel="tag">unikraft-thread</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">unikraft-函数调用</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/" rel="tag">unikraft-网络通信</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13px;">Linux系统调用</a> <a href="/tags/unikraft-bus/" style="font-size: 13px;">unikraft-bus</a> <a href="/tags/unikraft-futex/" style="font-size: 13px;">unikraft-futex</a> <a href="/tags/unikraft-netdev/" style="font-size: 13px;">unikraft-netdev</a> <a href="/tags/unikraft-process/" style="font-size: 13px;">unikraft-process</a> <a href="/tags/unikraft-thread/" style="font-size: 13.33px;">unikraft-thread</a> <a href="/tags/unikraft-virtio/" style="font-size: 14px;">unikraft-virtio</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 13.67px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13.33px;">unikraft-函数调用</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 14px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13.33px;">unikraft-线程管理</a> <a href="/tags/unikraft-%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/" style="font-size: 13.33px;">unikraft-网络通信</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-syscall/">unikraft-syscall</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/07/Unikraft%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" class="title">Unikraft函数调用</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-07T03:21:35.438Z" itemprop="datePublished">2022-11-07</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-syscall/">unikraft-syscall</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/07/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" class="title">Linux系统调用</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-07T03:21:35.401Z" itemprop="datePublished">2022-11-07</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/07/kvm%20qemu%20virtio%E4%B8%80%E4%BA%9B%E8%99%9A%E6%8B%9F%E5%8C%96%E7%9F%A5%E8%AF%86/" class="title">kvm qemu virtio一些虚拟化知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-07T03:21:35.399Z" itemprop="datePublished">2022-11-07</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-virtio/">unikraft-virtio</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/07/9pfs%20kvm%20qemu%E6%BA%90%E7%A0%81%E6%B5%81%E7%A8%8B/" class="title">9pfs kvm qemu源码流程</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-07T03:21:35.388Z" itemprop="datePublished">2022-11-07</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-liblwip/">unikraft-liblwip</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/lwip/" class="title">lwip 源码分析</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T13:44:48.824Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Unikraft%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8"><span class="toc-number">1.</span> <span class="toc-text">Unikraft函数调用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E8%AE%BA%E6%96%87%E7%9B%B8%E5%85%B3"><span class="toc-number">1.0.1.</span> <span class="toc-text">1、论文相关</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E6%BA%90%E7%A0%81%E7%9B%B8%E5%85%B3"><span class="toc-number">1.0.2.</span> <span class="toc-text">2、源码相关</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1%E3%80%81lib-syscall-shim"><span class="toc-number">1.0.2.1.</span> <span class="toc-text">1、lib&#x2F;syscall_shim</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#1%E3%80%81syscall-shim-syscall-h-in"><span class="toc-number">1.0.2.1.1.</span> <span class="toc-text">1、syscall_shim&#x2F;syscall.h.in</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2%E3%80%81syscall-shim%E4%B8%8B%E7%9A%84Config-uk%EF%BC%9A"><span class="toc-number">1.0.2.1.2.</span> <span class="toc-text">2、syscall_shim下的Config.uk：</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#3%E3%80%81syscall-shim%E4%B8%AD%E7%9A%84awk%E6%96%87%E4%BB%B6"><span class="toc-number">1.0.2.1.3.</span> <span class="toc-text">3、syscall_shim中的awk文件</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#4%E3%80%81legacy-syscall-h"><span class="toc-number">1.0.2.1.4.</span> <span class="toc-text">4、legacy_syscall.h</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#5%E3%80%81syscall-h"><span class="toc-number">1.0.2.1.5.</span> <span class="toc-text">5、syscall.h</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2%E3%80%81lib%E5%B1%82%E7%9A%84%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.0.2.2.</span> <span class="toc-text">2、lib层的系统调用实现</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#1%E3%80%81vfscore-vfs-h"><span class="toc-number">1.0.2.2.1.</span> <span class="toc-text">1、vfscore&#x2F;vfs.h</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2%E3%80%81vfscore-syscall-c"><span class="toc-number">1.0.2.2.2.</span> <span class="toc-text">2、vfscore&#x2F;syscall.c</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#3%E3%80%81vfscore-main-c"><span class="toc-number">1.0.2.2.3.</span> <span class="toc-text">3、vfscore&#x2F;main.c</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#4%E3%80%81support-scripts%E7%9A%84%E8%A7%A3%E9%87%8A"><span class="toc-number">1.0.2.2.4.</span> <span class="toc-text">4、support&#x2F;scripts的解释</span></a></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81%E6%80%BB%E7%BB%93"><span class="toc-number">1.0.3.</span> <span class="toc-text">3、总结</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#4%E3%80%81%E4%B8%8ELinux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E6%AF%94%E8%BE%83"><span class="toc-number">1.0.3.1.</span> <span class="toc-text">4、与Linux系统调用比较</span></a></li></ol></li></ol></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-Unikraft函数调用" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Unikraft函数调用
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/11/07/Unikraft%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" class="article-date">
+	  <time datetime="2022-11-07T03:21:35.438Z" itemprop="datePublished">2022-11-07</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-syscall/">unikraft-syscall</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">unikraft-函数调用</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/11/07/Unikraft%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="Unikraft函数调用"><a href="#Unikraft函数调用" class="headerlink" title="Unikraft函数调用"></a>Unikraft函数调用</h1><h3 id="1、论文相关"><a href="#1、论文相关" class="headerlink" title="1、论文相关"></a>1、论文相关</h3><ul>
+<li>每个实现系统调用处理程序的库，都通过宏注册到syscall shim这个库中，然后shim层生成lib级别的系统调用接口，当使用unikraft本地编译应用程序源文件时，直接链接到系统调用，从而将系统调用转化为廉价的函数调用</li>
+</ul>
+<h3 id="2、源码相关"><a href="#2、源码相关" class="headerlink" title="2、源码相关"></a>2、源码相关</h3><h4 id="1、lib-syscall-shim"><a href="#1、lib-syscall-shim" class="headerlink" title="1、lib/syscall_shim"></a>1、lib/syscall_shim</h4><h5 id="1、syscall-shim-syscall-h-in"><a href="#1、syscall-shim-syscall-h-in" class="headerlink" title="1、syscall_shim/syscall.h.in"></a>1、syscall_shim/syscall.h.in</h5><ul>
+<li>与Linux相似，unikraft中也有系统调用号，以NR_开头</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* SPDX-License-Identifier: BSD-2-Clause */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_restart_syscall	0</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_exit	1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_fork	2</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_read	3</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_write	4</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_open	5</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_close	6</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_creat	8</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_link	9</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_unlink	10</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_execve	11</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_chdir	12</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_mknod	14</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_chmod	15</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_lchown	16</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_lseek	19</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_getpid	20</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_mount	21</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_setuid	23</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_getuid	24</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_ptrace	26</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_pause	29</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_access	33</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_nice	34</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_sync	36</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_kill	37</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_rename	38</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_mkdir	39</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_rmdir	40</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_dup	41</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_pipe	42</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_times	43</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_brk	45</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_setgid	46</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_getgid	47</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_geteuid	49</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __NR_getegid	50</span></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<h5 id="2、syscall-shim下的Config-uk："><a href="#2、syscall-shim下的Config-uk：" class="headerlink" title="2、syscall_shim下的Config.uk："></a>2、syscall_shim下的Config.uk：</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">if LIBSYSCALL_SHIM</span><br><span class="line">	# Hidden configuration option that can be set by libc&#x27;s in order to</span><br><span class="line">	# switch off the generation of libc-style wrapper symbols</span><br><span class="line">	config LIBSYSCALL_SHIM_NOWRAPPER</span><br><span class="line">	bool</span><br><span class="line">	default n</span><br><span class="line"></span><br><span class="line">	config LIBSYSCALL_SHIM_LIBCSTUBS</span><br><span class="line">	depends on !LIBSYSCALL_SHIM_NOWRAPPER</span><br><span class="line">	bool &quot;Provide libc-style stubs&quot;</span><br><span class="line">	default n</span><br><span class="line">	help</span><br><span class="line">		Automatically generate libc-style stubs for unavailable</span><br><span class="line">		system calls. The aim is to provide all libc-style system</span><br><span class="line">		call symbols although just a subset of the full API may be</span><br><span class="line">		implemtented. The symbols are defined as `weak`.</span><br><span class="line">		Please note that depending on the used compiler and optimization</span><br><span class="line">		options, this functionality may sometimes cause linking failures </span><br><span class="line">		because of double definitions of symbols. This is the case when</span><br><span class="line">		another library is providing some libc-style system calls</span><br><span class="line">		without registering them to libsyscall_shim.</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>最后一段提到这里会为不可用的系统调用自动生成 libc -style的存根stubs, 但是由于符号的二重定义，此功能有时可能会导致链接失败。 当这种情况时，另一个库会提供一些 libc -style的系统调用，并且无需将它们注册到 syscall_shim库。也就是会有部分库中涉及到的系统调用会在syscall_shim这里通过宏注册，但是也会有部分系统调用会直接在一些库中实现，并没有通过宏定义。</p>
+</li>
+<li><p>接着：</p>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">config LIBSYSCALL_SHIM_HANDLER</span><br><span class="line">		bool &quot;Binary system call handler (Linux ABI)&quot;</span><br><span class="line">		default n</span><br><span class="line">		depends on ARCH_X86_64</span><br><span class="line">		select HAVE_SYSCALL</span><br><span class="line">		help</span><br><span class="line">			Enables a system call handler for binary system call</span><br><span class="line">			requests (e.g., sysenter/sysexit). The handler maps</span><br><span class="line">			register values accordingly to the Linux ABI standard</span><br><span class="line">			(see: man syscalls[2]).</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>为二进制系统调用启用系统调用处理程序请求（例如，sysenter/sysexit）。 处理程序映射根据 Linux ABI 标准注册值</li>
+</ul>
+<h5 id="3、syscall-shim中的awk文件"><a href="#3、syscall-shim中的awk文件" class="headerlink" title="3、syscall_shim中的awk文件"></a>3、syscall_shim中的awk文件</h5><ul>
+<li><p>在syscall_shim下有很多awk脚本，会生成一些关于系统调用名称、调用函数的头文件和程序（后面有图）</p>
+</li>
+<li><p><img src="/images/unikraft-syscall/awk.png" alt="img"></p>
+</li>
+<li><p>如在gen_syscall_nrs.awk中生成定义系统调用名称的程序</p>
+</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">BEGIN &#123;</span><br><span class="line">	print &quot;/* Automatically generated file; DO NOT EDIT */&quot;</span><br><span class="line">	print &quot;#ifndef __LIBSYSCALL_SHIM_SYSCALL_NRS_H__&quot;</span><br><span class="line">	print &quot;#define __LIBSYSCALL_SHIM_SYSCALL_NRS_H__&quot;</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">/#</span><span class="language-bash">define __NR_/&#123;</span></span><br><span class="line">	 printf &quot;\n#define SYS_%s\t\t%s&quot;, substr($2,6),$3 //定义系统调用名称</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">END &#123;</span><br><span class="line">	print &quot;\n\n#endif /* __LIBSYSCALL_SHIM_SYSCALL_NRS_H__ */&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>在gen_provided.awk中生成已经提供的系统调用的头文件</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">BEGIN &#123;</span><br><span class="line">	print &quot;/* Automatically generated file; DO NOT EDIT */&quot;</span><br><span class="line">	print &quot;#ifndef __LIBSYSCALL_SHIM_PROVIDED_SYSCALLS_H__&quot;</span><br><span class="line">	print &quot;#define __LIBSYSCALL_SHIM_PROVIDED_SYSCALLS_H__&quot;</span><br><span class="line">	print &quot;\n#include &lt;uk/bits/syscall_nrs.h&gt;&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">/[a-zA-Z0-9]+-[0-9]+/&#123;</span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash">check <span class="keyword">if</span> the syscall is not defined</span></span><br><span class="line">	printf &quot;\n#ifndef SYS_%s\n&quot;, $1;</span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash"><span class="keyword">if</span> a LEGACY_&lt;syscall_name&gt; symbol is defined, the syscall is not required</span></span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash">and we can <span class="built_in">continue</span> the build process</span></span><br><span class="line">	printf &quot;#ifdef LEGACY_SYS_%s\n&quot;, $1;</span><br><span class="line">	printf &quot;#ifdef CONFIG_LIBSYSCALL_SHIM_LEGACY_VERBOSE\n&quot;</span><br><span class="line">	printf &quot;#warning Ignoring legacy system call &#x27;%s&#x27;: No system call number available\n&quot;, $1</span><br><span class="line">	printf &quot;#endif /* LIBSYSCALL_SHIM_LEGACY_VERBOSE */\n&quot;</span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash"><span class="keyword">if</span> the LEGACY symbol is not defined <span class="keyword">for</span> this syscall, it means that the</span></span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash">syscall is required and we can<span class="string">&#x27;t continue without a definition</span></span></span><br><span class="line">	printf &quot;#else\n&quot;;</span><br><span class="line">	printf &quot;#error Failed to map system call &#x27;%s&#x27;: No system call number available\n&quot;, $1</span><br><span class="line">	printf &quot;#endif  /* LEGACY_SYS_%s */\n&quot;, $1</span><br><span class="line">	printf &quot;#else\n&quot;;</span><br><span class="line">	printf &quot;#define HAVE_uk_syscall_%s t\n&quot;, $1;</span><br><span class="line">	printf &quot;UK_SYSCALL_E_PROTO(%s, %s);\n&quot;, $2, $1;</span><br><span class="line">	printf &quot;UK_SYSCALL_R_PROTO(%s, %s);\n&quot;, $2, $1;</span><br><span class="line">	printf &quot;#endif /* !SYS_%s */\n&quot;, $1;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">END &#123;</span><br><span class="line">	print &quot;\n#endif /* __LIBSYSCALL_SHIM_PROVIDED_SYSCALLS_H__ */&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>在stubs、map、syscall_r、syscall_r_fn等awk中根据提供的系统调用名，定义（或者说注册）uk_syscall_e_*以及uk_syscall_r_*(*表示系统调用的名称）一系列宏定义函数，在其它库的exportsysm.uk文件中能找到</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">gen_syscall_map.awk:</span><br><span class="line"></span><br><span class="line">BEGIN &#123;print &quot;/* Automatically generated file; DO NOT EDIT */\n&quot;&#125;</span><br><span class="line"><span class="meta prompt_">/#</span><span class="language-bash">define __NR_/&#123;</span></span><br><span class="line">	printf &quot;#define uk_syscall_fn_%s(...)   uk_syscall_e_%s(__VA_ARGS__)\n&quot;, $3,substr($2,6)</span><br><span class="line">	printf &quot;#define uk_syscall_r_fn_%s(...) uk_syscall_r_%s(__VA_ARGS__)\n&quot;, $3,substr($2,6)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">gen_uk_syscall_r.awk:</span><br><span class="line"></span><br><span class="line">/[a-zA-Z0-9]+-[0-9]+/&#123;</span><br><span class="line">	name = $1</span><br><span class="line">	sys_name = &quot;SYS_&quot; name</span><br><span class="line">	uk_syscall_r = &quot;uk_syscall_r_&quot; name //根据provided系统调用名进行注册</span><br><span class="line">	args_nr = $2 + 0</span><br><span class="line">	printf &quot;#ifdef HAVE_uk_syscall_%s\n&quot;, name;</span><br><span class="line">	printf &quot;\tcase %s:\n&quot;, sys_name;</span><br><span class="line">	for (i = 1; i &lt;= args_nr; i++)</span><br><span class="line">		printf &quot;\t\ta%s = va_arg(arg, long);\n&quot;, i;</span><br><span class="line">	printf &quot;\t\treturn %s(&quot;, uk_syscall_r;</span><br><span class="line">	for (i = 1; i &lt; args_nr; i++)</span><br><span class="line">		printf &quot;a%d, &quot;, i;</span><br><span class="line">	if (args_nr &gt; 0)</span><br><span class="line">		printf &quot;a%d&quot;, args_nr;</span><br><span class="line">	printf(&quot;);\n&quot;)</span><br><span class="line">	printf &quot;#endif /* HAVE_uk_syscall_%s */\n\n&quot;, name;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>在syscall_shim下的Makefile.uk文件中出现相关头文件和程序：</p>
+</li>
+<li><p><img src="/images/unikraft-syscall/sys_makefile.png" alt="img"></p>
+</li>
+</ul>
+<h5 id="4、legacy-syscall-h"><a href="#4、legacy-syscall-h" class="headerlink" title="4、legacy_syscall.h"></a>4、legacy_syscall.h</h5><ul>
+<li>这里定义了一些被新的系统调用实现的一些遗失调用（在前面的一些实现中会提及查阅legacy头文件部分并跳过)</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * This file defines the syscalls that are marked as legacy.</span></span><br><span class="line"><span class="comment"> * 标记为lagacy的系统调用？遗留？</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * A legacy syscall is a syscall that is missing on some architectures, but</span></span><br><span class="line"><span class="comment"> * it&#x27;s functionality can be implemented using a newer syscall. Therefore,</span></span><br><span class="line"><span class="comment"> * this syscalls will not generate build failures on the architectures that</span></span><br><span class="line"><span class="comment"> * don&#x27;t implement them.</span></span><br><span class="line"><span class="comment"> * 在一些体系结构上miss的系统调用，但他们的功能会被更新的系统调用实现，</span></span><br><span class="line"><span class="comment"> * 因此这个系统调用不会在没有实现它的架构上产生构建失败</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * The format for marking a system call as legacy is the following one:</span></span><br><span class="line"><span class="comment"> * `#define LEGACY_SYS_&lt;syscall_name&gt;` (see the list below).</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifndef</span> __UK_LEGACY_SYSCALL_H__</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __UK_LEGACY_SYSCALL_H__</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_fork <span class="comment">/* modern: clone */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_vfork <span class="comment">/* modern: clone */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_getpgrp <span class="comment">/* modern: getpgid */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_readlink <span class="comment">/* modern: readlinkat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_symlink <span class="comment">/* modern: symlinkat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_unlink <span class="comment">/* modern: unlinkat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_link <span class="comment">/* modern: linkat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_access <span class="comment">/* modern: faccessat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_open <span class="comment">/* modern: openat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_creat <span class="comment">/* modern: openat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_mkdir <span class="comment">/* modern: mkdirat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_rmdir <span class="comment">/* modern: unlinkat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_mknod <span class="comment">/* modern: mknodat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_chmod <span class="comment">/* modern: fchmodat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_lchown <span class="comment">/* modern: fchownat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_chown <span class="comment">/* modern: fchownat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_rename <span class="comment">/* modern: renameat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_lstat <span class="comment">/* modern: fstatat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_stat <span class="comment">/* modern: fstatat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_getdents <span class="comment">/* modern: getdents64 */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_time <span class="comment">/* modern: gettimeofday */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_futimesat <span class="comment">/* modern: utimensat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_utime <span class="comment">/* modern: utimensat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_utimes <span class="comment">/* modern: utimensat */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_dup2 <span class="comment">/* modern: dup3 */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_pipe <span class="comment">/* modern: pipe2 */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_pause <span class="comment">/* modern: sigsuspend */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEGACY_SYS_alarm <span class="comment">/* modern: timer_settime */</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+
+<h5 id="5、syscall-h"><a href="#5、syscall-h" class="headerlink" title="5、syscall.h"></a>5、syscall.h</h5><ul>
+<li>在这个头文件中是大量的宏定义，包括了原始的系统调用样式(直接将函数调用映射到目标程序)、包括/不包括lib风格封装的两种宏定义、以及一些错误的汇总</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* System call, returns -1 and sets errno on errors */</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">uk_syscall</span><span class="params">(<span class="type">long</span> nr, ...)</span>;</span><br><span class="line"><span class="type">long</span> <span class="title function_">uk_vsyscall</span><span class="params">(<span class="type">long</span> nr, va_list arg)</span>;</span><br><span class="line"><span class="type">long</span> <span class="title function_">uk_syscall6</span><span class="params">(<span class="type">long</span> nr, <span class="type">long</span> arg1, <span class="type">long</span> arg2, <span class="type">long</span> arg3,</span></span><br><span class="line"><span class="params">		 <span class="type">long</span> arg4, <span class="type">long</span> arg5, <span class="type">long</span> arg6)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Use this variant instead of `uk_syscall()` whenever the system call number</span></span><br><span class="line"><span class="comment"> * is a constant. This macro maps the function call directly to the target</span></span><br><span class="line"><span class="comment"> * handler instead of doing a look-up at runtime</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> uk_syscall_static(...)						\</span></span><br><span class="line"><span class="meta">	UK_CONCAT(__uk_syscall, __UK_SYSCALL_NARGS(__VA_ARGS__))(__VA_ARGS__)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Raw system call, returns negative codes on errors */</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">uk_syscall_r</span><span class="params">(<span class="type">long</span> nr, ...)</span>;</span><br><span class="line"><span class="type">long</span> <span class="title function_">uk_vsyscall_r</span><span class="params">(<span class="type">long</span> nr, va_list arg)</span>;</span><br><span class="line"><span class="type">long</span> <span class="title function_">uk_syscall6_r</span><span class="params">(<span class="type">long</span> nr, <span class="type">long</span> arg1, <span class="type">long</span> arg2, <span class="type">long</span> arg3,</span></span><br><span class="line"><span class="params">		   <span class="type">long</span> arg4, <span class="type">long</span> arg5, <span class="type">long</span> arg6)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Use this variant instead of `uk_syscall_r()` whenever the system call number</span></span><br><span class="line"><span class="comment"> * is a constant. This macro maps the function call directly to the target</span></span><br><span class="line"><span class="comment"> * handler instead of doing a look-up at runtime</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> uk_syscall_r_static(...)					\</span></span><br><span class="line"><span class="meta">	UK_CONCAT(__uk_syscall,						\</span></span><br><span class="line"><span class="meta">		  UK_CONCAT(__UK_SYSCALL_NARGS(__VA_ARGS__)), _r)(__VA_ARGS__)</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="2、lib层的系统调用实现"><a href="#2、lib层的系统调用实现" class="headerlink" title="2、lib层的系统调用实现"></a>2、lib层的系统调用实现</h4><ul>
+<li>在syscall_shim层注册了一些提供的系统调用名称以及相关宏定义之后，在其他具体涉及到相关系统调用的lib中进行实现，这里以vfscore举例说明</li>
+</ul>
+<h5 id="1、vfscore-vfs-h"><a href="#1、vfscore-vfs-h" class="headerlink" title="1、vfscore/vfs.h"></a>1、vfscore/vfs.h</h5><ul>
+<li>在vfscore/vfs.h中定义了系统调用函数原型：</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* * per task data</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">   <span class="class"><span class="keyword">struct</span> <span class="title">task</span> &#123;</span></span><br><span class="line">   <span class="type">char</span> 	    t_cwd[PATH_MAX];	<span class="comment">/* current working directory */</span></span><br><span class="line">   <span class="class"><span class="keyword">struct</span> <span class="title">vfscore_file</span> *<span class="title">t_cwdfp</span>;</span>		<span class="comment">/* directory for cwd */</span></span><br><span class="line">   &#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span>	 <span class="title function_">sys_open</span><span class="params">(<span class="type">char</span> *path, <span class="type">int</span> flags, <span class="type">mode_t</span> mode, <span class="keyword">struct</span> vfscore_file **fp)</span>;</span><br><span class="line"><span class="type">int</span>	 <span class="title function_">sys_read</span><span class="params">(<span class="keyword">struct</span> vfscore_file *fp, <span class="type">const</span> <span class="keyword">struct</span> iovec *iov, <span class="type">size_t</span> niov,</span></span><br><span class="line"><span class="params">		<span class="type">off_t</span> offset, <span class="type">size_t</span> *count)</span>;</span><br><span class="line"><span class="type">int</span>	 <span class="title function_">sys_write</span><span class="params">(<span class="keyword">struct</span> vfscore_file *fp, <span class="type">const</span> <span class="keyword">struct</span> iovec *iov, <span class="type">size_t</span> niov,</span></span><br><span class="line"><span class="params">		<span class="type">off_t</span> offset, <span class="type">size_t</span> *count)</span>;</span><br><span class="line"><span class="type">int</span>	 <span class="title function_">sys_lseek</span><span class="params">(<span class="keyword">struct</span> vfscore_file *fp, <span class="type">off_t</span> off, <span class="type">int</span> type, <span class="type">off_t</span> * cur_off)</span>;</span><br><span class="line"><span class="type">int</span>	 <span class="title function_">sys_ioctl</span><span class="params">(<span class="keyword">struct</span> vfscore_file *fp, <span class="type">unsigned</span> <span class="type">long</span> request, <span class="type">void</span> *buf)</span>;</span><br><span class="line"><span class="type">int</span>	 <span class="title function_">sys_fstat</span><span class="params">(<span class="keyword">struct</span> vfscore_file *fp, <span class="keyword">struct</span> stat *st)</span>;</span><br><span class="line"><span class="type">int</span>	 <span class="title function_">sys_fstatfs</span><span class="params">(<span class="keyword">struct</span> vfscore_file *fp, <span class="keyword">struct</span> statfs *buf)</span>;</span><br><span class="line"><span class="type">int</span>	 <span class="title function_">sys_fsync</span><span class="params">(<span class="keyword">struct</span> vfscore_file *fp)</span>;</span><br><span class="line"><span class="type">int</span>	 <span class="title function_">sys_ftruncate</span><span class="params">(<span class="keyword">struct</span> vfscore_file *fp, <span class="type">off_t</span> length)</span>;</span><br></pre></td></tr></table></figure>
+
+<h5 id="2、vfscore-syscall-c"><a href="#2、vfscore-syscall-c" class="headerlink" title="2、vfscore/syscall.c"></a>2、vfscore/syscall.c</h5><ul>
+<li>在vfscore/syscall.c中具体实现,如sys_open()：</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * vfs_syscalls.c - everything in this file is a routine implementing</span></span><br><span class="line"><span class="comment"> *                  a VFS system call.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">...</span><br><span class="line"><span class="type">int</span></span><br><span class="line"><span class="title function_">sys_open</span><span class="params">(<span class="type">char</span> *path, <span class="type">int</span> flags, <span class="type">mode_t</span> mode, <span class="keyword">struct</span> vfscore_file **fpp)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vfscore_file</span> *<span class="title">fp</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">dentry</span> *<span class="title">dp</span>, *<span class="title">ddp</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vnode</span> *<span class="title">vp</span>;</span></span><br><span class="line">	<span class="type">char</span> *filename;</span><br><span class="line">	<span class="type">int</span> error;</span><br><span class="line"></span><br><span class="line">	DPRINTF(VFSDB_SYSCALL, (<span class="string">&quot;sys_open: path=%s flags=%x mode=%x\n&quot;</span>,</span><br><span class="line">				path, flags, mode));</span><br><span class="line"></span><br><span class="line">	flags = vfscore_fflags(flags);</span><br><span class="line">	<span class="keyword">if</span> (flags &amp; O_CREAT) &#123;</span><br><span class="line">		error = namei(path, &amp;dp);</span><br><span class="line">		<span class="keyword">if</span> (error == ENOENT) &#123;</span><br><span class="line">			<span class="comment">/* Create new struct vfscore_file. */</span></span><br><span class="line">			<span class="keyword">if</span> ((error = lookup(path, &amp;ddp, &amp;filename)) != <span class="number">0</span>)</span><br><span class="line">				<span class="keyword">return</span> error;</span><br><span class="line"></span><br><span class="line">			vn_lock(ddp-&gt;d_vnode);</span><br><span class="line">			<span class="keyword">if</span> ((error = vn_access(ddp-&gt;d_vnode, VWRITE)) != <span class="number">0</span>) &#123;</span><br><span class="line">				vn_unlock(ddp-&gt;d_vnode);</span><br><span class="line">				drele(ddp);</span><br><span class="line">				<span class="keyword">return</span> error;</span><br><span class="line">			&#125;</span><br><span class="line">			mode &amp;= ~S_IFMT;</span><br><span class="line">			mode |= S_IFREG;</span><br><span class="line">			error = VOP_CREATE(ddp-&gt;d_vnode, filename, mode);</span><br><span class="line">			vn_unlock(ddp-&gt;d_vnode);</span><br><span class="line">			drele(ddp);</span><br><span class="line"></span><br><span class="line">			<span class="keyword">if</span> (error)</span><br><span class="line">				<span class="keyword">return</span> error;</span><br><span class="line">			<span class="keyword">if</span> ((error = namei(path, &amp;dp)) != <span class="number">0</span>)</span><br><span class="line">				<span class="keyword">return</span> error;</span><br><span class="line"></span><br><span class="line">			vp = dp-&gt;d_vnode;</span><br><span class="line">			flags &amp;= ~O_TRUNC;</span><br><span class="line">		&#125; <span class="keyword">else</span> <span class="keyword">if</span> (error) &#123;</span><br><span class="line">			<span class="keyword">return</span> error;</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="comment">/* File already exits */</span></span><br><span class="line">			<span class="keyword">if</span> (flags &amp; O_EXCL) &#123;</span><br><span class="line">				error = EEXIST;</span><br><span class="line">				<span class="keyword">goto</span> out_drele;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		vp = dp-&gt;d_vnode;</span><br><span class="line">		flags &amp;= ~O_CREAT;</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">/* Open */</span></span><br><span class="line">		<span class="keyword">if</span> (flags &amp; O_NOFOLLOW) &#123;</span><br><span class="line">			error = open_no_follow_chk(path);</span><br><span class="line">			<span class="keyword">if</span> (error != <span class="number">0</span>)</span><br><span class="line">				<span class="keyword">return</span> error;</span><br><span class="line">		&#125;</span><br><span class="line">		error = namei(path, &amp;dp);</span><br><span class="line">		<span class="keyword">if</span> (error)</span><br><span class="line">			<span class="keyword">return</span> error;</span><br><span class="line"></span><br><span class="line">		vp = dp-&gt;d_vnode;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (flags &amp; UK_FWRITE || flags &amp; O_TRUNC) &#123;</span><br><span class="line">			error = vn_access(vp, VWRITE);</span><br><span class="line">			<span class="keyword">if</span> (error)</span><br><span class="line">				<span class="keyword">goto</span> out_drele;</span><br><span class="line"></span><br><span class="line">			error = EISDIR;</span><br><span class="line">			<span class="keyword">if</span> (vp-&gt;v_type == VDIR)</span><br><span class="line">				<span class="keyword">goto</span> out_drele;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (flags &amp; O_DIRECTORY) &#123;</span><br><span class="line">			<span class="keyword">if</span> (vp-&gt;v_type != VDIR) &#123;</span><br><span class="line">				error = ENOTDIR;</span><br><span class="line">				<span class="keyword">goto</span> out_drele;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	fp = <span class="built_in">calloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> vfscore_file), <span class="number">1</span>);</span><br><span class="line">	<span class="keyword">if</span> (!fp) &#123;</span><br><span class="line">		error = ENOMEM;</span><br><span class="line">		<span class="keyword">goto</span> out_drele;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	fhold(fp);</span><br><span class="line">	fp-&gt;f_flags = flags;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Don&#x27;t need to increase refcount here, we already hold a reference</span></span><br><span class="line"><span class="comment">	 * to dp from namei().</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	fp-&gt;f_dentry = dp;</span><br><span class="line"></span><br><span class="line">	uk_mutex_init(&amp;fp-&gt;f_lock);</span><br><span class="line">	UK_INIT_LIST_HEAD(&amp;fp-&gt;f_ep);</span><br><span class="line"></span><br><span class="line">	vn_lock(vp);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (flags &amp; O_TRUNC) &#123;</span><br><span class="line">		error = EINVAL;</span><br><span class="line">		<span class="keyword">if</span> (!(flags &amp; UK_FWRITE) || vp-&gt;v_type == VDIR)</span><br><span class="line">			<span class="keyword">goto</span> out_fp_free_unlock;</span><br><span class="line"></span><br><span class="line">		error = VOP_TRUNCATE(vp, <span class="number">0</span>);</span><br><span class="line">		<span class="keyword">if</span> (error)</span><br><span class="line">			<span class="keyword">goto</span> out_fp_free_unlock;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	error = VOP_OPEN(vp, fp);</span><br><span class="line">	<span class="keyword">if</span> (error)</span><br><span class="line">		<span class="keyword">goto</span> out_fp_free_unlock;</span><br><span class="line"></span><br><span class="line">	vn_unlock(vp);</span><br><span class="line"></span><br><span class="line">	*fpp = fp;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">out_fp_free_unlock:</span><br><span class="line">	<span class="built_in">free</span>(fp);</span><br><span class="line">	vn_unlock(vp);</span><br><span class="line">out_drele:</span><br><span class="line">	<span class="keyword">if</span> (dp)</span><br><span class="line">		drele(dp);</span><br><span class="line">	<span class="keyword">return</span> error;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h5 id="3、vfscore-main-c"><a href="#3、vfscore-main-c" class="headerlink" title="3、vfscore/main.c"></a>3、vfscore/main.c</h5><ul>
+<li><p>在vfscore/main.c中定义了一些libc样式的，像c标准库函数那样的调用接口：</p>
+</li>
+<li><p><img src="/images/unikraft-syscall/vfs_main.png" alt="img"></p>
+</li>
+<li><p>比如提供了调用接口open():</p>
+</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">if</span> UK_LIBC_SYSCALLS </span></span><br><span class="line"><span class="type">int</span> <span class="title function_">open</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *pathname, <span class="type">int</span> flags, ...)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">mode_t</span> mode = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (flags &amp; O_CREAT) &#123;</span><br><span class="line">		va_list ap;</span><br><span class="line"></span><br><span class="line">		va_start(ap, flags);</span><br><span class="line">		mode = apply_umask(va_arg(ap, <span class="type">mode_t</span>));</span><br><span class="line">		va_end(ap);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> uk_syscall_e_open((<span class="type">long</span> <span class="type">int</span>)pathname, flags, mode); <span class="comment">//来自注册过的宏定义</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> open64</span></span><br><span class="line"><span class="meta">#<span class="keyword">undef</span> open64</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>最后一行uk_syscall_e_open()来自宏的展开，像open系统调用是在syscall_shim层注册过的。在这个展开的函数中调用了在syscall.c中实现的真正的系统调用函数sys_open()。（猜测像这里出现的宏的展开是对系统调用的参数的验证）</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">UK_LLSYSCALL_R_DEFINE(<span class="type">int</span>, open, <span class="type">const</span> <span class="type">char</span>*, pathname, <span class="type">int</span>, flags,</span><br><span class="line">		      <span class="type">mode_t</span>, mode)</span><br><span class="line">&#123;</span><br><span class="line">	trace_vfs_open(pathname, flags, mode);</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">task</span> *<span class="title">t</span> =</span> main_task;</span><br><span class="line">	<span class="type">char</span> path[PATH_MAX];</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vfscore_file</span> *<span class="title">fp</span>;</span></span><br><span class="line">	<span class="type">int</span> fd, error;</span><br><span class="line">	<span class="type">int</span> acc;</span><br><span class="line"></span><br><span class="line">	acc = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">switch</span> (flags &amp; O_ACCMODE) &#123; <span class="comment">//判断文件的权限？打开文件的操作？读、写、读写</span></span><br><span class="line">	<span class="keyword">case</span> O_RDONLY:</span><br><span class="line">		acc = VREAD;</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line">	<span class="keyword">case</span> O_WRONLY:</span><br><span class="line">		acc = VWRITE;</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line">	<span class="keyword">case</span> O_RDWR:</span><br><span class="line">		acc = VREAD | VWRITE;</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	error = task_conv(t, pathname, acc, path);</span><br><span class="line">	<span class="keyword">if</span> (error)</span><br><span class="line">		<span class="keyword">goto</span> out_error;</span><br><span class="line"></span><br><span class="line">	error = sys_open(path, flags, mode, &amp;fp); <span class="comment">//这里调用sys_open系统调用</span></span><br><span class="line">	<span class="keyword">if</span> (error)</span><br><span class="line">		<span class="keyword">goto</span> out_error;</span><br><span class="line"></span><br><span class="line">	error = fdalloc(fp, &amp;fd);</span><br><span class="line">	<span class="keyword">if</span> (error)</span><br><span class="line">		<span class="keyword">goto</span> out_fput;</span><br><span class="line">	fdrop(fp);</span><br><span class="line">	trace_vfs_open_ret(fd);</span><br><span class="line">	<span class="keyword">return</span> fd;</span><br><span class="line"></span><br><span class="line">	out_fput:</span><br><span class="line">	fdrop(fp);</span><br><span class="line">	out_error:</span><br><span class="line">	trace_vfs_open_err(error);</span><br><span class="line">	<span class="keyword">return</span> -error;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>总结open()的调用过程：应用程序接口open() —-&gt; 宏定义展开系统调用函数uk_syscall_e_open() —-&gt;syscall.c中实现的最底层的系统调用sys_open()</li>
+</ul>
+<h5 id="4、support-scripts的解释"><a href="#4、support-scripts的解释" class="headerlink" title="4、support/scripts的解释"></a>4、support/scripts的解释</h5><ul>
+<li>这里提到一个声明：</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">check <span class="keyword">for</span> UK_(LL)SYSCALL_DEFINE(), raw implementation should be preferred</span></span><br><span class="line">		if ($line =~ /\bUK_(LL)?SYSCALL_DEFINE\s*\(/) &#123;</span><br><span class="line">			WARN(&quot;NON_RAW_SYSCALL&quot;,</span><br><span class="line">			     &quot;Prefer using raw system call definitions: &#x27;UK_SYSCALL_R_DEFINE&#x27;, &#x27;UK_LLSYSCALL_R_DEFINE&#x27;\n&quot; . $herecurr);</span><br><span class="line">		&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>这里提到首选使用原始实现UK_SYSCALL_R_DEFINE</p>
+</li>
+<li><p>在vfscore中可以看到一些只有UK_SYSCALL_R_DEFINE定义，而没有以sys_开头的系统调用函数，如pipe2，位于lib/vfscore/pipe.c文件中，但没有找到sys_pipe这种东西</p>
+</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">int</span>, pipe, <span class="type">int</span>*, pipefd)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">	<span class="type">int</span> r_fd, w_fd;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">pipe_file</span> *<span class="title">pipe_file</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Allocate pipe internal structure. */</span></span><br><span class="line">	pipe_file = pipe_file_alloc(PIPE_MAX_SIZE, <span class="number">0</span>);</span><br><span class="line">	<span class="keyword">if</span> (!pipe_file) &#123;</span><br><span class="line">		ret = -ENOMEM;</span><br><span class="line">		<span class="keyword">goto</span> ERR_EXIT;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	r_fd = pipe_fd_alloc(pipe_file, UK_FREAD);</span><br><span class="line">	<span class="keyword">if</span> (r_fd &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">goto</span> ERR_VFS_INSTALL;</span><br><span class="line"></span><br><span class="line">	w_fd = pipe_fd_alloc(pipe_file, UK_FWRITE);</span><br><span class="line">	<span class="keyword">if</span> (w_fd &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">goto</span> ERR_W_FD;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Fill pipefd fields. */</span></span><br><span class="line">	pipefd[<span class="number">0</span>] = r_fd;</span><br><span class="line">	pipefd[<span class="number">1</span>] = w_fd;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">ERR_W_FD:</span><br><span class="line">	vfscore_put_fd(r_fd);</span><br><span class="line">ERR_VFS_INSTALL:</span><br><span class="line">	pipe_file_free(pipe_file);</span><br><span class="line">ERR_EXIT:</span><br><span class="line">	UK_ASSERT(ret &lt; <span class="number">0</span>);</span><br><span class="line">	<span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* TODO find a more efficient way to implement pipe2() */</span></span><br><span class="line">UK_SYSCALL_R_DEFINE(<span class="type">int</span>, pipe2, <span class="type">int</span>*, pipefd, <span class="type">int</span>, flags)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line">	rc = pipe(pipefd);</span><br><span class="line">	<span class="keyword">if</span> (rc)</span><br><span class="line">		<span class="keyword">return</span> rc;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (flags &amp; O_CLOEXEC) &#123;</span><br><span class="line">		fcntl(pipefd[<span class="number">0</span>], F_SETFD, FD_CLOEXEC);</span><br><span class="line">		fcntl(pipefd[<span class="number">1</span>], F_SETFD, FD_CLOEXEC);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (flags &amp; O_NONBLOCK) &#123;</span><br><span class="line">		fcntl(pipefd[<span class="number">0</span>], F_SETFL, O_NONBLOCK);</span><br><span class="line">		fcntl(pipefd[<span class="number">1</span>], F_SETFL, O_NONBLOCK);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3、总结"><a href="#3、总结" class="headerlink" title="3、总结"></a>3、总结</h3><ul>
+<li><p>在syscall_shim层定义了一些系统调用编号、名称，通过那些.awk脚本、sycall.h去注册生成对应的系统调用名称和定义几类宏，接着在lib层，如vfscore中去实现相关的系统调用的宏的展开以及具体的系统调用（某些可能是不需要注册而直接定义的系统调用），并在main.c中会封装一些接口给应用程序直接调用</p>
+</li>
+<li><p>根据上面提到的support/scripts的声明解释，所以当有注册过的宏定义时，应优先调用的是以UK_SYSCALL_R_DEFINE、UK_LLSYSCALL_R_DEFINE展开的函数</p>
+</li>
+<li><p>注意到前面提到过的，部分系统调用是不需要注册而直接在lib层定义实现的，所以可以看到存在一些直接调用sys_xxx()而没有调用uk_syscall_e_xxx等</p>
+</li>
+</ul>
+<h4 id="4、与Linux系统调用比较"><a href="#4、与Linux系统调用比较" class="headerlink" title="4、与Linux系统调用比较"></a>4、与Linux系统调用比较</h4><p>Linux：</p>
+<ul>
+<li>调用syscall()，然后通过系统调用号在系统调用表里面找到对应系统调用函数的入口地址，然后int 0x80中断，进入内核态去做系统调用</li>
+</ul>
+<p>Unikraft：</p>
+<ul>
+<li>直接在syscall_shim去注册涉及到的系统调用，一大堆宏定义展开后是每个具体的系统调用，没有系统调用表</li>
+<li>在其他涉及到的库中，直接实现了对应的系统调用函数，在程序中直接调用已经实现的系统调用函数，不需要通过系统调用表和中断陷入内核的方式</li>
+</ul>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/11/07/Unikraft%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" title="Unikraft函数调用" target="_blank" rel="external">http://example.com/2022/11/07/Unikraft函数调用/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    
+    <li class="next">
+      <a href="/2022/11/07/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" title="Linux系统调用"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

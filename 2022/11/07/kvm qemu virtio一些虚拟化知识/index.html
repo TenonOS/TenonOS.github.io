@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>kvm qemu virtio一些虚拟化知识 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="123456sudo qemu-system-x86_64  -fsdev local,id&#x3D;myid,path&#x3D;$(pwd)&#x2F;fs0,security_model&#x3D;none \                         -device virtio-9p-pci,fsdev&#x3D;myid,mount_tag&#x3D;rootfs,disable-modern&#x3D;on,disable-legacy&#x3D;off">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kvm qemu virtio一些虚拟化知识">
+<meta property="og:url" content="http://example.com/2022/11/07/kvm%20qemu%20virtio%E4%B8%80%E4%BA%9B%E8%99%9A%E6%8B%9F%E5%8C%96%E7%9F%A5%E8%AF%86/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="123456sudo qemu-system-x86_64  -fsdev local,id&#x3D;myid,path&#x3D;$(pwd)&#x2F;fs0,security_model&#x3D;none \                         -device virtio-9p-pci,fsdev&#x3D;myid,mount_tag&#x3D;rootfs,disable-modern&#x3D;on,disable-legacy&#x3D;off">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft-virt/1.png">
+<meta property="og:image" content="http://example.com/images/unikraft-virt/2.png">
+<meta property="og:image" content="http://example.com/images/unikraft-virt/3.png">
+<meta property="og:image" content="http://example.com/images/unikraft-virt/4.png">
+<meta property="og:image" content="http://example.com/images/unikraft-virt/5.png">
+<meta property="og:image" content="http://example.com/images/unikraft-virt/6.png">
+<meta property="og:image" content="http://example.com/images/unikraft-virt/7.png">
+<meta property="og:image" content="http://example.com/images/unikraft-virt/8.png">
+<meta property="og:image" content="http://example.com/images/unikraft-virt/9.png">
+<meta property="og:image" content="http://example.com/images/unikraft-virt/10.png">
+<meta property="og:image" content="http://example.com/images/unikraft-virt/11.png">
+<meta property="og:image" content="http://example.com/images/unikraft-virt/12.png">
+<meta property="article:published_time" content="2022-11-07T03:21:35.399Z">
+<meta property="article:modified_time" content="2022-11-07T03:19:37.038Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-virtio">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft-virt/1.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/11/07/kvm%20qemu%20virtio%E4%B8%80%E4%BA%9B%E8%99%9A%E6%8B%9F%E5%8C%96%E7%9F%A5%E8%AF%86/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-bus/">unikraft-bus</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-liblwip/">unikraft-liblwip</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-9pfs/">unikraft-libs-9pfs</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-netdev/">unikraft-netdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-syscall/">unikraft-syscall</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-uknetdev/">unikraft-uknetdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-virtio/">unikraft-virtio</a><span class="category-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">Linux系统调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-bus/" rel="tag">unikraft-bus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-futex/" rel="tag">unikraft-futex</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-netdev/" rel="tag">unikraft-netdev</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-process/" rel="tag">unikraft-process</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-thread/" rel="tag">unikraft-thread</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">unikraft-函数调用</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/" rel="tag">unikraft-网络通信</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13px;">Linux系统调用</a> <a href="/tags/unikraft-bus/" style="font-size: 13px;">unikraft-bus</a> <a href="/tags/unikraft-futex/" style="font-size: 13px;">unikraft-futex</a> <a href="/tags/unikraft-netdev/" style="font-size: 13px;">unikraft-netdev</a> <a href="/tags/unikraft-process/" style="font-size: 13px;">unikraft-process</a> <a href="/tags/unikraft-thread/" style="font-size: 13.33px;">unikraft-thread</a> <a href="/tags/unikraft-virtio/" style="font-size: 14px;">unikraft-virtio</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 13.67px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13.33px;">unikraft-函数调用</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 14px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13.33px;">unikraft-线程管理</a> <a href="/tags/unikraft-%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/" style="font-size: 13.33px;">unikraft-网络通信</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-syscall/">unikraft-syscall</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/07/Unikraft%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" class="title">Unikraft函数调用</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-07T03:21:35.438Z" itemprop="datePublished">2022-11-07</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-syscall/">unikraft-syscall</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/07/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" class="title">Linux系统调用</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-07T03:21:35.401Z" itemprop="datePublished">2022-11-07</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/07/kvm%20qemu%20virtio%E4%B8%80%E4%BA%9B%E8%99%9A%E6%8B%9F%E5%8C%96%E7%9F%A5%E8%AF%86/" class="title">kvm qemu virtio一些虚拟化知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-07T03:21:35.399Z" itemprop="datePublished">2022-11-07</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-virtio/">unikraft-virtio</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/07/9pfs%20kvm%20qemu%E6%BA%90%E7%A0%81%E6%B5%81%E7%A8%8B/" class="title">9pfs kvm qemu源码流程</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-07T03:21:35.388Z" itemprop="datePublished">2022-11-07</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-liblwip/">unikraft-liblwip</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/lwip/" class="title">lwip 源码分析</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T13:44:48.824Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%BB%E4%BD%93I-O%E6%B5%81%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">总体I&#x2F;O流程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%99%9A%E6%8B%9F%E5%8C%96"><span class="toc-number">2.</span> <span class="toc-text">虚拟化</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#PCI%E8%99%9A%E6%8B%9F%E5%8C%96"><span class="toc-number">2.1.</span> <span class="toc-text">PCI虚拟化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Intel-VT-x%E8%99%9A%E6%8B%9F%E5%8C%96"><span class="toc-number">2.2.</span> <span class="toc-text">Intel VT-x虚拟化</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-kvm qemu virtio一些虚拟化知识" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      kvm qemu virtio一些虚拟化知识
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/11/07/kvm%20qemu%20virtio%E4%B8%80%E4%BA%9B%E8%99%9A%E6%8B%9F%E5%8C%96%E7%9F%A5%E8%AF%86/" class="article-date">
+	  <time datetime="2022-11-07T03:21:35.399Z" itemprop="datePublished">2022-11-07</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/11/07/kvm%20qemu%20virtio%E4%B8%80%E4%BA%9B%E8%99%9A%E6%8B%9F%E5%8C%96%E7%9F%A5%E8%AF%86/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">sudo qemu-system-x86_64  -fsdev <span class="built_in">local</span>,<span class="built_in">id</span>=myid,path=$(<span class="built_in">pwd</span>)/fs0,security_model=none \</span><br><span class="line">                         -device virtio-9p-pci,fsdev=myid,mount_tag=rootfs,disable-modern=on,disable-legacy=off \</span><br><span class="line">                         -kernel <span class="string">&quot;<span class="variable">$KVM_IMAGE</span>&quot;</span> \</span><br><span class="line">                         -cpu host \</span><br><span class="line">                         -enable-kvm \</span><br><span class="line">                         -nographic</span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="https://book.douban.com/subject/25897247/">处理器虚拟化技术 (豆瓣) (douban.com)</a><br><a target="_blank" rel="noopener" href="https://book.douban.com/subject/35324337/">QEMU/KVM源码解析与应用 (豆瓣) (douban.com)</a></p>
+<h1 id="总体I-O流程"><a href="#总体I-O流程" class="headerlink" title="总体I/O流程"></a>总体I/O流程</h1><p><img src="/images/unikraft-virt/1.png" alt="image-20221106173359075"></p>
+<p><a target="_blank" rel="noopener" href="https://insujang.github.io/2021-03-10/virtio-and-vhost-architecture-part-1/">Virtio and Vhost Architecture - Part 1 | Better Tomorrow with Computer Science (insujang.github.io)</a></p>
+<p><img src="/images/unikraft-virt/2.png" alt="image"></p>
+<h1 id="虚拟化"><a href="#虚拟化" class="headerlink" title="虚拟化"></a>虚拟化</h1><p><img src="/images/unikraft-virt/3.png" alt="在这里插入图片描述"></p>
+<p>​        virtio是一种前后端架构，包括前端驱动（Front-End Driver）和后端设备（Back-End Device）以及自身定义的传输协议。通过传输协议，virtio不仅可以用于QEMU/KVM方案，也可以用于其他的虚拟化方案。如虚拟机可以不必是QEMU，也可以是其他类型的虚拟机，后端不一定要在QEMU中实现，也可以在内核中实现（这实际上就是vhost方案）。</p>
+<p>​        前端驱动为虚拟机内部的virtio模拟设备对应的驱动，每一种前端设备都需要有对应的驱动才能正常运行。前端驱动的主要作用是接收用户态的请求，然后按照传输协议将这些请求进行封装，再写I/O端口，发送一个通知到QEMU的后端设备。后端设备则是在QEMU中，用来接收前端驱动发过来的I/O请求，然后从接收的数据中按照传输协议的格式进行解析，对于网卡等需要实际物理设备交互的请求，后端驱动会对物理设备进行操作，从而完成请求，并且会通过中断机制通知前端驱动。</p>
+<p>​        virtio前端和后端驱动的数据传输通过virtio队列（virtqueue）完成，一个设备会注册若干个virtio队列，每个队列负责处理不同的数据传输，有的是控制层面的队列，有的是数据层面的队列。virtqueue是通过vring实现的。vring是虚拟机和QEMU之间共享的一段环形缓冲区。当虚拟机需要发送请求到QEMU的时候就准备好数据，将数据描述放到vring中，写一个I/O端口，然后QEMU就能够从vring中读取数据信息，进而从内存中读出数据。QEMU完成请求之后，也将数据结构存放在vring中，前端驱动也就可以从vring中得到数据。</p>
+<h2 id="PCI虚拟化"><a href="#PCI虚拟化" class="headerlink" title="PCI虚拟化"></a>PCI虚拟化</h2><p><img src="/images/unikraft-virt/4.png" alt="image-20221103193916191"></p>
+<p>​        PCI设备有自己独立的地址空间，叫作PCI地址空间，也就是说从设备角度看到的地址跟CPU角度看到的地址本质上不在一个地址空间，这种隔离就是由图中的HOST-PCI主桥完成的。CPU需要通过主桥才能访问PCI设备，而PCI设备也需要通过主桥才能访问主存储器。主桥的一个重要作用就是将处理器访问的存储器地址转换为PCI总线地址。x86架构对于存储器地址空间和PCI地址空间不是很清晰，因为本质上是两个不同的地址空间，但是其地址是相同且一一对应的。</p>
+<p>​        每个PCI设备都有一个配置空间，该空间至少有256字节，其中前面64个字节是标准化的，每个设备都是这个格式，后面的数据则由设备决定。</p>
+<p><img src="/images/unikraft-virt/5.png" alt="image-20221103194127070"></p>
+<p>​        Vendor ID、Device ID、Class Code用来表明设备的身份，有的时候还会设置Subsystem Vendor ID Subsystem Device ID。6个Base Address表示的是PCI设备的IO地址空间，虚拟机可以通过这些地址空间对设备进行读写配置控制，除了6个BAR，还可能有一个ROM的BAR。有两个与中断设置有关的值，IRQ Line表示设备使用哪一个中断号，如传统的中断控制器由两个82599芯片级联而成，有0到15号Line，IRQ Line表示的是用哪一根线，IRQ Pin表示的是PCI设备使用哪一条引脚连接中断控制器，PCI总线上的设备可以通过4根中断引脚INTA～D#向中断控制器提交中断请求，这里的IRQ Pin即用来表示这个引脚编号，1～4分别表示INTA～INTD的4个引脚，大部分设备使用中断线INTA引脚，如果设备不支持中断，则该域为0。</p>
+<p>​        PCI总线能够发送对应的INTA～INTD 4个信号，这4个信号会与中断控制器的IRQ_PIN引脚相连。PCI总线规范中并没有规定PCI设备的INTx信号与中断控制引脚的相连关系，因此系统软件需要使用中断路由表存放PCI设备的INTx信号与中断控制器的连接关系，中断路由表通常是由BIOS等系统软件建立的。</p>
+<p>​        操作系统与PCI设备交互的主要方式是PIO和MMIO，MMIO虽然是一段内存，但是其没有EPT映射，在虚拟机中访问设备的MMIO时，会产生VM Exit，KVM识别此MMIO访问并且将该访问分派到应用层QEMU中，QEMU根据内存虚拟化的步骤进行分派，找到设备注册的MMIO读写回调函数，设备的MMIO读写回调函数根据设备的功能进行模拟，完成模拟之后可能会发送中断到虚拟机中，从而完成一些MMIO访问。</p>
+<p>​        北桥的PCI部分有两个I/O寄存器，其中一个是配置地址寄存器，叫作CONFGADDR，该寄存器的作用是选择PCI设备。北桥的PCI部分的另一个寄存器是配置数据寄存器，叫作CONFGDATA，这个寄存器用来对CONFGADDR中指定的设备进行配置。CONFADDR使用从端口0xcf8开始的4个端口，CONFDATA使用从0xcfc开始的4个端口。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// unikraft::plat/common/include/pci/pci_bus.h</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PCI_CONFIG_ADDR             (0xCF8)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PCI_CONFIG_DATA             (0xCFC)</span></span><br></pre></td></tr></table></figure>
+
+<p>​    写CONFGADDR的行为会设置配置寄存器的值(outl, outb…)，指定选择的PCI设备，用于随后的数据访问。</p>
+<hr>
+<p>​        virtio设备首先需要创建一个PCI设备，叫作virtio PCI代理设备，这个代理设备挂到PCI总线上，接着virtio代理设备再创建一条virtio总线，这样virtio设备就可以挂到这条总线上了。</p>
+<p><img src="/images/unikraft-virt/6.png" alt="image-20221103203123097"></p>
+<p><img src="/images/unikraft-virt/7.png" alt="image-20221103205722282"></p>
+<p>​        上图显示了virtio balloon设备对应的几个数据结构，VirtIOBalloonPCI是virtio balloon PCI代理设备的实例对象，其包括两个部分：一个是VirtIOPCIProxy，这个是virtio PCI代理设备的通用结构，里面存放了具体virtio PCI代理设备的相关成员；另一个是VirtIOBalloon，这个结构里面存放的是virtio balloon设备的相关数据，其第一个成员是VirtIODevice，也就是virtio公共设备的实例对象，VirtIOBalloon剩下的成员是与virtio balloon设备相关的数据。</p>
+<p>​        在使用9p挂载qemu启动的时候命令行有一句参数<code>-device virtio-9p-pci</code>进行具现化，设备的具现化函数都会调用device_set_realized函数，在该函数中会调用设备类的realize函数。最开始调用的是DeviceClass的realize函数，这个回调的默认函数是device_realize，当然，如果继承自DeviceClass的类可以重写这个函数，如PCIDeviceClass类就在其类初始化函数pci_device_class_init中将DeviceClass-&gt;realize重写为pci_qdev_realize，对于PCIDeviceClass本身来说，其PCIDeviceClass-&gt;realize可设置为pci_default_realize，后面继承PCIDeviceClass的类可以在自己的类初始化函数中设置realize函数。例如9p设备通过<code>virtio_9p_pci_class_init()</code>进行具现化。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// qemu::hw/virtio/virtio-9p-pci.c 注册了9p-pci设备挂到pci总线上，这个设备专门用来挂9p设备</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> VirtioPCIDeviceTypeInfo virtio_9p_pci_info = &#123;</span><br><span class="line">    .base_name              = TYPE_VIRTIO_9P_PCI,</span><br><span class="line">    .generic_name           = <span class="string">&quot;virtio-9p-pci&quot;</span>,</span><br><span class="line">    .transitional_name      = <span class="string">&quot;virtio-9p-pci-transitional&quot;</span>,</span><br><span class="line">    .non_transitional_name  = <span class="string">&quot;virtio-9p-pci-non-transitional&quot;</span>,</span><br><span class="line">    .instance_size = <span class="keyword">sizeof</span>(V9fsPCIState),</span><br><span class="line">    .instance_init = virtio_9p_pci_instance_init,	<span class="comment">// 初始化9p-pci 实例</span></span><br><span class="line">    .class_init    = virtio_9p_pci_class_init,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/9pfs/virtio-9p-device.c	即上述要挂在9p-pci设备上的设备</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> TypeInfo virtio_device_info = &#123;</span><br><span class="line">    .name = TYPE_VIRTIO_9P,</span><br><span class="line">    .parent = TYPE_VIRTIO_DEVICE,</span><br><span class="line">    .instance_size = <span class="keyword">sizeof</span>(V9fsVirtioState),</span><br><span class="line">    .class_init = virtio_9p_class_init,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/9pfs/virtio-9p-device.c 9p设备的具现化</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">virtio_9p_pci_class_init</span><span class="params">(ObjectClass *klass, <span class="type">void</span> *data)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);</span><br><span class="line">    k-&gt;realize = virtio_9p_pci_realize;		<span class="comment">// 关键实现</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/unikraft-virt/8.png" alt="image-20221104165745488"></p>
+<hr>
+<p>​        对于设备模拟，虚拟机通过触发VM Exit退出到KVM，接着由KVM或者QEMU完成I/O模拟等操作。当KVM或QEMU完成了I/O请求或者有其他事件需要通知虚拟机时，则通过注入中断的方式让虚拟机得到事件通知。从I/O请求的分发路径来看，每次虚拟机内部写设备的MMIO或者PIO的时候，都会导致陷入到KVM，然后分发到QEMU，QEMU中还会进行一轮分发，这个过程比较低效，因此ioeventfd方案就应运而生了。ioeventfd主要是基于eventfd，在初始化的时候QEMU将一段I/O地址空间和一个eventfd联系起来，当虚拟机写I/O地址的时候，陷入KVM，KVM直接设置该I/O地址对应的fd，QEMU主循环返回，执行相应的函数，这样就绕过了QEMU层的分发。irqfd也是基于eventfd，当触发irqfd的fd时，会直接注入中断到虚拟机中。</p>
+<p>​            一个完整的I/O流程包括从虚拟机内部到KVM，再到QEMU，并由QEMU最终进行分发这样一个同步过程，I/O完成之后的返回路径与之相反。当然，使用同步的I/O请求有其原因，如很多时候虚拟机内部需要这些I/O数据才能继续运行。但是存在这样一种情况，即I/O请求本身只是作为一个通知事件，这个事件本身可能是通知KVM或者QEMU完成另一个具体的I/O，这种情况下没有必要像普通I/O一样等待数据完全写完，而是只需要完成一个简单的通知。如果这种I/O请求也使用之前同步的方式完成，很明显会增加不必要的路径。ioeventfd就是对这种通知I/O进行的优化，用户层程序（如QEMU）可以为虚拟机特定的地址关联一个eventfd，并对该eventfd进行事件监听，然后调用ioctl(KVM_IOEVENTFD)向KVM注册这段地址，当虚拟机内部因为I/O发生VM Exit时，KVM可以判断其地址是否有对应的eventfd，如果有就直接调用eventfd_signal发送信号到对应的fd，这样，QEMU就能够从其事件监听循环返回，进而进行处理。</p>
+<p><img src="/images/unikraft-virt/9.png" alt="img"></p>
+<h2 id="Intel-VT-x虚拟化"><a href="#Intel-VT-x虚拟化" class="headerlink" title="Intel VT-x虚拟化"></a>Intel VT-x虚拟化</h2><p>Intel提供3个层面的虚拟化技术(Intel Virtualization Technology)</p>
+<ul>
+<li>基于处理器的虚拟化技术(Intel VT-X) 全称为 Virtualization Technology for x86</li>
+<li>基于PCI总线域设备实现的I/O虚拟化技术(Intel VT-D) 全称为Virtualization Technology for Directed I/O</li>
+<li>基于网络的虚拟化技术(Intel VT-C) 全称为Virtualization Technology for Connectify</li>
+</ul>
+<p>​        Intel实现了VMX架构来支持CPU端的虚拟化技术(Intel VT-x技术)，引入了一种新的处理器操作模式，被称为VMX operation。也加入了一系列的VMX指令支持VMX operation模式。</p>
+<p>​        逻辑处理器在VMX操作时使用虚拟机控制数据结构（virtual-machine control data structures，VMCSs）。它们管理进入和退出VMX non-root(虚拟机入口和虚拟机出口)的过渡，以及VMX non-root中的处理器行为。这个结构由指令VMCLEAR、VMPTRLD、VMREAD和VMWRITE操作。</p>
+<p>VMCS字段列表如下（不同版本，各字段的位置可能不同）</p>
+<p><img src="/images/unikraft-virt/10.png" alt="在这里插入图片描述"></p>
+<p><img src="/images/unikraft-virt/11.png" alt="img"></p>
+<p><img src="/images/unikraft-virt/12.png" alt="在这里插入图片描述"></p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/11/07/kvm%20qemu%20virtio%E4%B8%80%E4%BA%9B%E8%99%9A%E6%8B%9F%E5%8C%96%E7%9F%A5%E8%AF%86/" title="kvm qemu virtio一些虚拟化知识" target="_blank" rel="external">http://example.com/2022/11/07/kvm qemu virtio一些虚拟化知识/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/11/07/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" title="Linux系统调用"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/11/07/9pfs%20kvm%20qemu%E6%BA%90%E7%A0%81%E6%B5%81%E7%A8%8B/" title="9pfs kvm qemu源码流程"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

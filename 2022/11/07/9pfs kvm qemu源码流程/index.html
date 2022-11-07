@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>9pfs kvm qemu源码流程 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="这篇介绍qemu、kvm、unikraft三者的交互源码 大致流程以9pfs read操作为例。大致流程为 12345678910111213141516171819qemu::kvm_cpu_exec -&gt;kvm:: kvm_arch_vcpu_ioctl_run -&gt; unikraft::main(9p_read) -&gt; unikraft::outl	-&gt;kvm::vm">
+<meta property="og:type" content="article">
+<meta property="og:title" content="9pfs kvm qemu源码流程">
+<meta property="og:url" content="http://example.com/2022/11/07/9pfs%20kvm%20qemu%E6%BA%90%E7%A0%81%E6%B5%81%E7%A8%8B/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="这篇介绍qemu、kvm、unikraft三者的交互源码 大致流程以9pfs read操作为例。大致流程为 12345678910111213141516171819qemu::kvm_cpu_exec -&gt;kvm:: kvm_arch_vcpu_ioctl_run -&gt; unikraft::main(9p_read) -&gt; unikraft::outl	-&gt;kvm::vm">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-11-07T03:21:35.388Z">
+<meta property="article:modified_time" content="2022-11-07T03:19:37.037Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="unikraft-文件系统">
+<meta property="article:tag" content="unikraft-virtio">
+<meta name="twitter:card" content="summary">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/11/07/9pfs%20kvm%20qemu%E6%BA%90%E7%A0%81%E6%B5%81%E7%A8%8B/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-bus/">unikraft-bus</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-liblwip/">unikraft-liblwip</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-9pfs/">unikraft-libs-9pfs</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-futex/">unikraft-libs-futex</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-process/">unikraft-libs-process</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukalloc/">unikraft-libs-ukalloc</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-ukallocbbuddy/">unikraft-libs-ukallocbbuddy</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-vfscore/">unikraft-libs-vfscore</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-libs-%E5%AF%BC%E8%A7%88/">unikraft-libs-导览</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-netdev/">unikraft-netdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-syscall/">unikraft-syscall</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-thread/">unikraft-thread</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-uknetdev/">unikraft-uknetdev</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/unikraft-virtio/">unikraft-virtio</a><span class="category-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">Linux系统调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-bus/" rel="tag">unikraft-bus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-futex/" rel="tag">unikraft-futex</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-netdev/" rel="tag">unikraft-netdev</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-process/" rel="tag">unikraft-process</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-thread/" rel="tag">unikraft-thread</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag">unikraft-内存管理</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">unikraft-函数调用</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag">unikraft-线程管理</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unikraft-%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/" rel="tag">unikraft-网络通信</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13px;">Linux系统调用</a> <a href="/tags/unikraft-bus/" style="font-size: 13px;">unikraft-bus</a> <a href="/tags/unikraft-futex/" style="font-size: 13px;">unikraft-futex</a> <a href="/tags/unikraft-netdev/" style="font-size: 13px;">unikraft-netdev</a> <a href="/tags/unikraft-process/" style="font-size: 13px;">unikraft-process</a> <a href="/tags/unikraft-thread/" style="font-size: 13.33px;">unikraft-thread</a> <a href="/tags/unikraft-virtio/" style="font-size: 14px;">unikraft-virtio</a> <a href="/tags/unikraft-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 13.67px;">unikraft-内存管理</a> <a href="/tags/unikraft-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13.33px;">unikraft-函数调用</a> <a href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 14px;">unikraft-文件系统</a> <a href="/tags/unikraft-%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86/" style="font-size: 13.33px;">unikraft-线程管理</a> <a href="/tags/unikraft-%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/" style="font-size: 13.33px;">unikraft-网络通信</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-syscall/">unikraft-syscall</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/07/Unikraft%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" class="title">Unikraft函数调用</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-07T03:21:35.438Z" itemprop="datePublished">2022-11-07</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-syscall/">unikraft-syscall</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/07/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" class="title">Linux系统调用</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-07T03:21:35.401Z" itemprop="datePublished">2022-11-07</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-basic-knowledge/">unikraft-basic_knowledge</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/07/kvm%20qemu%20virtio%E4%B8%80%E4%BA%9B%E8%99%9A%E6%8B%9F%E5%8C%96%E7%9F%A5%E8%AF%86/" class="title">kvm qemu virtio一些虚拟化知识</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-07T03:21:35.399Z" itemprop="datePublished">2022-11-07</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-virtio/">unikraft-virtio</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/07/9pfs%20kvm%20qemu%E6%BA%90%E7%A0%81%E6%B5%81%E7%A8%8B/" class="title">9pfs kvm qemu源码流程</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-07T03:21:35.388Z" itemprop="datePublished">2022-11-07</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/unikraft-liblwip/">unikraft-liblwip</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/10/30/lwip/" class="title">lwip 源码分析</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-10-30T13:44:48.824Z" itemprop="datePublished">2022-10-30</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A4%A7%E8%87%B4%E6%B5%81%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">大致流程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#kvm%E4%BE%A7"><span class="toc-number">2.</span> <span class="toc-text">kvm侧</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#kvm-arch-vcpu-ioctl-run"><span class="toc-number">2.1.</span> <span class="toc-text">kvm_arch_vcpu_ioctl_run</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#kvm-enter-guest"><span class="toc-number">2.2.</span> <span class="toc-text">kvm_enter_guest</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#vmx-vcpu-run"><span class="toc-number">2.3.</span> <span class="toc-text">vmx_vcpu_run</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#vmx-vcpu-enter-exit"><span class="toc-number">2.3.1.</span> <span class="toc-text">vmx_vcpu_enter_exit</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#vmx-vcpu-run-1"><span class="toc-number">2.3.2.</span> <span class="toc-text">__vmx_vcpu_run</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#vmx-handle-exit"><span class="toc-number">2.4.</span> <span class="toc-text">vmx_handle_exit</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#qemu%E4%BE%A7"><span class="toc-number">3.</span> <span class="toc-text">qemu侧</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#kvm-cpu-exec"><span class="toc-number">3.1.</span> <span class="toc-text">kvm_cpu_exec</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#virtio-pci-config-write"><span class="toc-number">3.2.</span> <span class="toc-text">virtio_pci_config_write</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#9p%E5%90%8E%E7%AB%AF%E5%AE%9E%E7%8E%B0%E7%9B%B8%E5%85%B3"><span class="toc-number">3.3.</span> <span class="toc-text">9p后端实现相关</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#virtio-9p-device%E7%9B%B8%E5%85%B3"><span class="toc-number">3.3.1.</span> <span class="toc-text">virtio_9p_device相关</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#handle-9p-output"><span class="toc-number">3.3.2.</span> <span class="toc-text">handle_9p_output</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#v9fs-read%E5%AE%9E%E7%8E%B0"><span class="toc-number">3.3.3.</span> <span class="toc-text">v9fs_read实现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#pdu-complete%E8%AE%BE%E7%BD%AE%E4%B8%AD%E6%96%AD"><span class="toc-number">3.3.4.</span> <span class="toc-text">pdu_complete设置中断</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#unikraft%E4%BE%A7"><span class="toc-number">4.</span> <span class="toc-text">unikraft侧</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#virtio-pci-handle%E8%8E%B7%E5%8F%96%E4%B8%AD%E6%96%AD%E5%A4%84%E7%90%86"><span class="toc-number">4.1.</span> <span class="toc-text">virtio_pci_handle获取中断处理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#callback%E7%9B%B8%E5%85%B3"><span class="toc-number">4.2.</span> <span class="toc-text">callback相关</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-9pfs kvm qemu源码流程" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      9pfs kvm qemu源码流程
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/11/07/9pfs%20kvm%20qemu%E6%BA%90%E7%A0%81%E6%B5%81%E7%A8%8B/" class="article-date">
+	  <time datetime="2022-11-07T03:21:35.388Z" itemprop="datePublished">2022-11-07</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/unikraft-virtio/">unikraft-virtio</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/unikraft-virtio/" rel="tag">unikraft-virtio</a>, <a class="article-tag-link-link" href="/tags/unikraft-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">unikraft-文件系统</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/11/07/9pfs%20kvm%20qemu%E6%BA%90%E7%A0%81%E6%B5%81%E7%A8%8B/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <p>这篇介绍qemu、kvm、unikraft三者的交互源码</p>
+<h1 id="大致流程"><a href="#大致流程" class="headerlink" title="大致流程"></a>大致流程</h1><p>以9pfs read操作为例。大致流程为</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">qemu::kvm_cpu_exec -&gt;</span><br><span class="line">kvm:: kvm_arch_vcpu_ioctl_run -&gt; </span><br><span class="line">unikraft::main(9p_read) -&gt; </span><br><span class="line">unikraft::outl	-&gt;</span><br><span class="line">kvm::vmx_handle_exit -&gt; </span><br><span class="line">qemu::kvm_handle_io -&gt; </span><br><span class="line">qemu::virtqueue-&gt;handle_output -&gt; </span><br><span class="line">qemu::handle_9p_output -&gt; </span><br><span class="line">qemu::v9fs_read -&gt; </span><br><span class="line">unistd.h::<span class="built_in">read</span> -&gt; </span><br><span class="line">qemu::pdu_complete -&gt;</span><br><span class="line">qemu::transport-&gt;push_and_notify -&gt;</span><br><span class="line">qemu::virtio_set_isr -&gt; </span><br><span class="line">unikraft::virtio_pci_handle -&gt; </span><br><span class="line">unikraft::virtqueue-&gt;vq_callvack -&gt;</span><br><span class="line">unikraft::virtio_9p_recv -&gt;</span><br><span class="line">unikraft::uk_9preq_receive_cb -&gt;</span><br><span class="line">unikraft::main	-&gt; </span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="kvm侧"><a href="#kvm侧" class="headerlink" title="kvm侧"></a>kvm侧</h1><h2 id="kvm-arch-vcpu-ioctl-run"><a href="#kvm-arch-vcpu-ioctl-run" class="headerlink" title="kvm_arch_vcpu_ioctl_run"></a>kvm_arch_vcpu_ioctl_run</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// linux::arch/x86/kvm/x86.c 	qemu中调用ioctl(KVM_RUN)会调用到这里，即kvm中的主函数</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">kvm_arch_vcpu_ioctl_run</span><span class="params">(<span class="keyword">struct</span> kvm_vcpu *vcpu)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">kvm_queued_exception</span> *<span class="title">ex</span> =</span> &amp;vcpu-&gt;arch.exception;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">kvm_run</span> *<span class="title">kvm_run</span> =</span> vcpu-&gt;run;</span><br><span class="line">    </span><br><span class="line">	... <span class="comment">// 各种准备操作</span></span><br><span class="line"></span><br><span class="line">	r = vcpu_run(vcpu);	<span class="comment">// 调用vcpu_run主函数</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> r;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// linux::arch/x86/kvm/x86.c  vcpu_run主函数</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">vcpu_run</span><span class="params">(<span class="keyword">struct</span> kvm_vcpu *vcpu)</span></span><br><span class="line">&#123;</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">for</span> (;;) &#123;</span><br><span class="line">		<span class="comment">/* 主循环 */</span></span><br><span class="line">		vcpu-&gt;arch.at_instruction_boundary = <span class="literal">false</span>;</span><br><span class="line">		<span class="keyword">if</span> (kvm_vcpu_running(vcpu)) &#123;</span><br><span class="line">            <span class="comment">// vcpu_enter_guest主函数，r是guest os产生vm exit后kvm处理的结果 </span></span><br><span class="line">			r = vcpu_enter_guest(vcpu);	</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			r = vcpu_block(vcpu);</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (r &lt;= <span class="number">0</span>)	<span class="comment">// 如果处理结果&lt;0即kvm处理不了，就终止循环，退出到qemu里面处理，否则就继续循环</span></span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">		... <span class="comment">// 各种后续操作</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> r;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="kvm-enter-guest"><a href="#kvm-enter-guest" class="headerlink" title="kvm_enter_guest"></a>kvm_enter_guest</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// linux::arch/x86/kvm/x86.c	kvm这边进入guest os的主函数，即qemu调用ioctl后进入kvm中调用的函数</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">vcpu_enter_guest</span><span class="params">(<span class="keyword">struct</span> kvm_vcpu *vcpu)</span></span><br><span class="line">&#123;</span><br><span class="line">	...	<span class="comment">// 各种准备工作</span></span><br><span class="line">	static_call(kvm_x86_prepare_switch_to_guest)(vcpu);</span><br><span class="line">	...<span class="comment">//  还是准备工作</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (;;) &#123;</span><br><span class="line">		<span class="comment">/* 主循环	*/</span></span><br><span class="line">		...</span><br><span class="line">        <span class="comment">// 调用vcpu_run主函数，进入guest os	这个返回值代表guest os那边产生了vm exit退出了</span></span><br><span class="line">		exit_fastpath = static_call(kvm_x86_vcpu_run)(vcpu);	</span><br><span class="line">		...</span><br><span class="line">		<span class="keyword">if</span> (unlikely(kvm_vcpu_exit_request(vcpu))) &#123;	<span class="comment">// vm exit有请求就退出循环处理请求</span></span><br><span class="line">			exit_fastpath = EXIT_FASTPATH_EXIT_HANDLED;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	... <span class="comment">// 各种保存现场的代码</span></span><br><span class="line">        </span><br><span class="line">    <span class="comment">// 调用handle_exit来处理</span></span><br><span class="line">	r = static_call(kvm_x86_handle_exit)(vcpu, exit_fastpath);</span><br><span class="line">	<span class="keyword">return</span> r;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中有两个主要函数是kvm_x86_vcpu_run和kvm_x86_handle_exit，那么是在哪里注册的呢？</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// linux::arch/x86/kvm/x86.c 定义static call</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KVM_X86_OP(func) \</span></span><br><span class="line"><span class="meta">	DECLARE_STATIC_CALL(kvm_x86_##func, *(((struct kvm_x86_ops *)0)-&gt;func));</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// linux::arch/x86/kvm/vmx/vmx.c 注册各种vmx操作到kvm_x86_ops里</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">kvm_x86_ops</span> <span class="title">vmx_x86_ops</span> __<span class="title">initdata</span> =</span> &#123;</span><br><span class="line">	.name = <span class="string">&quot;kvm_intel&quot;</span>,</span><br><span class="line">	...</span><br><span class="line">	.vcpu_load = vmx_vcpu_load,</span><br><span class="line">	.vcpu_put = vmx_vcpu_put,</span><br><span class="line">	...</span><br><span class="line">	.vcpu_run = vmx_vcpu_run,	<span class="comment">// run</span></span><br><span class="line">	.handle_exit = vmx_handle_exit,	<span class="comment">// handle_exit</span></span><br><span class="line">	... <span class="comment">// 好多操作</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="vmx-vcpu-run"><a href="#vmx-vcpu-run" class="headerlink" title="vmx_vcpu_run"></a>vmx_vcpu_run</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// linux::arch/x86/kvm/vmx/vmx.c vcpu run主函数</span></span><br><span class="line"><span class="type">static</span> <span class="type">fastpath_t</span> <span class="title function_">vmx_vcpu_run</span><span class="params">(<span class="keyword">struct</span> kvm_vcpu *vcpu)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vcpu_vmx</span> *<span class="title">vmx</span> =</span> to_vmx(vcpu);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 很多vmx相关的准备工作</span></span><br><span class="line">	... </span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 主函数，进入guest os */</span></span><br><span class="line">	vmx_vcpu_enter_exit(vcpu, vmx, __vmx_vcpu_run_flags(vmx));</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 发生了vm exit */</span></span><br><span class="line">    </span><br><span class="line">	... <span class="comment">// 保存现场等exit前的操作</span></span><br><span class="line"></span><br><span class="line">	vmx-&gt;exit_reason.full = vmcs_read32(VM_EXIT_REASON);	<span class="comment">// 读取exit的原因</span></span><br><span class="line">	</span><br><span class="line">    ... <span class="comment">// exit前的准备工作</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> vmx_exit_handlers_fastpath(vcpu);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="vmx-vcpu-enter-exit"><a href="#vmx-vcpu-enter-exit" class="headerlink" title="vmx_vcpu_enter_exit"></a>vmx_vcpu_enter_exit</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// linux::arch/x86/kvm/vmx/vmx.c 主函数</span></span><br><span class="line"><span class="type">static</span> noinstr <span class="type">void</span> <span class="title function_">vmx_vcpu_enter_exit</span><span class="params">(<span class="keyword">struct</span> kvm_vcpu *vcpu,</span></span><br><span class="line"><span class="params">					<span class="keyword">struct</span> vcpu_vmx *vmx,</span></span><br><span class="line"><span class="params">					<span class="type">unsigned</span> <span class="type">long</span> flags)</span></span><br><span class="line">&#123;</span><br><span class="line">	...</span><br><span class="line">    <span class="comment">/* 调用__vmx_vcpu_run */</span></span><br><span class="line">	vmx-&gt;fail = __vmx_vcpu_run(vmx, (<span class="type">unsigned</span> <span class="type">long</span> *)&amp;vcpu-&gt;arch.regs,</span><br><span class="line">				   flags);</span><br><span class="line">	...</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="vmx-vcpu-run-1"><a href="#vmx-vcpu-run-1" class="headerlink" title="__vmx_vcpu_run"></a>__vmx_vcpu_run</h3><p>这个__vmx_vcpu_run是汇编代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">/* linux::arch/x86/kvm/vmx/vmenter.S */</span><br><span class="line">.section .noinstr.text, &quot;ax&quot;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> * __vmx_vcpu_run - Run a vCPU via a transition to VMX guest mode</span><br><span class="line"> * @vmx:	struct vcpu_vmx *</span><br><span class="line"> * @regs:	unsigned long * (to guest registers)</span><br><span class="line"> * @flags:	VMX_RUN_VMRESUME:	use VMRESUME instead of VMLAUNCH</span><br><span class="line"> *		VMX_RUN_SAVE_SPEC_CTRL: save guest SPEC_CTRL into vmx-&gt;spec_ctrl</span><br><span class="line"> *</span><br><span class="line"> * Returns:</span><br><span class="line"> *	0 on VM-Exit, 1 on VM-Fail</span><br><span class="line"> */</span><br><span class="line">SYM_FUNC_START(__vmx_vcpu_run)</span><br><span class="line">	/* 很多汇编代码 */</span><br><span class="line">	...</span><br><span class="line">	jz .Lvmlaunch</span><br><span class="line">	...</span><br><span class="line">/* 恢复到guest os */</span><br><span class="line">.Lvmresume:</span><br><span class="line">	/* x86 Intel VT-x指令集 */</span><br><span class="line">	vmresume</span><br><span class="line">	jmp .Lvmfail</span><br><span class="line"></span><br><span class="line">/* 启动guest os */</span><br><span class="line">.Lvmlaunch:</span><br><span class="line">	/* x86 Intel VT-x指令集 */</span><br><span class="line">	vmlaunch</span><br><span class="line">	jmp .Lvmfail</span><br><span class="line">...</span><br><span class="line">/* 很多汇编代码 */</span><br><span class="line">...</span><br><span class="line">SYM_FUNC_END(__vmx_vcpu_run)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="vmx-handle-exit"><a href="#vmx-handle-exit" class="headerlink" title="vmx_handle_exit"></a>vmx_handle_exit</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// linux::arch/x86/kvm/vmx/vmx.c</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">vmx_handle_exit</span><span class="params">(<span class="keyword">struct</span> kvm_vcpu *vcpu, <span class="type">fastpath_t</span> exit_fastpath)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> ret = __vmx_handle_exit(vcpu, exit_fastpath);	<span class="comment">// 主要实现</span></span><br><span class="line"></span><br><span class="line">	... <span class="comment">// 一些操作</span></span><br><span class="line">	<span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/* linux::arch/x86/kvm/vmx/vmx.c 	handle exit的实现</span></span><br><span class="line"><span class="comment"> * guest os出现了vm exit，kvm会先看看能不能自己处理，或者还是要qemu的帮助，如果返回值&gt;0则不需要qemu</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __vmx_handle_exit(<span class="keyword">struct</span> kvm_vcpu *vcpu, <span class="type">fastpath_t</span> exit_fastpath)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vcpu_vmx</span> *<span class="title">vmx</span> =</span> to_vmx(vcpu);</span><br><span class="line">	<span class="class"><span class="keyword">union</span> <span class="title">vmx_exit_reason</span> <span class="title">exit_reason</span> =</span> vmx-&gt;exit_reason;</span><br><span class="line">	... <span class="comment">// 很多处理</span></span><br><span class="line">	</span><br><span class="line">	<span class="keyword">return</span> kvm_vmx_exit_handlers[exit_handler_index](vcpu);	<span class="comment">// 具体的处理函数</span></span><br><span class="line"></span><br><span class="line">unexpected_vmexit:</span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="qemu侧"><a href="#qemu侧" class="headerlink" title="qemu侧"></a>qemu侧</h1><h2 id="kvm-cpu-exec"><a href="#kvm-cpu-exec" class="headerlink" title="kvm_cpu_exec"></a>kvm_cpu_exec</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// qemu::accel/kvm/kvm_all.c  qemu中的主函数</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">kvm_cpu_exec</span><span class="params">(CPUState *cpu)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">kvm_run</span> *<span class="title">run</span> =</span> cpu-&gt;kvm_run;</span><br><span class="line">	...</span><br><span class="line">    <span class="keyword">do</span> &#123;	<span class="comment">// 主循环</span></span><br><span class="line">        ...</span><br><span class="line">        <span class="comment">// 调用kvm中的vcpu_enter_guest的循环主函数</span></span><br><span class="line">        run_ret = kvm_vcpu_ioctl(cpu, KVM_RUN, <span class="number">0</span>);	</span><br><span class="line">        ...</span><br><span class="line">        trace_kvm_run_exit(cpu-&gt;cpu_index, run-&gt;exit_reason);</span><br><span class="line">        <span class="keyword">switch</span> (run-&gt;exit_reason) &#123;	<span class="comment">// 判断kvm的vmexit的原因</span></span><br><span class="line">        <span class="keyword">case</span> KVM_EXIT_IO:	<span class="comment">// 如果是因为io而退出的</span></span><br><span class="line">            DPRINTF(<span class="string">&quot;handle_io\n&quot;</span>);</span><br><span class="line">            <span class="comment">/* 关键处理函数 */</span></span><br><span class="line">            kvm_handle_io(run-&gt;io.port, attrs,</span><br><span class="line">                          (<span class="type">uint8_t</span> *)run + run-&gt;io.data_offset,</span><br><span class="line">                          run-&gt;io.direction,</span><br><span class="line">                          run-&gt;io.size,</span><br><span class="line">                          run-&gt;io.count);</span><br><span class="line">            ret = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> ... <span class="comment">// 其他exit情况</span></span><br><span class="line">    &#125; <span class="keyword">while</span> (ret == <span class="number">0</span>);	<span class="comment">// 当ret等于零的时候继续循环，即继续回到kvm启动guest os</span></span><br><span class="line">	</span><br><span class="line">    <span class="comment">// 否则退出qemu</span></span><br><span class="line">	...</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line">    </span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::accel/kvm/kvm_all.c  调用 address_space_rw</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">kvm_handle_io</span><span class="params">(<span class="type">uint16_t</span> port, MemTxAttrs attrs, <span class="type">void</span> *data, <span class="type">int</span> direction,</span></span><br><span class="line"><span class="params">                          <span class="type">int</span> size, <span class="type">uint32_t</span> count)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> i;</span><br><span class="line">    <span class="type">uint8_t</span> *ptr = data;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; count; i++) &#123;</span><br><span class="line">        address_space_rw(&amp;address_space_io, port, attrs,</span><br><span class="line">                         ptr, size,</span><br><span class="line">                         direction == KVM_EXIT_IO_OUT);</span><br><span class="line">        ptr += size;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line"><span class="comment">// qemu::softmmu/physmem.c	上述函数的实现</span></span><br><span class="line">MemTxResult <span class="title function_">address_space_rw</span><span class="params">(AddressSpace *as, hwaddr addr, MemTxAttrs attrs,</span></span><br><span class="line"><span class="params">                             <span class="type">void</span> *buf, hwaddr len, <span class="type">bool</span> is_write)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (is_write) &#123;</span><br><span class="line">        <span class="keyword">return</span> address_space_write(as, addr, attrs, buf, len);	<span class="comment">// 调用write</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> address_space_read_full(as, addr, attrs, buf, len);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">    </span><br><span class="line"><span class="comment">// qemu::softmmu/physmem.c write操作</span></span><br><span class="line">MemTxResult <span class="title function_">address_space_write</span><span class="params">(AddressSpace *as, hwaddr addr,</span></span><br><span class="line"><span class="params">                                MemTxAttrs attrs,</span></span><br><span class="line"><span class="params">                                <span class="type">const</span> <span class="type">void</span> *buf, hwaddr len)</span></span><br><span class="line">&#123;</span><br><span class="line">    MemTxResult result = MEMTX_OK;</span><br><span class="line">    FlatView *fv;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (len &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        RCU_READ_LOCK_GUARD();</span><br><span class="line">        fv = address_space_to_flatview(as);	<span class="comment">// 把地址转为fv</span></span><br><span class="line">        result = flatview_write(fv, addr, attrs, buf, len); <span class="comment">// 主要函数</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line">    </span><br><span class="line"><span class="comment">// qemu::softmmu/physmem.c 具体实现   </span></span><br><span class="line"><span class="type">static</span> MemTxResult <span class="title function_">flatview_write</span><span class="params">(FlatView *fv, hwaddr addr, MemTxAttrs attrs,</span></span><br><span class="line"><span class="params">                                  <span class="type">const</span> <span class="type">void</span> *buf, hwaddr len)</span></span><br><span class="line">&#123;</span><br><span class="line">    hwaddr l;</span><br><span class="line">    hwaddr addr1;</span><br><span class="line">    MemoryRegion *mr;</span><br><span class="line"></span><br><span class="line">    l = len;</span><br><span class="line">    mr = flatview_translate(fv, addr, &amp;addr1, &amp;l, <span class="literal">true</span>, attrs);	<span class="comment">// 把fv翻译成内存域mr</span></span><br><span class="line">    <span class="keyword">if</span> (!flatview_access_allowed(mr, attrs, addr, len)) &#123;</span><br><span class="line">        <span class="keyword">return</span> MEMTX_ACCESS_ERROR;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> flatview_write_continue(fv, addr, attrs, buf, len,	<span class="comment">// 主要函数</span></span><br><span class="line">                                   addr1, l, mr);</span><br><span class="line">&#125;    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line"><span class="comment">// qemu::softmmu/physmem.c 具体实现 </span></span><br><span class="line"><span class="type">static</span> MemTxResult <span class="title function_">flatview_write_continue</span><span class="params">(FlatView *fv, hwaddr addr,</span></span><br><span class="line"><span class="params">                                           MemTxAttrs attrs,</span></span><br><span class="line"><span class="params">                                           <span class="type">const</span> <span class="type">void</span> *ptr,</span></span><br><span class="line"><span class="params">                                           hwaddr len, hwaddr addr1,</span></span><br><span class="line"><span class="params">                                           hwaddr l, MemoryRegion *mr)</span></span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        ...</span><br><span class="line">            <span class="comment">/* 主要函数 */</span></span><br><span class="line">            result |= memory_region_dispatch_write(mr, addr1, val,</span><br><span class="line">                                                   size_memop(l), attrs);</span><br><span class="line">       ...</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;    </span><br><span class="line">    </span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::softmmu/memory.c 具体实现 </span></span><br><span class="line">MemTxResult <span class="title function_">memory_region_dispatch_write</span><span class="params">(MemoryRegion *mr,</span></span><br><span class="line"><span class="params">                                         hwaddr addr,</span></span><br><span class="line"><span class="params">                                         <span class="type">uint64_t</span> data,</span></span><br><span class="line"><span class="params">                                         MemOp op,</span></span><br><span class="line"><span class="params">                                         MemTxAttrs attrs)</span></span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">if</span> (mr-&gt;ops-&gt;write) &#123;	<span class="comment">// 如果内存域mr的ops中注册了write</span></span><br><span class="line">        <span class="comment">/* 主要函数 */</span></span><br><span class="line">        <span class="keyword">return</span> access_with_adjusted_size(addr, &amp;data, size,</span><br><span class="line">                                         mr-&gt;ops-&gt;impl.min_access_size,</span><br><span class="line">                                         mr-&gt;ops-&gt;impl.max_access_size,</span><br><span class="line">                                         memory_region_write_accessor, mr,</span><br><span class="line">                                         attrs);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">    </span><br><span class="line"><span class="comment">// qemu::softmmu/memory.c 具体实现     </span></span><br><span class="line"><span class="type">static</span> MemTxResult <span class="title function_">access_with_adjusted_size</span><span class="params">(hwaddr addr,</span></span><br><span class="line"><span class="params">                                      <span class="type">uint64_t</span> *value,</span></span><br><span class="line"><span class="params">                                      <span class="type">unsigned</span> size,</span></span><br><span class="line"><span class="params">                                      <span class="type">unsigned</span> access_size_min,</span></span><br><span class="line"><span class="params">                                      <span class="type">unsigned</span> access_size_max,</span></span><br><span class="line"><span class="params">                                      MemTxResult (*access_fn)</span></span><br><span class="line"><span class="params">                                                  (MemoryRegion *mr,</span></span><br><span class="line"><span class="params">                                                   hwaddr addr,</span></span><br><span class="line"><span class="params">                                                   <span class="type">uint64_t</span> *value,</span></span><br><span class="line"><span class="params">                                                   <span class="type">unsigned</span> size,</span></span><br><span class="line"><span class="params">                                                   <span class="type">signed</span> shift,</span></span><br><span class="line"><span class="params">                                                   <span class="type">uint64_t</span> mask,</span></span><br><span class="line"><span class="params">                                                   MemTxAttrs attrs),</span></span><br><span class="line"><span class="params">                                      MemoryRegion *mr,</span></span><br><span class="line"><span class="params">                                      MemTxAttrs attrs)</span></span><br><span class="line">&#123;</span><br><span class="line">   	...</span><br><span class="line">    <span class="keyword">if</span> (memory_region_big_endian(mr)) &#123;		<span class="comment">// big_endian</span></span><br><span class="line">        <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; size; i += access_size) &#123;</span><br><span class="line">            <span class="comment">/* 调用参数access_fn，即上述的memory_region_write_accessor */</span></span><br><span class="line">            r |= access_fn(mr, addr + i, value, access_size,</span><br><span class="line">                        (size - access_size - i) * <span class="number">8</span>, access_mask, attrs);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; size; i += access_size) &#123;	<span class="comment">// little_endian</span></span><br><span class="line">            r |= access_fn(mr, addr + i, value, access_size, i * <span class="number">8</span>,</span><br><span class="line">                        access_mask, attrs);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> r;</span><br><span class="line">&#125;</span><br><span class="line">    </span><br><span class="line"><span class="comment">// qemu::softmmu/memory.c 真正调用write</span></span><br><span class="line"><span class="type">static</span> MemTxResult <span class="title function_">memory_region_write_accessor</span><span class="params">(MemoryRegion *mr,</span></span><br><span class="line"><span class="params">                                                hwaddr addr,</span></span><br><span class="line"><span class="params">                                                <span class="type">uint64_t</span> *value,</span></span><br><span class="line"><span class="params">                                                <span class="type">unsigned</span> size,</span></span><br><span class="line"><span class="params">                                                <span class="type">signed</span> shift,</span></span><br><span class="line"><span class="params">                                                <span class="type">uint64_t</span> mask,</span></span><br><span class="line"><span class="params">                                                MemTxAttrs attrs)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">uint64_t</span> tmp = memory_region_shift_write_access(value, shift, mask);</span><br><span class="line">	...</span><br><span class="line">    <span class="comment">/* 真正调用write的地方 */</span></span><br><span class="line">    mr-&gt;ops-&gt;write(mr-&gt;opaque, addr, tmp, size);</span><br><span class="line">    <span class="keyword">return</span> MEMTX_OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>那么在哪里注册了这个write操作呢？</p>
+<h2 id="virtio-pci-config-write"><a href="#virtio-pci-config-write" class="headerlink" title="virtio_pci_config_write"></a>virtio_pci_config_write</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// qemu::hw/virtio/virtio-pci.c  注册mr的ops</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> MemoryRegionOps virtio_pci_config_ops = &#123;</span><br><span class="line">    .read = virtio_pci_config_read,</span><br><span class="line">    .write = virtio_pci_config_write,</span><br><span class="line">    .impl = &#123;</span><br><span class="line">        .min_access_size = <span class="number">1</span>,</span><br><span class="line">        .max_access_size = <span class="number">4</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    .endianness = DEVICE_LITTLE_ENDIAN,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/virtio/virtio-pci.c  write的实现</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">virtio_pci_config_write</span><span class="params">(<span class="type">void</span> *opaque, hwaddr addr,</span></span><br><span class="line"><span class="params">                                    <span class="type">uint64_t</span> val, <span class="type">unsigned</span> size)</span></span><br><span class="line">&#123;</span><br><span class="line">    VirtIOPCIProxy *proxy = opaque;</span><br><span class="line">    <span class="type">uint32_t</span> config = VIRTIO_PCI_CONFIG_SIZE(&amp;proxy-&gt;pci_dev);</span><br><span class="line">    VirtIODevice *vdev = virtio_bus_get_device(&amp;proxy-&gt;bus);</span><br><span class="line">	</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">if</span> (addr &lt; config) &#123;</span><br><span class="line">        <span class="comment">/* ioport_write是这个的具体实现 */</span></span><br><span class="line">        virtio_ioport_write(proxy, addr, val);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/virtio/virtio-pci.c ioport_write的实现</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">virtio_ioport_write</span><span class="params">(<span class="type">void</span> *opaque, <span class="type">uint32_t</span> addr, <span class="type">uint32_t</span> val)</span></span><br><span class="line">&#123;</span><br><span class="line">    VirtIOPCIProxy *proxy = opaque;</span><br><span class="line">    VirtIODevice *vdev = virtio_bus_get_device(&amp;proxy-&gt;bus);</span><br><span class="line">    hwaddr pa;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> (addr) &#123;	<span class="comment">// 通过这个地址来判断这个地址属于什么类型</span></span><br><span class="line">    <span class="keyword">case</span> ... <span class="comment">// 各种情况</span></span><br><span class="line">    <span class="keyword">case</span> VIRTIO_PCI_QUEUE_NOTIFY:</span><br><span class="line">        <span class="keyword">if</span> (val &lt; VIRTIO_QUEUE_MAX) &#123;</span><br><span class="line">            <span class="comment">/* 主要函数 */</span></span><br><span class="line">            virtio_queue_notify(vdev, val);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> ...</span><br><span class="line">&#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line"><span class="comment">// qemu::hw/virtio/virtio.c  	   virtio_queue_notify的实现</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">virtio_queue_notify</span><span class="params">(VirtIODevice *vdev, <span class="type">int</span> n)</span></span><br><span class="line">&#123;</span><br><span class="line">    VirtQueue *vq = &amp;vdev-&gt;vq[n];</span><br><span class="line">	</span><br><span class="line">    <span class="keyword">if</span>(...)</span><br><span class="line">    &#123;</span><br><span class="line">    ...</span><br><span class="line">        <span class="comment">/* 主要函数 */</span></span><br><span class="line">        vq-&gt;handle_output(vdev, vq);</span><br><span class="line">	...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="9p后端实现相关"><a href="#9p后端实现相关" class="headerlink" title="9p后端实现相关"></a>9p后端实现相关</h2><p>可以看到最后是调了VirtQueue的handle_output这个方法，那么9p是在哪里注册的这个方法呢？</p>
+<h3 id="virtio-9p-device相关"><a href="#virtio-9p-device相关" class="headerlink" title="virtio_9p_device相关"></a>virtio_9p_device相关</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// qemu::hw/9pfs/virtio-9p-device.c  对9p dev的实现</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">virtio_9p_device_realize</span><span class="params">(DeviceState *dev, Error **errp)</span></span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    virtio_init(vdev, VIRTIO_ID_9P, v-&gt;config_size);</span><br><span class="line">    <span class="comment">/* 在这里注册了 */</span></span><br><span class="line">    v-&gt;vq = virtio_add_queue(vdev, MAX_REQ, handle_9p_output);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/virtio/virtio.c 注册函数</span></span><br><span class="line">VirtQueue *<span class="title function_">virtio_add_queue</span><span class="params">(VirtIODevice *vdev, <span class="type">int</span> queue_size,</span></span><br><span class="line"><span class="params">                            VirtIOHandleOutput handle_output)</span></span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    vdev-&gt;vq[i].handle_output = handle_output;	<span class="comment">// 注册handle_9p_output</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">return</span> &amp;vdev-&gt;vq[i];</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="handle-9p-output"><a href="#handle-9p-output" class="headerlink" title="handle_9p_output"></a>handle_9p_output</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// qemu:hw/9pfs/virtio-9p-device.c	handle_9p_output的实现</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">handle_9p_output</span><span class="params">(VirtIODevice *vdev, VirtQueue *vq)</span></span><br><span class="line">&#123;</span><br><span class="line">    V9fsPDU *pdu;	<span class="comment">// 分组数据单元</span></span><br><span class="line">    <span class="keyword">while</span>(...)&#123;</span><br><span class="line">    	elem = virtqueue_pop(vq, <span class="keyword">sizeof</span>(VirtQueueElement));  <span class="comment">// 获取virtqueue</span></span><br><span class="line">    ...</span><br><span class="line">        </span><br><span class="line">        v-&gt;elems[pdu-&gt;idx] = elem;</span><br><span class="line">        pdu_submit(pdu, &amp;out);	<span class="comment">// 关键函数的实现</span></span><br><span class="line">    ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu:hw/9pfs/9p.c	pdu_submit的实现</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">pdu_submit</span><span class="params">(V9fsPDU *pdu, P9MsgHeader *hdr)</span></span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    V9fsState *s = pdu-&gt;s;</span><br><span class="line">	...</span><br><span class="line">    <span class="keyword">if</span> (...)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        handler = pdu_co_handlers[pdu-&gt;id];	<span class="comment">// 关键取handle的地方，根据pdu的id即9p的类型</span></span><br><span class="line">    &#125;</span><br><span class="line">	...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/9pfs/9p.c pdu_co_handlers数组， 即很多9p相关的具体实现</span></span><br><span class="line"><span class="type">static</span> CoroutineEntry *pdu_co_handlers[] = &#123;</span><br><span class="line">    [P9_TREADDIR] = v9fs_readdir,</span><br><span class="line">    [P9_TSTATFS] = v9fs_statfs,</span><br><span class="line">    [P9_TGETATTR] = v9fs_getattr,</span><br><span class="line">    [P9_TSETATTR] = v9fs_setattr,</span><br><span class="line">    [P9_TXATTRWALK] = v9fs_xattrwalk,</span><br><span class="line">    [P9_TXATTRCREATE] = v9fs_xattrcreate,</span><br><span class="line">    [P9_TMKNOD] = v9fs_mknod,</span><br><span class="line">    [P9_TRENAME] = v9fs_rename,</span><br><span class="line">    [P9_TLOCK] = v9fs_lock,</span><br><span class="line">    [P9_TGETLOCK] = v9fs_getlock,</span><br><span class="line">    [P9_TRENAMEAT] = v9fs_renameat,</span><br><span class="line">    [P9_TREADLINK] = v9fs_readlink,</span><br><span class="line">    [P9_TUNLINKAT] = v9fs_unlinkat,</span><br><span class="line">    [P9_TMKDIR] = v9fs_mkdir,</span><br><span class="line">    [P9_TVERSION] = v9fs_version,</span><br><span class="line">    [P9_TLOPEN] = v9fs_open,</span><br><span class="line">    [P9_TATTACH] = v9fs_attach,</span><br><span class="line">    [P9_TSTAT] = v9fs_stat,</span><br><span class="line">    [P9_TWALK] = v9fs_walk,</span><br><span class="line">    [P9_TCLUNK] = v9fs_clunk,</span><br><span class="line">    [P9_TFSYNC] = v9fs_fsync,</span><br><span class="line">    [P9_TOPEN] = v9fs_open,</span><br><span class="line">    [P9_TREAD] = v9fs_read,</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> 0</span></span><br><span class="line">    [P9_TAUTH] = v9fs_auth,</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">    [P9_TFLUSH] = v9fs_flush,</span><br><span class="line">    [P9_TLINK] = v9fs_link,</span><br><span class="line">    [P9_TSYMLINK] = v9fs_symlink,</span><br><span class="line">    [P9_TCREATE] = v9fs_create,</span><br><span class="line">    [P9_TLCREATE] = v9fs_lcreate,</span><br><span class="line">    [P9_TWRITE] = v9fs_write,</span><br><span class="line">    [P9_TWSTAT] = v9fs_wstat,</span><br><span class="line">    [P9_TREMOVE] = v9fs_remove,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="v9fs-read实现"><a href="#v9fs-read实现" class="headerlink" title="v9fs_read实现"></a>v9fs_read实现</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// qemu::hw/9pfs/9p.c	read的具体实现 </span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> coroutine_fn <span class="title function_">v9fs_read</span><span class="params">(<span class="type">void</span> *opaque)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int32_t</span> fid;</span><br><span class="line">    <span class="type">uint64_t</span> off;</span><br><span class="line">    <span class="type">ssize_t</span> err = <span class="number">0</span>;</span><br><span class="line">    <span class="type">int32_t</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="type">size_t</span> offset = <span class="number">7</span>;</span><br><span class="line">    <span class="type">uint32_t</span> max_count;</span><br><span class="line">    V9fsFidState *fidp;</span><br><span class="line">    V9fsPDU *pdu = opaque;</span><br><span class="line">    V9fsState *s = pdu-&gt;s;</span><br><span class="line"></span><br><span class="line">    err = pdu_unmarshal(pdu, offset, <span class="string">&quot;dqd&quot;</span>, &amp;fid, &amp;off, &amp;max_count);	<span class="comment">// 取具体的数据</span></span><br><span class="line">   	...</span><br><span class="line">            <span class="keyword">do</span> &#123;</span><br><span class="line">                len = v9fs_co_preadv(pdu, fidp, qiov.iov, qiov.niov, off);	<span class="comment">// 主要实现</span></span><br><span class="line">                <span class="keyword">if</span> (len &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">                    off   += len;</span><br><span class="line">                    count += len;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">while</span> (len == -EINTR &amp;&amp; !pdu-&gt;cancelled);</span><br><span class="line">            ...</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/* 完成所有操作之后通知guest os */</span></span><br><span class="line">    pdu_complete(pdu, err);	<span class="comment">// 通知函数</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/9pfs/corefile.c</span></span><br><span class="line"><span class="type">int</span> coroutine_fn <span class="title function_">v9fs_co_preadv</span><span class="params">(V9fsPDU *pdu, V9fsFidState *fidp,</span></span><br><span class="line"><span class="params">                                <span class="keyword">struct</span> iovec *iov, <span class="type">int</span> iovcnt, <span class="type">int64_t</span> offset)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> err;</span><br><span class="line">    V9fsState *s = pdu-&gt;s;</span><br><span class="line">	...</span><br><span class="line">            err = s-&gt;ops-&gt;preadv(&amp;s-&gt;ctx, &amp;fidp-&gt;fs, iov, iovcnt, offset);	<span class="comment">// 主要实现</span></span><br><span class="line">	...</span><br><span class="line">    <span class="keyword">return</span> err;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/9pfs/9p-local.c  preadv的一种具体实现，另外还有两种</span></span><br><span class="line">FileOperations local_ops = &#123;</span><br><span class="line">    ... <span class="comment">// 很多操作</span></span><br><span class="line">    .open = local_open,</span><br><span class="line">    .opendir = local_opendir,</span><br><span class="line">    .rewinddir = local_rewinddir,</span><br><span class="line">    .telldir = local_telldir,</span><br><span class="line">    .readdir = local_readdir,</span><br><span class="line">    .seekdir = local_seekdir,</span><br><span class="line">    <span class="comment">/* 在这里 */</span></span><br><span class="line">    .preadv = local_preadv,</span><br><span class="line">    .pwritev = local_pwritev,</span><br><span class="line">    .chmod = local_chmod,</span><br><span class="line">    .mknod = local_mknod,</span><br><span class="line">    .mkdir = local_mkdir,</span><br><span class="line">    ... <span class="comment">//很多操作</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/9pfs/9p-local.c pread_v的实现</span></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">local_preadv</span><span class="params">(FsContext *ctx, V9fsFidOpenState *fs,</span></span><br><span class="line"><span class="params">                            <span class="type">const</span> <span class="keyword">struct</span> iovec *iov,</span></span><br><span class="line"><span class="params">                            <span class="type">int</span> iovcnt, <span class="type">off_t</span> offset)</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_PREADV</span></span><br><span class="line">    <span class="keyword">return</span> preadv(fs-&gt;fd, iov, iovcnt, offset);	<span class="comment">// 调用preadv</span></span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">    <span class="type">int</span> err = lseek(fs-&gt;fd, offset, SEEK_SET);</span><br><span class="line">    <span class="keyword">if</span> (err == <span class="number">-1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> err;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> readv(fs-&gt;fd, iov, iovcnt);	<span class="comment">// 调用readv</span></span><br><span class="line">    &#125;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::util/osdep.c  readv的实现</span></span><br><span class="line"><span class="type">ssize_t</span></span><br><span class="line"><span class="title function_">readv</span><span class="params">(<span class="type">int</span> fd, <span class="type">const</span> <span class="keyword">struct</span> iovec *iov, <span class="type">int</span> iov_cnt)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> readv_writev(fd, iov, iov_cnt, <span class="literal">false</span>);	<span class="comment">// 调用readv_writev</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::util/osdep.c readv_writev的实现</span></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span></span><br><span class="line"><span class="title function_">readv_writev</span><span class="params">(<span class="type">int</span> fd, <span class="type">const</span> <span class="keyword">struct</span> iovec *iov, <span class="type">int</span> iov_cnt, <span class="type">bool</span> do_write)</span></span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">while</span> (i &lt; iov_cnt) &#123;</span><br><span class="line">        <span class="type">ssize_t</span> r = do_write</span><br><span class="line">            ? write(fd, iov[i].iov_base + off, iov[i].iov_len - off)	</span><br><span class="line">            <span class="comment">// 调用linux posix系统调用read</span></span><br><span class="line">            : read(fd, iov[i].iov_base + off, iov[i].iov_len - off);	</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="pdu-complete设置中断"><a href="#pdu-complete设置中断" class="headerlink" title="pdu_complete设置中断"></a>pdu_complete设置中断</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// qemu::hw/9pfs/9p.c	在操作完成后设置中断</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> coroutine_fn <span class="title function_">pdu_complete</span><span class="params">(V9fsPDU *pdu, <span class="type">ssize_t</span> len)</span></span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">/* 主要函数push_and_notify */</span></span><br><span class="line">    pdu-&gt;s-&gt;transport-&gt;push_and_notify(pdu);</span><br><span class="line">	...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/9pfs/virtio-9p-device.c		注册push_and_notify</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> V9fsTransport virtio_9p_transport = &#123;</span><br><span class="line">    .pdu_vmarshal = virtio_pdu_vmarshal,</span><br><span class="line">    .pdu_vunmarshal = virtio_pdu_vunmarshal,</span><br><span class="line">    .init_in_iov_from_pdu = virtio_init_in_iov_from_pdu,</span><br><span class="line">    .init_out_iov_from_pdu = virtio_init_out_iov_from_pdu,</span><br><span class="line">    .push_and_notify = virtio_9p_push_and_notify,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/9pfs/virtio-9p-device.c		具体实现</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">virtio_9p_push_and_notify</span><span class="params">(V9fsPDU *pdu)</span></span><br><span class="line">&#123;</span><br><span class="line">    V9fsState *s = pdu-&gt;s;</span><br><span class="line">    V9fsVirtioState *v = container_of(s, V9fsVirtioState, state);</span><br><span class="line">    VirtQueueElement *elem = v-&gt;elems[pdu-&gt;idx];</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 把处理完的queue push进virtqueue队列里，并且设置中断通知guest os */</span></span><br><span class="line">    virtqueue_push(v-&gt;vq, elem, pdu-&gt;size);</span><br><span class="line">    g_free(elem);</span><br><span class="line">    v-&gt;elems[pdu-&gt;idx] = <span class="literal">NULL</span>;</span><br><span class="line">    </span><br><span class="line">    virtio_notify(VIRTIO_DEVICE(v), v-&gt;vq);	<span class="comment">// 通知函数</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/virtio/virtio.c		</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">virtio_notify</span><span class="params">(VirtIODevice *vdev, VirtQueue *vq)</span></span><br><span class="line">&#123;</span><br><span class="line">    WITH_RCU_READ_LOCK_GUARD() &#123;</span><br><span class="line">        <span class="keyword">if</span> (!virtio_should_notify(vdev, vq)) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    virtio_irq(vq);		<span class="comment">// 设置中断</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu::hw/virtio/virtio.c	</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">virtio_irq</span><span class="params">(VirtQueue *vq)</span></span><br><span class="line">&#123;</span><br><span class="line">    virtio_set_isr(vq-&gt;vdev, <span class="number">0x1</span>);	<span class="comment">// 设置中断</span></span><br><span class="line">    virtio_notify_vector(vq-&gt;vdev, vq-&gt;<span class="built_in">vector</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// qemu:: hw/virtio/virtio.c 设置中断</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">virtio_set_isr</span><span class="params">(VirtIODevice *vdev, <span class="type">int</span> value)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">uint8_t</span> old = qatomic_read(&amp;vdev-&gt;isr);</span><br><span class="line">    <span class="keyword">if</span> ((old &amp; value) != value) &#123;</span><br><span class="line">        qatomic_or(&amp;vdev-&gt;isr, value);	<span class="comment">// 写中断</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="unikraft侧"><a href="#unikraft侧" class="headerlink" title="unikraft侧"></a>unikraft侧</h1><h2 id="virtio-pci-handle获取中断处理"><a href="#virtio-pci-handle获取中断处理" class="headerlink" title="virtio_pci_handle获取中断处理"></a>virtio_pci_handle获取中断处理</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// unikraft::plat/drivers/virtio/virtio_pci.c  处理中断</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_pci_handle</span><span class="params">(<span class="type">void</span> *arg)</span></span><br><span class="line">&#123;</span><br><span class="line">	...</span><br><span class="line">	<span class="comment">/* 读中断状态 */</span></span><br><span class="line">	isr_status = virtio_cread8((<span class="type">void</span> *)(<span class="type">unsigned</span> <span class="type">long</span>)d-&gt;pci_isr_addr, <span class="number">0</span>);</span><br><span class="line">	...</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (isr_status &amp; VIRTIO_PCI_ISR_HAS_INTR) &#123;	<span class="comment">// 有中断了</span></span><br><span class="line">		UK_TAILQ_FOREACH(vq, &amp;d-&gt;vdev.vqs, next) &#123;	<span class="comment">// 遍历virtqueue队列来获取qemu处理的virtqueue</span></span><br><span class="line">			rc |= virtqueue_ring_interrupt(vq);	<span class="comment">// 处理中断</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// unikraft::plat/drivers/virtio/virtio_ring.c  处理中断</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">virtqueue_ring_interrupt</span><span class="params">(<span class="type">void</span> *obj)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtqueue</span> *<span class="title">vq</span> =</span> (<span class="keyword">struct</span> virtqueue *)obj;</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">if</span> (likely(vq-&gt;vq_callback))</span><br><span class="line">		rc = vq-&gt;vq_callback(vq, vq-&gt;priv);	<span class="comment">// 调用回调函数，即9p的相关函数</span></span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个回调函数callback在哪里注册的呢？其实在创建virtqueue的时候就注册了</p>
+<h2 id="callback相关"><a href="#callback相关" class="headerlink" title="callback相关"></a>callback相关</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// unikraft::plat/drivers/virtio/virtio_ring.c	注册回调函数</span></span><br><span class="line"><span class="keyword">struct</span> virtqueue *<span class="title function_">virtqueue_create</span><span class="params">(__u16 queue_id, __u16 nr_descs, __u16 align,</span></span><br><span class="line"><span class="params">				   <span class="type">virtqueue_callback_t</span> callback,</span></span><br><span class="line"><span class="params">				   <span class="type">virtqueue_notify_host_t</span> notify,</span></span><br><span class="line"><span class="params">				   <span class="keyword">struct</span> virtio_dev *vdev, <span class="keyword">struct</span> uk_alloc *a)</span></span><br><span class="line">&#123;</span><br><span class="line">	... <span class="comment">// 一些操作</span></span><br><span class="line">	vq = &amp;vrq-&gt;vq;</span><br><span class="line">	vq-&gt;queue_id = queue_id;</span><br><span class="line">	vq-&gt;vdev = vdev;</span><br><span class="line">    <span class="comment">/* 在这里注册了 */</span></span><br><span class="line">	vq-&gt;vq_callback = callback;</span><br><span class="line">	vq-&gt;vq_notify_host = notify;</span><br><span class="line">	<span class="keyword">return</span> vq;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// unikraft::plat/drivers/virtio/virtio_9p.c	在这里创建的vq</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_9p_vq_alloc</span><span class="params">(<span class="keyword">struct</span> virtio_9p_device *d)</span></span><br><span class="line">&#123;</span><br><span class="line">	...</span><br><span class="line">    <span class="comment">/* 这个setup函数调用的就是上面的create */</span></span><br><span class="line">	d-&gt;vq = virtio_vqueue_setup(d-&gt;vdev,</span><br><span class="line">				    d-&gt;hwvq_id,</span><br><span class="line">				    NUM_SEGMENTS,</span><br><span class="line">				    virtio_9p_recv,		<span class="comment">// 这个就是callback回调函数</span></span><br><span class="line">				    a);</span><br><span class="line">	...</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// unikraft::plat/drivers/virtio/virtio_9p.c	recv的实现</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_9p_recv</span><span class="params">(<span class="keyword">struct</span> virtqueue *vq, <span class="type">void</span> *priv)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">virtio_9p_device</span> *<span class="title">dev</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_9preq</span> *<span class="title">req</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">	<span class="type">uint32_t</span> len;</span><br><span class="line">	<span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">	<span class="type">int</span> handled = <span class="number">0</span>;</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">		...</span><br><span class="line">        <span class="comment">/* 取出virtqueue */</span></span><br><span class="line">		rc = virtqueue_buffer_dequeue(dev-&gt;vq, (<span class="type">void</span> **)&amp;req, &amp;len);</span><br><span class="line">		...</span><br><span class="line"></span><br><span class="line">		uk_9preq_receive_cb(req, len);	<span class="comment">// 真正实现</span></span><br><span class="line"></span><br><span class="line">        ...</span><br><span class="line">		handled = <span class="number">1</span>;</span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> handled;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// unikraft:lib/uk9p/9preq.c		具体实现</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_9preq_receive_cb</span><span class="params">(<span class="keyword">struct</span> uk_9preq *req, <span class="type">uint32_t</span> recv_size)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">uint32_t</span> size;</span><br><span class="line">	<span class="type">uint16_t</span> tag;</span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line">	...</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 根据9p协议解序列化. */</span></span><br><span class="line">	req-&gt;recv.offset = <span class="number">0</span>;</span><br><span class="line">	req-&gt;recv.size = recv_size;</span><br><span class="line">	<span class="keyword">if</span> ((rc = uk_9preq_read32(req, &amp;size)) &lt; <span class="number">0</span> ||</span><br><span class="line">		(rc = uk_9preq_read8(req, &amp;req-&gt;recv.type)) &lt; <span class="number">0</span> ||</span><br><span class="line">		(rc = uk_9preq_read16(req, &amp;tag)) &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">return</span> rc;</span><br><span class="line"></span><br><span class="line">	...</span><br><span class="line">	<span class="comment">/* 更新req的状态. */</span></span><br><span class="line">	UK_WRITE_ONCE(req-&gt;state, UK_9PREQ_RECEIVED);</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/11/07/9pfs%20kvm%20qemu%E6%BA%90%E7%A0%81%E6%B5%81%E7%A8%8B/" title="9pfs kvm qemu源码流程" target="_blank" rel="external">http://example.com/2022/11/07/9pfs kvm qemu源码流程/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/11/07/kvm%20qemu%20virtio%E4%B8%80%E4%BA%9B%E8%99%9A%E6%8B%9F%E5%8C%96%E7%9F%A5%E8%AF%86/" title="kvm qemu virtio一些虚拟化知识"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/10/30/lwip/" title="lwip 源码分析"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>
