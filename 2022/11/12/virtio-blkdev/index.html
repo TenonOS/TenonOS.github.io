@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>virtio-blkdev源码 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="块设备请求信息存入扇区链表建立扇区链表sglist，将*virtio_blk_req的请求存放在unikraft块设备队列的sglist的段中 12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758596061626364static in">
+<meta property="og:type" content="article">
+<meta property="og:title" content="virtio-blkdev源码">
+<meta property="og:url" content="http://example.com/2022/11/12/virtio-blkdev/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="块设备请求信息存入扇区链表建立扇区链表sglist，将*virtio_blk_req的请求存放在unikraft块设备队列的sglist的段中 12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758596061626364static in">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/virtio-blkdev/vritqueue%E9%80%9A%E4%BF%A1.png">
+<meta property="og:image" content="http://example.com/images/virtio-blkdev/%E5%B0%86virtio_blk_req%E7%9A%84%E8%AF%B7%E6%B1%82%E6%94%BE%E5%85%A5%E7%BC%93%E5%86%B2%E9%98%9F%E5%88%97(%E6%94%BE%E5%85%A5vring).png">
+<meta property="og:image" content="http://example.com/images/virtio-blkdev/used%20ring%E7%B4%A2%E5%BC%95%E5%85%B3%E7%B3%BB.png">
+<meta property="og:image" content="http://example.com/images/virtio-blkdev/dev%E4%B8%8Epci%E4%BA%A4%E4%BA%92.webp">
+<meta property="article:published_time" content="2022-11-12T05:09:27.670Z">
+<meta property="article:modified_time" content="2022-11-12T02:38:56.295Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="Plat">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/virtio-blkdev/vritqueue%E9%80%9A%E4%BF%A1.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/11/12/virtio-blkdev/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">9</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.8px;">Plat</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.6px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.4px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.2px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/virtio-blkdev%E6%A0%B8%E5%BF%83%E7%BB%93%E6%9E%84/" class="title">virtio-blkdev核心数据结构</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.672Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/virtio-blkdev/" class="title">virtio-blkdev源码</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.670Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/" class="title">Unikraft启动过程</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.651Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/uk_dpdk%EF%BC%88%E9%A9%B1%E5%8A%A8%E9%83%A8%E5%88%86%EF%BC%89/" class="title">uk_dpdk（驱动部分）</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.639Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/ukblkdev/" class="title">ukblkdev源码阅读</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.632Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9D%97%E8%AE%BE%E5%A4%87%E8%AF%B7%E6%B1%82%E4%BF%A1%E6%81%AF%E5%AD%98%E5%85%A5%E6%89%87%E5%8C%BA%E9%93%BE%E8%A1%A8"><span class="toc-number">1.</span> <span class="toc-text">块设备请求信息存入扇区链表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E7%AB%AF%E9%A9%B1%E5%8A%A8%E5%87%86%E5%A4%87%E5%A5%BD%E8%AF%B7%E6%B1%82%EF%BC%8C%E5%B9%B6%E9%80%9A%E7%9F%A5%E5%90%8E%E7%AB%AF"><span class="toc-number">2.</span> <span class="toc-text">前端驱动准备好请求，并通知后端</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9D%97%E8%AE%BE%E5%A4%87%E8%AF%B7%E6%B1%82%E7%9A%84%E5%85%A5%E9%98%9F%E4%B8%8E%E5%87%BA%E9%98%9F"><span class="toc-number">3.</span> <span class="toc-text">块设备请求的入队与出队</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AF%B7%E6%B1%82%E4%BA%8B%E4%BB%B6%E5%8A%A0%E8%BD%BD%E5%88%B0virtqueue"><span class="toc-number">3.1.</span> <span class="toc-text">请求事件加载到virtqueue</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#virtqueue-buffer-enqueue"><span class="toc-number">3.1.1.</span> <span class="toc-text">virtqueue_buffer_enqueue</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AF%B7%E6%B1%82%E4%BA%8B%E4%BB%B6%E4%BB%8Evirtqueue%E5%87%BA%E9%98%9F"><span class="toc-number">3.2.</span> <span class="toc-text">请求事件从virtqueue出队</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#virtqueue-buffer-dequeue"><span class="toc-number">3.2.1.</span> <span class="toc-text">virtqueue_buffer_dequeue</span></a></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%8E%E7%AB%AF%E5%AE%8C%E6%88%90%E8%AF%B7%E6%B1%82%E4%BA%8B%E4%BB%B6"><span class="toc-number">4.</span> <span class="toc-text">后端完成请求事件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#uk-blkdev-ops%E7%9A%84%E5%BA%95%E5%B1%82%E5%AE%9E%E7%8E%B0"><span class="toc-number">5.</span> <span class="toc-text">uk_blkdev ops的底层实现</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#virtio-blkdev-configure"><span class="toc-number">5.1.</span> <span class="toc-text">virtio_blkdev_configure</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#virtio-blkdev-queues-alloc"><span class="toc-number">5.1.1.</span> <span class="toc-text">virtio_blkdev_queues_alloc</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#virtio-blkdev-queue-setup"><span class="toc-number">5.2.</span> <span class="toc-text">virtio_blkdev_queue_setup</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#virtio-blkdev-vqueue-setup"><span class="toc-number">5.2.1.</span> <span class="toc-text">virtio_blkdev_vqueue_setup</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#virtio-blkdev-recv-done"><span class="toc-number">5.3.</span> <span class="toc-text">virtio_blkdev_recv_done</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#virtio-blkdev-start"><span class="toc-number">5.4.</span> <span class="toc-text">virtio_blkdev_start</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#virtio-blkdev-stop"><span class="toc-number">5.5.</span> <span class="toc-text">virtio_blkdev_stop</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#virtio-blkdev-queue-release"><span class="toc-number">5.6.</span> <span class="toc-text">virtio_blkdev_queue_release</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#virtio-blkdev-unconfigure"><span class="toc-number">5.7.</span> <span class="toc-text">virtio_blkdev_unconfigure</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A9%B1%E5%8A%A8%E5%88%9B%E5%BB%BAvirtio%E5%9D%97%E8%AE%BE%E5%A4%87"><span class="toc-number">6.</span> <span class="toc-text">驱动创建virtio块设备</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#virtio-blkdev-feature-negotiate"><span class="toc-number">6.1.</span> <span class="toc-text">virtio_blkdev_feature_negotiate</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8EPCI%E7%9A%84%E4%BA%A4%E4%BA%92"><span class="toc-number">7.</span> <span class="toc-text">与PCI的交互</span></a></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-virtio-blkdev" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      virtio-blkdev源码
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/11/12/virtio-blkdev/" class="article-date">
+	  <time datetime="2022-11-12T05:09:27.670Z" itemprop="datePublished">2022-11-12</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/Plat/" rel="tag">Plat</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/11/12/virtio-blkdev/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h3 id="块设备请求信息存入扇区链表"><a href="#块设备请求信息存入扇区链表" class="headerlink" title="块设备请求信息存入扇区链表"></a>块设备请求信息存入扇区链表</h3><p>建立扇区链表sglist，将*virtio_blk_req的请求存放在unikraft块设备队列的sglist的段中</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_request_set_sglist</span><span class="params">(<span class="keyword">struct</span> uk_blkdev_queue *<span class="built_in">queue</span>,</span></span><br><span class="line"><span class="params">        <span class="keyword">struct</span> virtio_blkdev_request *virtio_blk_req,</span></span><br><span class="line"><span class="params">        __sector sector_size,</span></span><br><span class="line"><span class="params">        <span class="type">bool</span> have_data)</span></span><br><span class="line">        <span class="comment">// have_data:标记是否有数据需要存放，有数据为1</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_blk_device</span> *<span class="title">vbdev</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkreq</span> *<span class="title">req</span>;</span></span><br><span class="line">    <span class="type">size_t</span> data_size = <span class="number">0</span>;</span><br><span class="line">    <span class="type">size_t</span> segment_size;</span><br><span class="line">    <span class="type">size_t</span> segment_max_size;</span><br><span class="line">    <span class="type">size_t</span> idx;</span><br><span class="line">    <span class="type">uintptr_t</span> start_data;</span><br><span class="line">    <span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(<span class="built_in">queue</span>);</span><br><span class="line">    UK_ASSERT(virtio_blk_req);</span><br><span class="line">  </span><br><span class="line">    req = virtio_blk_req-&gt;req;</span><br><span class="line">    vbdev = <span class="built_in">queue</span>-&gt;vbd;</span><br><span class="line">    start_data = (<span class="type">uintptr_t</span>)req-&gt;aio_buf;</span><br><span class="line">    data_size = req-&gt;nb_sectors * sector_size;</span><br><span class="line">    segment_max_size = vbdev-&gt;max_size_segment;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* Prepare the sglist */</span></span><br><span class="line">    uk_sglist_reset(&amp;<span class="built_in">queue</span>-&gt;sg);</span><br><span class="line">    <span class="comment">// 将virtio_blk_req-&gt;virtio_blk_outhdr添加到sglist中</span></span><br><span class="line">    rc = uk_sglist_append(&amp;<span class="built_in">queue</span>-&gt;sg, &amp;virtio_blk_req-&gt;virtio_blk_outhdr,</span><br><span class="line">            <span class="keyword">sizeof</span>(<span class="keyword">struct</span> virtio_blk_outhdr));</span><br><span class="line">    <span class="keyword">if</span> (unlikely(rc != <span class="number">0</span>)) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Failed to append to sg list %d\n&quot;</span>, rc);</span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* Append to sglist chunks of `segment_max_size` size</span></span><br><span class="line"><span class="comment">     * Only for read / write operations</span></span><br><span class="line"><span class="comment">     **/</span></span><br><span class="line">    <span class="keyword">if</span> (have_data)</span><br><span class="line">        <span class="comment">// 每次申请段的大小不能超过segment_max_size</span></span><br><span class="line">        <span class="comment">// 从start_data+0开始申请段，每次增加segment_max_size,直到data_size</span></span><br><span class="line">        <span class="keyword">for</span> (idx = <span class="number">0</span>; idx &lt; data_size; idx += segment_max_size) &#123;</span><br><span class="line">            segment_size = data_size - idx;  <span class="comment">// 查看剩余部分是不是小于segment_max_size</span></span><br><span class="line">            segment_size = (segment_size &gt; segment_max_size) ?</span><br><span class="line">                    segment_max_size : segment_size</span><br><span class="line">            rc = uk_sglist_append(&amp;<span class="built_in">queue</span>-&gt;sg,</span><br><span class="line">                    (<span class="type">void</span> *)(start_data + idx),</span><br><span class="line">                    segment_size);</span><br><span class="line">            <span class="keyword">if</span> (unlikely(rc != <span class="number">0</span>)) &#123;</span><br><span class="line">                uk_pr_err(<span class="string">&quot;Failed to append to sg list %d\n&quot;</span>,</span><br><span class="line">                        rc);</span><br><span class="line">                <span class="keyword">goto</span> out;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 将virtio_blk_req-&gt;status添加到sglist中</span></span><br><span class="line">    rc = uk_sglist_append(&amp;<span class="built_in">queue</span>-&gt;sg, &amp;virtio_blk_req-&gt;status,</span><br><span class="line">            <span class="keyword">sizeof</span>(<span class="type">uint8_t</span>));</span><br><span class="line">    <span class="keyword">if</span> (unlikely(rc != <span class="number">0</span>)) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Failed to append to sg list %d\n&quot;</span>, rc);</span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line">    &#125;</span><br><span class="line">out:</span><br><span class="line">    <span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="前端驱动准备好请求，并通知后端"><a href="#前端驱动准备好请求，并通知后端" class="headerlink" title="前端驱动准备好请求，并通知后端"></a>前端驱动准备好请求，并通知后端</h3><p>该函数是unikraft块设备uk_blkdev成员submit_one的具体实现</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_submit_request</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev,</span></span><br><span class="line"><span class="params">        <span class="keyword">struct</span> uk_blkdev_queue *<span class="built_in">queue</span>,</span></span><br><span class="line"><span class="params">        <span class="keyword">struct</span> uk_blkreq *req)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> status = <span class="number">0x0</span>;</span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(req);</span><br><span class="line">    UK_ASSERT(<span class="built_in">queue</span>);</span><br><span class="line">    UK_ASSERT(dev);</span><br><span class="line">  </span><br><span class="line">    rc = virtio_blkdev_queue_enqueue(<span class="built_in">queue</span>, req);</span><br><span class="line">    <span class="keyword">if</span> (likely(rc &gt;= <span class="number">0</span>)) &#123;</span><br><span class="line">        uk_pr_debug(<span class="string">&quot;Success and more descriptors available\n&quot;</span>);</span><br><span class="line">        status |= UK_BLKDEV_STATUS_SUCCESS;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * Notify the host the new buffer.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        virtqueue_host_notify(<span class="built_in">queue</span>-&gt;vq);</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * When there is further space available in the ring</span></span><br><span class="line"><span class="comment">         * return UK_BLKDEV_STATUS_MORE.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        status |= likely(rc &gt; <span class="number">0</span>) ? UK_BLKDEV_STATUS_MORE : <span class="number">0x0</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (rc == -ENOSPC) &#123;</span><br><span class="line">        uk_pr_debug(<span class="string">&quot;No more descriptors available\n&quot;</span>);</span><br><span class="line">        <span class="keyword">goto</span> err;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Failed to enqueue descriptors into the ring: %d\n&quot;</span></span><br><span class="line">              rc);</span><br><span class="line">        <span class="keyword">goto</span> err;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">return</span> status;</span><br><span class="line">err:</span><br><span class="line">    <span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="块设备请求的入队与出队"><a href="#块设备请求的入队与出队" class="headerlink" title="块设备请求的入队与出队"></a>块设备请求的入队与出队</h3><p>virtio-queue实现了环形缓冲区(ring buffer)，用于保存前端驱动和后端处理程序执行的信息，并且它可以批量的方式保存前端驱动的多次I/O请求，并且交由后端去批量处理，减少虚拟运行环境的模式切换，从而提高Guest与hypervisor信息交换的效率。<br><img src="/images/virtio-blkdev/vritqueue%E9%80%9A%E4%BF%A1.png" alt="virtqueue通信"></p>
+<h4 id="请求事件加载到virtqueue"><a href="#请求事件加载到virtqueue" class="headerlink" title="请求事件加载到virtqueue"></a>请求事件加载到virtqueue</h4><p>1.释放所有在uk_blkdev_queue中free_list所链接到的已完成的请求<br>2.分配virtio_blk_req空间存放uk_blkreq<br>3.根据请求操作类型(读、写、flush)，分配读写段<br>4.将请求事件加入virtqueue中</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_queue_enqueue</span><span class="params">(<span class="keyword">struct</span> uk_blkdev_queue *<span class="built_in">queue</span>,</span></span><br><span class="line"><span class="params">        <span class="keyword">struct</span> uk_blkreq *req)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_blkdev_request</span> *<span class="title">virtio_blk_req</span>;</span></span><br><span class="line">    __u16 write_segs = <span class="number">0</span>;</span><br><span class="line">    __u16 read_segs = <span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(<span class="built_in">queue</span>);</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 如果virtqueue不存在</span></span><br><span class="line">    <span class="keyword">if</span> (virtqueue_is_full(<span class="built_in">queue</span>-&gt;vq)) &#123;</span><br><span class="line">        uk_pr_debug(<span class="string">&quot;The virtqueue is full\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -ENOSPC;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 释放所有在queue-&gt;free_list中的请求(此类请求任务可能已经完成)</span></span><br><span class="line">    virtio_blkdev_queue_cleanup_requests(<span class="built_in">queue</span>);</span><br><span class="line">    virtio_blk_req = uk_malloc(a, <span class="keyword">sizeof</span>(*virtio_blk_req));</span><br><span class="line">    <span class="keyword">if</span> (!virtio_blk_req)</span><br><span class="line">        <span class="keyword">return</span> -ENOMEM;</span><br><span class="line">  </span><br><span class="line">    virtio_blk_req-&gt;req = req;</span><br><span class="line">    virtio_blk_req-&gt;virtio_blk_outhdr.sector = req-&gt;start_sector;</span><br><span class="line">    <span class="keyword">if</span> (req-&gt;operation == UK_BLKREQ_WRITE ||</span><br><span class="line">            req-&gt;operation == UK_BLKREQ_READ)</span><br><span class="line">        rc = virtio_blkdev_request_write(<span class="built_in">queue</span>, virtio_blk_req,</span><br><span class="line">                &amp;read_segs, &amp;write_segs);</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (req-&gt;operation == UK_BLKREQ_FFLUSH)</span><br><span class="line">        rc = virtio_blkdev_request_flush(<span class="built_in">queue</span>, virtio_blk_req,</span><br><span class="line">                &amp;read_segs, &amp;write_segs);</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">if</span> (rc)</span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 将virtio_blk_req的请求放入virtqueue中(vring)</span></span><br><span class="line">    rc = virtqueue_buffer_enqueue(<span class="built_in">queue</span>-&gt;vq, virtio_blk_req, &amp;<span class="built_in">queue</span>-&gt;sg,</span><br><span class="line">                      read_segs, write_segs);</span><br><span class="line">out:</span><br><span class="line">    <span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="virtqueue-buffer-enqueue"><a href="#virtqueue-buffer-enqueue" class="headerlink" title="virtqueue_buffer_enqueue"></a>virtqueue_buffer_enqueue</h5><p>具体流程如下：<br>1.由head_free_desc索引到空闲的vq_info[head_free_desc]，用于链接要装载的请求<br>2.将uk_blkdev_queue的读写段(请求事件的写入数据等)加载到vring<br>3.更新avail的ring，将head_free_desc写入ring<br>4.更新head_free_desc，（下一个空闲vring_desc的索引）<br><img src="/images/virtio-blkdev/%E5%B0%86virtio_blk_req%E7%9A%84%E8%AF%B7%E6%B1%82%E6%94%BE%E5%85%A5%E7%BC%93%E5%86%B2%E9%98%9F%E5%88%97(%E6%94%BE%E5%85%A5vring).png" alt="入队流程"></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span>     <span class="title function_">virtqueue_buffer_enqueue</span><span class="params">(<span class="keyword">struct</span> virtqueue *vq, <span class="type">void</span> *cookie,</span></span><br><span class="line"><span class="params">                 <span class="keyword">struct</span> uk_sglist *sg, __u16 read_bufs,</span></span><br><span class="line"><span class="params">                 __u16 write_bufs)</span></span><br><span class="line">&#123;</span><br><span class="line">    __u32 total_desc = <span class="number">0</span>;</span><br><span class="line">    __u16 head_idx = <span class="number">0</span>, idx = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtqueue_vring</span> *<span class="title">vrq</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(vq);</span><br><span class="line">  </span><br><span class="line">    vrq = to_virtqueue_vring(vq);  <span class="comment">// vq的vring的地址</span></span><br><span class="line">    total_desc = read_bufs + write_bufs;  <span class="comment">// 总段数(描述符总数量)</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (unlikely(total_desc &lt; <span class="number">1</span> || total_desc &gt; vrq-&gt;vring.num)) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;%&quot;</span>__PRIu32<span class="string">&quot; invalid number of descriptor\n&quot;</span>,</span><br><span class="line">              total_desc);</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (vrq-&gt;desc_avail &lt; total_desc) &#123;  <span class="comment">// 如果现存描述符过少</span></span><br><span class="line">        uk_pr_err(<span class="string">&quot;Available descriptor:%&quot;</span>__PRIu16<span class="string">&quot;, Requested descriptor:%&quot;</span>__PRIu32<span class="string">&quot;\n&quot;</span>,</span><br><span class="line">              vrq-&gt;desc_avail, total_desc);</span><br><span class="line">        <span class="keyword">return</span> -ENOSPC;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Get the head of free descriptor */</span></span><br><span class="line">    head_idx = vrq-&gt;head_free_desc;</span><br><span class="line">    UK_ASSERT(cookie);</span><br><span class="line">    <span class="comment">/* Additional information to reconstruct the data buffer */</span></span><br><span class="line">    vrq-&gt;vq_info[head_idx].cookie = cookie;</span><br><span class="line">    vrq-&gt;vq_info[head_idx].desc_count = total_desc;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * We separate the descriptor management to enqueue segment(s).</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="comment">// 将read和write的所有buffer信息放入vring的vring_desc数组中</span></span><br><span class="line">    idx = virtqueue_buffer_enqueue_segments(vrq, head_idx, sg,</span><br><span class="line">            read_bufs, write_bufs);</span><br><span class="line">    <span class="comment">/* Metadata maintenance for the virtqueue */</span></span><br><span class="line">    <span class="comment">// 更新virtqueue vring</span></span><br><span class="line">    vrq-&gt;head_free_desc = idx;</span><br><span class="line">    vrq-&gt;desc_avail -= total_desc;</span><br><span class="line">  </span><br><span class="line">    uk_pr_debug(<span class="string">&quot;Old head:%d, new head:%d, total_desc:%d\n&quot;</span>,</span><br><span class="line">            head_idx, idx, total_desc);</span><br><span class="line">  </span><br><span class="line">    virtqueue_ring_update_avail(vrq, head_idx);  <span class="comment">// 索引更新</span></span><br><span class="line">    <span class="keyword">return</span> vrq-&gt;desc_avail;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="请求事件从virtqueue出队"><a href="#请求事件从virtqueue出队" class="headerlink" title="请求事件从virtqueue出队"></a>请求事件从virtqueue出队</h4><p>1.将请求从virtqueue队列中出队<br>2.更新请求事件的结果(完成or未完成)<br>3.将请求加入virtio块队列的free_list中</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_queue_dequeue</span><span class="params">(<span class="keyword">struct</span> uk_blkdev_queue *<span class="built_in">queue</span>,</span></span><br><span class="line"><span class="params">        <span class="keyword">struct</span> uk_blkreq **req)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    __u32 len;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_blkdev_request</span> *<span class="title">response_req</span>;</span></span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(req);</span><br><span class="line">    *req = <span class="literal">NULL</span>;</span><br><span class="line">  </span><br><span class="line">    ret = virtqueue_buffer_dequeue(<span class="built_in">queue</span>-&gt;vq, (<span class="type">void</span> **) &amp;response_req, &amp;len);</span><br><span class="line">    <span class="keyword">if</span> (ret &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        uk_pr_info(<span class="string">&quot;No data available in the queue\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* We need at least one byte for the result status */</span></span><br><span class="line">    <span class="keyword">if</span> (unlikely(len &lt; <span class="number">1</span>)) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Received invalid response size: %u\n&quot;</span>, len);</span><br><span class="line">        ret = -EINVAL;</span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    *req = response_req-&gt;req;</span><br><span class="line">    (*req)-&gt;result = -response_req-&gt;status;</span><br><span class="line">  </span><br><span class="line">out:</span><br><span class="line">    uk_list_add(&amp;response_req-&gt;free_list_head, &amp;<span class="built_in">queue</span>-&gt;free_list);</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="virtqueue-buffer-dequeue"><a href="#virtqueue-buffer-dequeue" class="headerlink" title="virtqueue_buffer_dequeue"></a>virtqueue_buffer_dequeue</h5><p>1.获取请求在vring_desc描述符中的索引<br>2.读取要出队的请求<br>3.将请求在vring的描述符删除<br>4.返回现在vring可用的vring_desc描述符数量<br><img src="/images/virtio-blkdev/used%20ring%E7%B4%A2%E5%BC%95%E5%85%B3%E7%B3%BB.png" alt="usedring索引"></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">virtqueue_buffer_dequeue</span><span class="params">(<span class="keyword">struct</span> virtqueue *vq, <span class="type">void</span> **cookie, __u32 *len)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtqueue_vring</span> *<span class="title">vrq</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">    __u16 used_idx, head_idx;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">vring_used_elem</span> *<span class="title">elem</span>;</span></span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(vq);</span><br><span class="line">    UK_ASSERT(cookie);</span><br><span class="line">    vrq = to_virtqueue_vring(vq); <span class="comment">// virtqueue所在的vring</span></span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* No new descriptor since last dequeue operation */</span></span><br><span class="line">    <span class="keyword">if</span> (!virtqueue_hasdata(vq))</span><br><span class="line">        <span class="keyword">return</span> -ENOMSG;</span><br><span class="line">    <span class="comment">// 得到buffer中队尾在使用的描述符ring的索引</span></span><br><span class="line">    used_idx = vrq-&gt;last_used_desc_idx++ &amp; (vrq-&gt;vring.num - <span class="number">1</span>);</span><br><span class="line">    elem = &amp;vrq-&gt;vring.used-&gt;ring[used_idx];</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * We are reading from the used descriptor information updated by the</span></span><br><span class="line"><span class="comment">     * host.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    rmb();</span><br><span class="line">    head_idx = elem-&gt;id;  <span class="comment">// buffer队列的队头索引</span></span><br><span class="line">    <span class="keyword">if</span> (len)</span><br><span class="line">        *len = elem-&gt;len;</span><br><span class="line">    <span class="comment">// 获取vrq中的请求virtio_blkdev_request</span></span><br><span class="line">    *cookie = vrq-&gt;vq_info[head_idx].cookie;</span><br><span class="line">    <span class="comment">// 将head_idx所在的vring.desc全部置为可用，并将head_idx赋给head_free_desc</span></span><br><span class="line">    virtqueue_detach_desc(vrq, head_idx);</span><br><span class="line">    vrq-&gt;vq_info[head_idx].cookie = <span class="literal">NULL</span>;  <span class="comment">// 清除请求</span></span><br><span class="line">    <span class="keyword">return</span> (vrq-&gt;vring.num - vrq-&gt;desc_avail);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="后端完成请求事件"><a href="#后端完成请求事件" class="headerlink" title="后端完成请求事件"></a>后端完成请求事件</h3><p>该函数是unikraft块设备uk_blkdev成员finish_reqs的具体实现<br>1.将所有完成的请求事件从virtqueue中出队<br>2.将完成的请求事件标记为已完成</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_complete_reqs</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev,</span></span><br><span class="line"><span class="params">        <span class="keyword">struct</span> uk_blkdev_queue *<span class="built_in">queue</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkreq</span> *<span class="title">req</span>;</span></span><br><span class="line">    <span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(dev);</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* Queue interrupts have to be off when calling receive */</span></span><br><span class="line">    UK_ASSERT(!(<span class="built_in">queue</span>-&gt;intr_enabled &amp; VTBLK_INTR_EN));</span><br><span class="line">  </span><br><span class="line">moretodo:</span><br><span class="line">    <span class="comment">// 将所有完成的请求出队</span></span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        rc = virtio_blkdev_queue_dequeue(<span class="built_in">queue</span>, &amp;req);</span><br><span class="line">        <span class="keyword">if</span> (unlikely(rc &lt; <span class="number">0</span>)) &#123;</span><br><span class="line">            uk_pr_err(<span class="string">&quot;Failed to dequeue the request: %d\n&quot;</span>, rc);</span><br><span class="line">            <span class="keyword">goto</span> err_exit;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!req)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">  </span><br><span class="line">        <span class="comment">// 标记请求已经完成</span></span><br><span class="line">        uk_blkreq_finished(req);</span><br><span class="line">        <span class="keyword">if</span> (req-&gt;cb)</span><br><span class="line">            req-&gt;cb(req, req-&gt;cb_cookie);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Enable interrupt only when user had previously enabled it */</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">queue</span>-&gt;intr_enabled &amp; VTBLK_INTR_USR_EN_MASK) &#123;</span><br><span class="line">        rc = virtqueue_intr_enable(<span class="built_in">queue</span>-&gt;vq);</span><br><span class="line">        <span class="keyword">if</span> (rc == <span class="number">1</span>)</span><br><span class="line">            <span class="keyword">goto</span> moretodo;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">  </span><br><span class="line">err_exit:</span><br><span class="line">    <span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="uk-blkdev-ops的底层实现"><a href="#uk-blkdev-ops的底层实现" class="headerlink" title="uk_blkdev ops的底层实现"></a>uk_blkdev ops的底层实现</h3><h4 id="virtio-blkdev-configure"><a href="#virtio-blkdev-configure" class="headerlink" title="virtio_blkdev_configure"></a>virtio_blkdev_configure</h4><p>充当uk_blkdev的ops操作中<code>dev_configure</code>的具体实现<br>为virtio块设备分配uk_blkdev_queue队列的内存空间，功能由<code>virtio_blkdev_queues_alloc</code>实现</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_configure</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev,</span></span><br><span class="line"><span class="params">        <span class="type">const</span> <span class="keyword">struct</span> uk_blkdev_conf *conf)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_blk_device</span> *<span class="title">vbdev</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(dev != <span class="literal">NULL</span>);</span><br><span class="line">    UK_ASSERT(conf != <span class="literal">NULL</span>);</span><br><span class="line">  </span><br><span class="line">    vbdev = to_virtioblkdev(dev);</span><br><span class="line">    rc = virtio_blkdev_queues_alloc(vbdev, conf);</span><br><span class="line">    <span class="keyword">if</span> (rc) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Failed to allocate the queues %d\n&quot;</span>, rc);</span><br><span class="line">        <span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    uk_pr_info(DRIVER_NAME<span class="string">&quot;: %&quot;</span>__PRIu16<span class="string">&quot; configured\n&quot;</span>, vbdev-&gt;uid);</span><br><span class="line"><span class="built_in">exit</span>:</span><br><span class="line">    <span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="virtio-blkdev-queues-alloc"><a href="#virtio-blkdev-queues-alloc" class="headerlink" title="virtio_blkdev_queues_alloc"></a>virtio_blkdev_queues_alloc</h5><p>为virtio块设备分配uk_blkdev_queue队列的内存空间，数量与virtqueue保持一致<br>1.查看现存的virtqueue数量<br>2.为virtio_blk_device分配uk_blkdev_queue队列(根据virtqueue的数量)的内存空间<br>3.为每个队列赋予最多可用的描述符数量</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_queues_alloc</span><span class="params">(<span class="keyword">struct</span> virtio_blk_device *vbdev,</span></span><br><span class="line"><span class="params">                    <span class="type">const</span> <span class="keyword">struct</span> uk_blkdev_conf *conf)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">    <span class="type">uint16_t</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> vq_avail = <span class="number">0</span>;</span><br><span class="line">    __u16 qdesc_size[conf-&gt;nb_queues];</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">if</span> (conf-&gt;nb_queues &gt; vbdev-&gt;max_vqueue_pairs) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Queue number not supported: %&quot;</span>__PRIu16<span class="string">&quot;\n&quot;</span>,</span><br><span class="line">                conf-&gt;nb_queues);</span><br><span class="line">        <span class="keyword">return</span> -ENOTSUP;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    vbdev-&gt;nb_queues = conf-&gt;nb_queues;</span><br><span class="line">    <span class="comment">// 查看现存的virtqueue队列的数量，调用vdev-&gt;cops-&gt;vqs_find</span></span><br><span class="line">    vq_avail = virtio_find_vqs(vbdev-&gt;vdev, conf-&gt;nb_queues, qdesc_size);</span><br><span class="line">    <span class="keyword">if</span> (unlikely(vq_avail != conf-&gt;nb_queues)) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Expected: %d queues, Found: %d queues\n&quot;</span>,</span><br><span class="line">                conf-&gt;nb_queues, vq_avail);</span><br><span class="line">        rc = -ENOMEM;</span><br><span class="line">        <span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    vbdev-&gt;qs = uk_calloc(a, conf-&gt;nb_queues, <span class="keyword">sizeof</span>(*vbdev-&gt;qs));</span><br><span class="line">    <span class="keyword">if</span> (unlikely(vbdev-&gt;qs == <span class="literal">NULL</span>)) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Failed to allocate memory for queue management\n&quot;</span>);</span><br><span class="line">        rc = -ENOMEM;</span><br><span class="line">        <span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 为每个uk_blkdev_queue赋值max_nb_desc</span></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; conf-&gt;nb_queues; ++i)</span><br><span class="line">        vbdev-&gt;qs[i].max_nb_desc = qdesc_size[i];</span><br><span class="line">  </span><br><span class="line"><span class="built_in">exit</span>:</span><br><span class="line">    <span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="virtio-blkdev-queue-setup"><a href="#virtio-blkdev-queue-setup" class="headerlink" title="virtio_blkdev_queue_setup"></a>virtio_blkdev_queue_setup</h4><p>充当uk_blkdev的ops操作中<code>queue_configure</code>的具体实现<br>设置virtio_blkdev的uk_blkdev_queue队列的成员<br>1.为uk_blkdev_queue的成员指定赋值<br>2.为uk_blkdev_queue分配扇区链表<br>3.设置virtqueue的成员</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">struct</span> uk_blkdev_queue *<span class="title function_">virtio_blkdev_queue_setup</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev,</span></span><br><span class="line"><span class="params">        <span class="type">uint16_t</span> queue_id,</span></span><br><span class="line"><span class="params">        <span class="type">uint16_t</span> nb_desc,</span></span><br><span class="line"><span class="params">        <span class="type">const</span> <span class="keyword">struct</span> uk_blkdev_queue_conf *queue_conf)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_blk_device</span> *<span class="title">vbdev</span>;</span></span><br><span class="line">    <span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_queue</span> *<span class="title">queue</span>;</span></span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(dev != <span class="literal">NULL</span>);</span><br><span class="line">    UK_ASSERT(queue_conf != <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 得到dev所在的virtio_blkdev</span></span><br><span class="line">    vbdev = to_virtioblkdev(dev);</span><br><span class="line">    <span class="keyword">if</span> (unlikely(queue_id &gt;= vbdev-&gt;nb_queues)) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Invalid queue_id %&quot;</span>__PRIu16<span class="string">&quot;\n&quot;</span>, queue_id);</span><br><span class="line">        rc = -EINVAL;</span><br><span class="line">        <span class="keyword">goto</span> err_exit;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="built_in">queue</span> = &amp;vbdev-&gt;qs[queue_id];  <span class="comment">// 要setup的queue</span></span><br><span class="line">    <span class="built_in">queue</span>-&gt;a = queue_conf-&gt;a;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* Init sglist */</span></span><br><span class="line">    <span class="built_in">queue</span>-&gt;sgsegs = uk_malloc(<span class="built_in">queue</span>-&gt;a,</span><br><span class="line">            vbdev-&gt;max_segments * <span class="keyword">sizeof</span>(*<span class="built_in">queue</span>-&gt;sgsegs));</span><br><span class="line">    <span class="keyword">if</span> (unlikely(!<span class="built_in">queue</span>-&gt;sgsegs)) &#123;</span><br><span class="line">        rc = -ENOMEM;</span><br><span class="line">        <span class="keyword">goto</span> err_exit;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    uk_sglist_init(&amp;<span class="built_in">queue</span>-&gt;sg, vbdev-&gt;max_segments,</span><br><span class="line">            <span class="built_in">queue</span>-&gt;sgsegs);</span><br><span class="line">    <span class="built_in">queue</span>-&gt;vbd = vbdev;</span><br><span class="line">    <span class="built_in">queue</span>-&gt;nb_desc = nb_desc;</span><br><span class="line">    <span class="built_in">queue</span>-&gt;lqueue_id = queue_id;</span><br><span class="line">    UK_INIT_LIST_HEAD(&amp;<span class="built_in">queue</span>-&gt;free_list);</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* Setup the virtqueue with the descriptor */</span></span><br><span class="line">    rc = virtio_blkdev_vqueue_setup(<span class="built_in">queue</span>, nb_desc);</span><br><span class="line">    <span class="keyword">if</span> (rc &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Failed to set up virtqueue %&quot;</span>__PRIu16<span class="string">&quot;: %d\n&quot;</span>,</span><br><span class="line">              queue_id, rc);</span><br><span class="line">        <span class="keyword">goto</span> setup_err;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line"><span class="built_in">exit</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">queue</span>;</span><br><span class="line">setup_err:</span><br><span class="line">    <span class="comment">// 无法创建就释放</span></span><br><span class="line">    uk_free(<span class="built_in">queue</span>-&gt;a, <span class="built_in">queue</span>-&gt;sgsegs);</span><br><span class="line">err_exit:</span><br><span class="line">    <span class="built_in">queue</span> = ERR2PTR(rc);</span><br><span class="line">    <span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="virtio-blkdev-vqueue-setup"><a href="#virtio-blkdev-vqueue-setup" class="headerlink" title="virtio_blkdev_vqueue_setup"></a>virtio_blkdev_vqueue_setup</h5><p>创建virtio_blkdev的一个virtqueue队列<br>1.确定要创建的virtqueue的描述符的数量<br>2.创建virtqueue</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_vqueue_setup</span><span class="params">(<span class="keyword">struct</span> uk_blkdev_queue *<span class="built_in">queue</span>,</span></span><br><span class="line"><span class="params">        <span class="type">uint16_t</span> nr_desc)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">uint16_t</span> max_desc;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtqueue</span> *<span class="title">vq</span>;</span></span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(<span class="built_in">queue</span>);</span><br><span class="line">    max_desc = <span class="built_in">queue</span>-&gt;max_nb_desc;</span><br><span class="line">    <span class="keyword">if</span> (unlikely(max_desc &lt; nr_desc)) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Max desc: %&quot;</span>__PRIu16<span class="string">&quot; Requested desc:%&quot;</span>__PRIu16<span class="string">&quot;\n&quot;</span>,</span><br><span class="line">              max_desc, nr_desc);</span><br><span class="line">        <span class="keyword">return</span> -ENOBUFS;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    nr_desc = (nr_desc) ? nr_desc : max_desc;</span><br><span class="line">    uk_pr_debug(<span class="string">&quot;Configuring the %d descriptors\n&quot;</span>, nr_desc);</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* Check if the descriptor is a power of 2 */</span></span><br><span class="line">    <span class="keyword">if</span> (unlikely(nr_desc &amp; (nr_desc - <span class="number">1</span>))) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Expected descriptor count as a power 2\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 对vdev-&gt;cops-&gt;vq_setup的一层抽象</span></span><br><span class="line">    vq = virtio_vqueue_setup(<span class="built_in">queue</span>-&gt;vbd-&gt;vdev, <span class="built_in">queue</span>-&gt;lqueue_id, nr_desc,</span><br><span class="line">            virtio_blkdev_recv_done, a);</span><br><span class="line">    <span class="keyword">if</span> (unlikely(PTRISERR(vq))) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Failed to set up virtqueue %&quot;</span>__PRIu16<span class="string">&quot;\n&quot;</span>,</span><br><span class="line">              <span class="built_in">queue</span>-&gt;lqueue_id);</span><br><span class="line">        <span class="keyword">return</span> PTR2ERR(vq);</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="built_in">queue</span>-&gt;vq = vq;</span><br><span class="line">    vq-&gt;priv = <span class="built_in">queue</span>;</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="virtio-blkdev-recv-done"><a href="#virtio-blkdev-recv-done" class="headerlink" title="virtio_blkdev_recv_done"></a>virtio_blkdev_recv_done</h4><p>virtqueue将事件从后端发送至前端(前端接收)<br>在块设备通信中，充当virtqueue的vq_callback回调函数的实现接口</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_recv_done</span><span class="params">(<span class="keyword">struct</span> virtqueue *vq, <span class="type">void</span> *priv)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_queue</span> *<span class="title">queue</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(vq &amp;&amp; priv);</span><br><span class="line">  </span><br><span class="line">    <span class="built_in">queue</span> = (<span class="keyword">struct</span> uk_blkdev_queue *) priv;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Disable the interrupt for the ring */</span></span><br><span class="line">    virtqueue_intr_disable(vq);</span><br><span class="line">    <span class="built_in">queue</span>-&gt;intr_enabled &amp;= ~(VTBLK_INTR_EN);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 将virtqueue的事件转发给用户</span></span><br><span class="line">    uk_blkdev_drv_queue_event(&amp;<span class="built_in">queue</span>-&gt;vbd-&gt;blkdev, <span class="built_in">queue</span>-&gt;lqueue_id);</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="virtio-blkdev-start"><a href="#virtio-blkdev-start" class="headerlink" title="virtio_blkdev_start"></a>virtio_blkdev_start</h4><p>充当uk_blkdev的ops操作中<code>dev_start</code>的具体实现<br>标记virtio配置完成，可以与后端开始通信和数据传输</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_start</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_blk_device</span> *<span class="title">d</span>;</span></span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(dev != <span class="literal">NULL</span>);</span><br><span class="line">  </span><br><span class="line">    d = to_virtioblkdev(dev);</span><br><span class="line">    <span class="comment">// virtio_dev状态更新为virtio的配置初始化完成</span></span><br><span class="line">    virtio_dev_drv_up(d-&gt;vdev);</span><br><span class="line">  </span><br><span class="line">    uk_pr_info(DRIVER_NAME<span class="string">&quot;: %&quot;</span>__PRIu16<span class="string">&quot; started\n&quot;</span>, d-&gt;uid);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="virtio-blkdev-stop"><a href="#virtio-blkdev-stop" class="headerlink" title="virtio_blkdev_stop"></a>virtio_blkdev_stop</h4><p>充当uk_blkdev的ops操作中<code>dev_stop</code>的具体实现<br>停止virtio块设备的通信</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_stop</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_blk_device</span> *<span class="title">d</span>;</span></span><br><span class="line">    <span class="type">uint16_t</span> q_id;</span><br><span class="line">    <span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(dev != <span class="literal">NULL</span>);</span><br><span class="line">    d = to_virtioblkdev(dev);</span><br><span class="line">    <span class="comment">// 遍历vbd所有uk_blkdev_queue，其对应的virtqueue不能有请求</span></span><br><span class="line">    <span class="keyword">for</span> (q_id = <span class="number">0</span>; q_id &lt; d-&gt;nb_queues; ++q_id) &#123;</span><br><span class="line">        <span class="keyword">if</span> (virtqueue_hasdata(d-&gt;qs[q_id].vq)) &#123;</span><br><span class="line">            uk_pr_err(<span class="string">&quot;Queue:%&quot;</span>__PRIu16<span class="string">&quot; has unconsumed responses\n&quot;</span>,</span><br><span class="line">                    q_id);</span><br><span class="line">            <span class="keyword">return</span> -EBUSY;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 重建virtio块设备，调用vdev-&gt;cops-&gt;device_reset</span></span><br><span class="line">    rc = virtio_dev_reset(d-&gt;vdev);</span><br><span class="line">    <span class="keyword">if</span> (rc) &#123;</span><br><span class="line">        uk_pr_info(DRIVER_NAME<span class="string">&quot;:%&quot;</span>__PRIu16<span class="string">&quot; stopped&quot;</span>, d-&gt;uid);</span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    uk_pr_warn(DRIVER_NAME<span class="string">&quot;:%&quot;</span>__PRIu16<span class="string">&quot; Start is not allowed!!!&quot;</span>, d-&gt;uid);</span><br><span class="line">  </span><br><span class="line">out:</span><br><span class="line">    <span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="virtio-blkdev-queue-release"><a href="#virtio-blkdev-queue-release" class="headerlink" title="virtio_blkdev_queue_release"></a>virtio_blkdev_queue_release</h4><p>充当uk_blkdev的ops操作中<code>queue_unconfigure</code>的具体实现<br>释放uk_blkdev_queue队列的成员<br>1.释放所有在queue-&gt;free_list中的请求(此类请求任务可能已经完成)<br>2.释放sglist扇区链表的内存空间<br>3.释放virtqueue队列的成员</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_queue_release</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev,</span></span><br><span class="line"><span class="params">        <span class="keyword">struct</span> uk_blkdev_queue *<span class="built_in">queue</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_blk_device</span> *<span class="title">vbdev</span>;</span></span><br><span class="line">    <span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(dev != <span class="literal">NULL</span>);</span><br><span class="line">    vbdev = to_virtioblkdev(dev);</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 释放所有在queue-&gt;free_list中的请求(此类请求任务可能已经完成)</span></span><br><span class="line">    virtio_blkdev_queue_cleanup_requests(<span class="built_in">queue</span>);</span><br><span class="line">    <span class="comment">// 释放sglist扇区链表</span></span><br><span class="line">    uk_free(<span class="built_in">queue</span>-&gt;a, <span class="built_in">queue</span>-&gt;sgsegs);</span><br><span class="line">    <span class="comment">// 释放virtqueue，调用vdev-&gt;cops-&gt;vq_release</span></span><br><span class="line">    virtio_vqueue_release(vbdev-&gt;vdev, <span class="built_in">queue</span>-&gt;vq, <span class="built_in">queue</span>-&gt;a);</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="virtio-blkdev-unconfigure"><a href="#virtio-blkdev-unconfigure" class="headerlink" title="virtio_blkdev_unconfigure"></a>virtio_blkdev_unconfigure</h4><p>充当uk_blkdev的ops操作中<code>dev_unconfigure</code>的具体实现<br>释放virtio块设备中的uk_blkdev_queue的队列的内存空间</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_unconfigure</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_blk_device</span> *<span class="title">d</span>;</span></span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(dev != <span class="literal">NULL</span>);</span><br><span class="line">    d = to_virtioblkdev(dev);</span><br><span class="line">    uk_free(a, d-&gt;qs);</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="驱动创建virtio块设备"><a href="#驱动创建virtio块设备" class="headerlink" title="驱动创建virtio块设备"></a>驱动创建virtio块设备</h3><p>在块设备io通信中，<code>virtio_blk_drv_init</code>为virtio驱动的<code>add_dev</code>成员<br>1.分配virtio块设备的内存空间<br>2.设置virtio块设备的成员<br>3.注册uk_blkdev块设备<br>4.设置驱动程序支持的功能<br>5.进行virtio块设备的特征协商</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blk_add_dev</span><span class="params">(<span class="keyword">struct</span> virtio_dev *vdev)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_blk_device</span> *<span class="title">vbdev</span>;</span></span><br><span class="line">    <span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(vdev != <span class="literal">NULL</span>);</span><br><span class="line">  </span><br><span class="line">    vbdev = uk_calloc(a, <span class="number">1</span>, <span class="keyword">sizeof</span>(*vbdev));</span><br><span class="line">    <span class="keyword">if</span> (!vbdev)</span><br><span class="line">        <span class="keyword">return</span> -ENOMEM;</span><br><span class="line">  </span><br><span class="line">    vbdev-&gt;vdev = vdev;</span><br><span class="line">    vbdev-&gt;blkdev.finish_reqs = virtio_blkdev_complete_reqs;</span><br><span class="line">    vbdev-&gt;blkdev.submit_one = virtio_blkdev_submit_request;</span><br><span class="line">    vbdev-&gt;blkdev.dev_ops = &amp;virtio_blkdev_ops;</span><br><span class="line">  </span><br><span class="line">    rc = uk_blkdev_drv_register(&amp;vbdev-&gt;blkdev, a, drv_name);</span><br><span class="line">    <span class="keyword">if</span> (rc &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Failed to register virtio_blk device: %d\n&quot;</span>, rc);</span><br><span class="line">        <span class="keyword">goto</span> err_out;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    vbdev-&gt;uid = rc;</span><br><span class="line">    <span class="comment">// 设置驱动程序支持的功能</span></span><br><span class="line">    virtio_blkdev_feature_set(vbdev);</span><br><span class="line">    <span class="comment">// 进行特征协商</span></span><br><span class="line">    rc = virtio_blkdev_feature_negotiate(vbdev);</span><br><span class="line">    <span class="keyword">if</span> (rc) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Failed to negotiate the device feature %d\n&quot;</span>, rc);</span><br><span class="line">        <span class="keyword">goto</span> err_negotiate_feature;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    uk_pr_info(<span class="string">&quot;Virtio-blk device registered with libukblkdev\n&quot;</span>);</span><br><span class="line">  </span><br><span class="line">out:</span><br><span class="line">    <span class="keyword">return</span> rc;</span><br><span class="line">err_negotiate_feature:</span><br><span class="line">    virtio_dev_status_update(vbdev-&gt;vdev, VIRTIO_CONFIG_STATUS_FAIL);</span><br><span class="line">err_out:</span><br><span class="line">    uk_free(a, vbdev);</span><br><span class="line">    <span class="keyword">goto</span> out;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="virtio-blkdev-feature-negotiate"><a href="#virtio-blkdev-feature-negotiate" class="headerlink" title="virtio_blkdev_feature_negotiate"></a>virtio_blkdev_feature_negotiate</h4><p>virtio块设备的特征协商</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">virtio_blkdev_feature_negotiate</span><span class="params">(<span class="keyword">struct</span> virtio_blk_device *vbdev)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_cap</span> *<span class="title">cap</span>;</span></span><br><span class="line">    __u64 host_features = <span class="number">0</span>;</span><br><span class="line">    __sector sectors;</span><br><span class="line">    __sector ssize;</span><br><span class="line">    __u16 num_queues;</span><br><span class="line">    __u32 max_segments;</span><br><span class="line">    __u32 max_size_segment;</span><br><span class="line">    <span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">  </span><br><span class="line">    UK_ASSERT(vbdev);</span><br><span class="line">    cap = &amp;vbdev-&gt;blkdev.capabilities;</span><br><span class="line">    <span class="comment">// 获得host的features,调用vdev-&gt;cops-&gt;features_get</span></span><br><span class="line">    host_features = virtio_feature_get(vbdev-&gt;vdev);</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* Get size of device */</span></span><br><span class="line">    <span class="comment">// 1. 得到设备中sectors的数量，调用vdev-&gt;cops-&gt;config_get</span></span><br><span class="line">    rc = virtio_config_get(vbdev-&gt;vdev,</span><br><span class="line">            __offsetof(<span class="keyword">struct</span> virtio_blk_config, capacity),</span><br><span class="line">            &amp;sectors,</span><br><span class="line">            <span class="keyword">sizeof</span>(sectors),</span><br><span class="line">            <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">if</span> (unlikely(rc)) &#123;</span><br><span class="line">        uk_pr_err(<span class="string">&quot;Failed to get nb of sectors from device %d\n&quot;</span>, rc);</span><br><span class="line">        <span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 2. 得到设备中sector的size信息</span></span><br><span class="line">    <span class="comment">// 如果没有sectors的size信息，设为默认值</span></span><br><span class="line">    <span class="keyword">if</span> (!VIRTIO_FEATURE_HAS(host_features, VIRTIO_BLK_F_BLK_SIZE)) &#123;</span><br><span class="line">        ssize = DEFAULT_SECTOR_SIZE;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        rc = virtio_config_get(vbdev-&gt;vdev,</span><br><span class="line">                __offsetof(<span class="keyword">struct</span> virtio_blk_config, blk_size),</span><br><span class="line">                &amp;ssize,</span><br><span class="line">                <span class="keyword">sizeof</span>(ssize),</span><br><span class="line">                <span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (unlikely(rc)) &#123;</span><br><span class="line">            uk_pr_err(<span class="string">&quot;Failed to get ssize from the device %d\n&quot;</span>,</span><br><span class="line">                    rc);</span><br><span class="line">            <span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* If the device does not support multi-queues,</span></span><br><span class="line"><span class="comment">     * we will use only one queue.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="comment">// 3. 得到设备中virtqueue数量</span></span><br><span class="line">    <span class="keyword">if</span> (VIRTIO_FEATURE_HAS(host_features, VIRTIO_BLK_F_MQ)) &#123;</span><br><span class="line">        rc = virtio_config_get(vbdev-&gt;vdev,</span><br><span class="line">                    __offsetof(<span class="keyword">struct</span> virtio_blk_config,</span><br><span class="line">                            num_queues),</span><br><span class="line">                    &amp;num_queues,</span><br><span class="line">                    <span class="keyword">sizeof</span>(num_queues),</span><br><span class="line">                    <span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (unlikely(rc)) &#123;</span><br><span class="line">            uk_pr_err(<span class="string">&quot;Failed to read max-queues\n&quot;</span>);</span><br><span class="line">            <span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span></span><br><span class="line">        num_queues = <span class="number">1</span>;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 4. 得到设备中可承受的最大段数</span></span><br><span class="line">    <span class="keyword">if</span> (VIRTIO_FEATURE_HAS(host_features, VIRTIO_BLK_F_SEG_MAX)) &#123;</span><br><span class="line">        rc = virtio_config_get(vbdev-&gt;vdev,</span><br><span class="line">            __offsetof(<span class="keyword">struct</span> virtio_blk_config, seg_max),</span><br><span class="line">            &amp;max_segments,</span><br><span class="line">            <span class="keyword">sizeof</span>(max_segments),</span><br><span class="line">            <span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (unlikely(rc)) &#123;</span><br><span class="line">            uk_pr_err(<span class="string">&quot;Failed to get maximum nb of segments\n&quot;</span>);</span><br><span class="line">            <span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span></span><br><span class="line">        max_segments = <span class="number">1</span>;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* We need extra sg elements for head (header) and tail (status). */</span></span><br><span class="line">    max_segments += <span class="number">2</span>;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 5. 得到设备中段可用的最大size</span></span><br><span class="line">    <span class="keyword">if</span> (VIRTIO_FEATURE_HAS(host_features, VIRTIO_BLK_F_SIZE_MAX)) &#123;</span><br><span class="line">        rc = virtio_config_get(vbdev-&gt;vdev,</span><br><span class="line">            __offsetof(<span class="keyword">struct</span> virtio_blk_config, size_max),</span><br><span class="line">            &amp;max_size_segment,</span><br><span class="line">            <span class="keyword">sizeof</span>(max_size_segment),</span><br><span class="line">            <span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (unlikely(rc)) &#123;</span><br><span class="line">            uk_pr_err(<span class="string">&quot;Failed to get size max from device %d\n&quot;</span>,</span><br><span class="line">                    rc);</span><br><span class="line">            <span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span></span><br><span class="line">        max_size_segment = __PAGE_SIZE;</span><br><span class="line">  </span><br><span class="line">    cap-&gt;ssize = ssize;</span><br><span class="line">    cap-&gt;sectors = sectors;</span><br><span class="line">    cap-&gt;ioalign = <span class="keyword">sizeof</span>(<span class="type">void</span> *);</span><br><span class="line">    cap-&gt;mode = (VIRTIO_FEATURE_HAS(</span><br><span class="line">            host_features, VIRTIO_BLK_F_RO)) ? O_RDONLY : O_RDWR;</span><br><span class="line">    cap-&gt;max_sectors_per_req =</span><br><span class="line">            max_size_segment / ssize * (max_segments - <span class="number">2</span>);</span><br><span class="line">  </span><br><span class="line">    vbdev-&gt;max_vqueue_pairs = num_queues;</span><br><span class="line">    vbdev-&gt;max_segments = max_segments;</span><br><span class="line">    vbdev-&gt;max_size_segment = max_size_segment;</span><br><span class="line">    vbdev-&gt;writeback = VIRTIO_FEATURE_HAS(host_features,</span><br><span class="line">                VIRTIO_BLK_F_FLUSH);</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Mask out features supported by both driver and device.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    vbdev-&gt;vdev-&gt;features &amp;= host_features;</span><br><span class="line">    <span class="comment">// 设置virtio_dev的features，调用vdev-&gt;cops-&gt;features_set</span></span><br><span class="line">    virtio_feature_set(vbdev-&gt;vdev, vbdev-&gt;vdev-&gt;features);</span><br><span class="line">  </span><br><span class="line"><span class="built_in">exit</span>:</span><br><span class="line">    <span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="与PCI的交互"><a href="#与PCI的交互" class="headerlink" title="与PCI的交互"></a>与PCI的交互</h3><p>上述函数中有很多功能的底层实现均调用了virtio_dev的配置操作*ops，结构如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">virtio_config_ops</span> &#123;</span></span><br><span class="line">    <span class="comment">/** Resetting the device */</span></span><br><span class="line">    <span class="type">void</span> (*device_reset)(<span class="keyword">struct</span> virtio_dev *vdev);</span><br><span class="line">    <span class="comment">/** Set configuration option */</span></span><br><span class="line">    <span class="type">int</span> (*config_set)(<span class="keyword">struct</span> virtio_dev *vdev, __u16 offset,</span><br><span class="line">              <span class="type">const</span> <span class="type">void</span> *buf, __u32 len);</span><br><span class="line">    <span class="comment">/** Get configuration option */</span></span><br><span class="line">    <span class="type">int</span> (*config_get)(<span class="keyword">struct</span> virtio_dev *vdev, __u16 offset, <span class="type">void</span> *buf,</span><br><span class="line">              __u32 len, __u8 type_len);</span><br><span class="line">    <span class="comment">/** Get the feature */</span></span><br><span class="line">    __u64 (*features_get)(<span class="keyword">struct</span> virtio_dev *vdev);</span><br><span class="line">    <span class="comment">/** Set the feature */</span></span><br><span class="line">    <span class="type">void</span> (*features_set)(<span class="keyword">struct</span> virtio_dev *vdev, __u64 features);</span><br><span class="line">    <span class="comment">/** Get and Set Status */</span></span><br><span class="line">    __u8 (*status_get)(<span class="keyword">struct</span> virtio_dev *vdev);</span><br><span class="line">    <span class="type">void</span> (*status_set)(<span class="keyword">struct</span> virtio_dev *vdev, __u8 status);</span><br><span class="line">    <span class="comment">/** Find the virtqueue */</span></span><br><span class="line">    <span class="type">int</span> (*vqs_find)(<span class="keyword">struct</span> virtio_dev *vdev, __u16 num_vq, __u16 *vq_size);</span><br><span class="line">    <span class="comment">/** Setup the virtqueue */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtqueue</span> *(*<span class="title">vq_setup</span>)(<span class="keyword">struct</span> <span class="title">virtio_dev</span> *<span class="title">vdev</span>, __<span class="title">u16</span> <span class="title">num_desc</span>,</span></span><br><span class="line"><span class="class">                      __<span class="title">u16</span> <span class="title">queue_id</span>,</span></span><br><span class="line"><span class="class">                      <span class="title">virtqueue_callback_t</span> <span class="title">callback</span>,</span></span><br><span class="line"><span class="class">                      <span class="keyword">struct</span> <span class="title">uk_alloc</span> *<span class="title">a</span>);</span></span><br><span class="line">    <span class="type">void</span> (*vq_release)(<span class="keyword">struct</span> virtio_dev *vdev, <span class="keyword">struct</span> virtqueue *vq,</span><br><span class="line">                <span class="keyword">struct</span> uk_alloc *a);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>blk本身也是一个pci设备，因此blk将通过virtio dev与pci交互，virtio ops配置操作主要是由pci实现<br><img src="/images/virtio-blkdev/dev%E4%B8%8Epci%E4%BA%A4%E4%BA%92.webp" alt="pci交互"><br>在<code>virtio_pci.c</code>文件中vpci_legacy_ops负责了virtio dev的配置操作ops的实现</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">virtio_config_ops</span> <span class="title">vpci_legacy_ops</span> =</span> &#123;</span><br><span class="line">    .device_reset = vpci_legacy_pci_dev_reset,</span><br><span class="line">    .config_get   = vpci_legacy_pci_config_get,</span><br><span class="line">    .config_set   = vpci_legacy_pci_config_set,</span><br><span class="line">    .features_get = vpci_legacy_pci_features_get,</span><br><span class="line">    .features_set = vpci_legacy_pci_features_set,</span><br><span class="line">    .status_get   = vpci_legacy_pci_status_get,</span><br><span class="line">    .status_set   = vpci_legacy_pci_status_set,</span><br><span class="line">    .vqs_find     = vpci_legacy_pci_vq_find,</span><br><span class="line">    .vq_setup     = vpci_legacy_vq_setup,</span><br><span class="line">    .vq_release   = vpci_legacy_vq_release,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>同时，在<code>virtio_mmio.c</code>文件中virtio_mmio_config_ops也有一个virtio dev的配置操作ops的实现</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">virtio_config_ops</span> <span class="title">virtio_mmio_config_ops</span> =</span> &#123;</span><br><span class="line">    .config_get = vm_get,</span><br><span class="line">    .config_set = vm_set,</span><br><span class="line">    .status_get = vm_get_status,</span><br><span class="line">    .status_set = vm_set_status,</span><br><span class="line">    .device_reset   = vm_reset,</span><br><span class="line">    .features_get   = vm_get_features,</span><br><span class="line">    .features_set   = vm_set_features,</span><br><span class="line">    .vqs_find   = vm_find_vqs,</span><br><span class="line">    .vq_setup   = vm_setup_vq,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/11/12/virtio-blkdev/" title="virtio-blkdev源码" target="_blank" rel="external">http://example.com/2022/11/12/virtio-blkdev/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/11/12/virtio-blkdev%E6%A0%B8%E5%BF%83%E7%BB%93%E6%9E%84/" title="virtio-blkdev核心数据结构"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/11/12/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/" title="Unikraft启动过程"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

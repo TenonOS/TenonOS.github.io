@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>ukblkdev源码阅读 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="描述了unikraft的块设备及其功能 数据结构各结构体之间的关联 uk_blkdev12345678910111213141516struct uk_blkdev &amp;#123;    &#x2F;* Pointer to submit request function *&#x2F;    uk_blkdev_queue_submit_one_t submit_one;    &#x2F;* Pointer to handl">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ukblkdev源码阅读">
+<meta property="og:url" content="http://example.com/2022/11/12/ukblkdev/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="描述了unikraft的块设备及其功能 数据结构各结构体之间的关联 uk_blkdev12345678910111213141516struct uk_blkdev &amp;#123;    &#x2F;* Pointer to submit request function *&#x2F;    uk_blkdev_queue_submit_one_t submit_one;    &#x2F;* Pointer to handl">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft-blkdev/ukblkdev%E7%BB%93%E6%9E%84%E4%BD%93%E5%B8%83%E5%B1%80.png">
+<meta property="article:published_time" content="2022-11-12T05:09:27.632Z">
+<meta property="article:modified_time" content="2022-11-12T02:38:56.294Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="Lib">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft-blkdev/ukblkdev%E7%BB%93%E6%9E%84%E4%BD%93%E5%B8%83%E5%B1%80.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/11/12/ukblkdev/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">9</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.8px;">Plat</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.6px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.4px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.2px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/virtio-blkdev%E6%A0%B8%E5%BF%83%E7%BB%93%E6%9E%84/" class="title">virtio-blkdev核心数据结构</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.672Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/virtio-blkdev/" class="title">virtio-blkdev源码</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.670Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/" class="title">Unikraft启动过程</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.651Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/uk_dpdk%EF%BC%88%E9%A9%B1%E5%8A%A8%E9%83%A8%E5%88%86%EF%BC%89/" class="title">uk_dpdk（驱动部分）</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.639Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/ukblkdev/" class="title">ukblkdev源码阅读</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.632Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">1.</span> <span class="toc-text">数据结构</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%90%84%E7%BB%93%E6%9E%84%E4%BD%93%E4%B9%8B%E9%97%B4%E7%9A%84%E5%85%B3%E8%81%94"><span class="toc-number">1.1.</span> <span class="toc-text">各结构体之间的关联</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#uk-blkdev"><span class="toc-number">1.2.</span> <span class="toc-text">uk_blkdev</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#uk-blkdev-data"><span class="toc-number">1.3.</span> <span class="toc-text">uk_blkdev_data</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#uk-blkdev-event-handler"><span class="toc-number">1.4.</span> <span class="toc-text">uk_blkdev_event_handler</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#uk-blkdev-cap"><span class="toc-number">1.5.</span> <span class="toc-text">uk_blkdev_cap</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#uk-blkdev-ops"><span class="toc-number">1.6.</span> <span class="toc-text">uk_blkdev_ops</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%93%8D%E4%BD%9C"><span class="toc-number">2.</span> <span class="toc-text">操作</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AF%B9virtio%E5%B1%82%E7%9A%84%E6%8A%BD%E8%B1%A1%E6%93%8D%E4%BD%9C"><span class="toc-number">2.1.</span> <span class="toc-text">对virtio层的抽象操作</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BA%8B%E4%BB%B6%E7%AE%A1%E7%90%86%E7%BB%93%E6%9E%84%E7%9A%84%E5%88%9B%E5%BB%BA%E5%8F%8A%E9%94%80%E6%AF%81"><span class="toc-number">2.2.</span> <span class="toc-text">事件管理结构的创建及销毁</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B3%A8%E5%86%8C%E5%9D%97%E8%AE%BE%E5%A4%87"><span class="toc-number">2.3.</span> <span class="toc-text">注册块设备</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B3%A8%E9%94%80%E5%9D%97%E8%AE%BE%E5%A4%87"><span class="toc-number">2.4.</span> <span class="toc-text">注销块设备</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-ukblkdev" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      ukblkdev源码阅读
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/11/12/ukblkdev/" class="article-date">
+	  <time datetime="2022-11-12T05:09:27.632Z" itemprop="datePublished">2022-11-12</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/Lib/" rel="tag">Lib</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/11/12/ukblkdev/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <p>描述了unikraft的块设备及其功能</p>
+<h3 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h3><h4 id="各结构体之间的关联"><a href="#各结构体之间的关联" class="headerlink" title="各结构体之间的关联"></a>各结构体之间的关联</h4><p><img src="/images/unikraft-blkdev/ukblkdev%E7%BB%93%E6%9E%84%E4%BD%93%E5%B8%83%E5%B1%80.png" alt="ukblkdev结构体布局"></p>
+<h4 id="uk-blkdev"><a href="#uk-blkdev" class="headerlink" title="uk_blkdev"></a>uk_blkdev</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev</span> &#123;</span></span><br><span class="line">    <span class="comment">/* Pointer to submit request function */</span></span><br><span class="line">    <span class="type">uk_blkdev_queue_submit_one_t</span> submit_one;</span><br><span class="line">    <span class="comment">/* Pointer to handle_responses function 完成请求 */</span></span><br><span class="line">    <span class="type">uk_blkdev_queue_finish_reqs_t</span> finish_reqs;</span><br><span class="line">    <span class="comment">/* Pointer to API-internal state data. */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_data</span> *_<span class="title">data</span>;</span></span><br><span class="line">    <span class="comment">/* Capabilities. */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_cap</span> <span class="title">capabilities</span>;</span></span><br><span class="line">    <span class="comment">/* Functions callbacks by driver. */</span></span><br><span class="line">    <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_ops</span> *<span class="title">dev_ops</span>;</span></span><br><span class="line">    <span class="comment">/* Pointers to queues (API-private) */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_queue</span> *_<span class="title">queue</span>[<span class="title">CONFIG_LIBUKBLKDEV_MAXNBQUEUES</span>];</span></span><br><span class="line">    <span class="comment">/* Entry for list of block devices TAILQ项，用于加入uk_blkdev_list*/</span></span><br><span class="line">    UK_TAILQ_ENTRY(<span class="keyword">struct</span> uk_blkdev) _list;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>submit_one：通过将信息放入virtio buffer,向host提交事件请求。只是一个接口，具体实现由<code>virtio_blk.c</code>文件中的<code>virtio_blkdev_submit_request</code>函数完成</li>
+<li>finish_reqs：host完成请求，并通过virtqueue_vring将请求出队，返还给uk_blkdev。只是一个接口，具体实现由<code>virtio_blk.c</code>文件中的<code>virtio_blkdev_complete_reqs</code>函数完成</li>
+<li>_data：目前块设备的具体数据信息</li>
+<li>capabilities：块设备的容量</li>
+<li>dev_ops：块设备可实现的操作，只定义接口，具体实现由virtio_blk完成</li>
+<li>_queue[CONFIG_LIBUKBLKDEV_MAXNBQUEUES]：块设备队列，具体结构在<code>virtio_blk.c</code>文件中</li>
+<li>_list：UK_TAILQ_ENTRY(环状双链表表项)，用于将blkdev链接至uk_blkdev_list<h4 id="uk-blkdev-data"><a href="#uk-blkdev-data" class="headerlink" title="uk_blkdev_data"></a>uk_blkdev_data</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_data</span> &#123;</span></span><br><span class="line">     <span class="comment">/* Device id identifier */</span></span><br><span class="line">    <span class="type">const</span> <span class="type">uint16_t</span> id;</span><br><span class="line">    <span class="comment">/* Device state */</span></span><br><span class="line">    <span class="class"><span class="keyword">enum</span> <span class="title">uk_blkdev_state</span> <span class="title">state</span>;</span></span><br><span class="line">    <span class="comment">/* Event handler for each queue */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_event_handler</span></span></span><br><span class="line"><span class="class">        <span class="title">queue_handler</span>[<span class="title">CONFIG_LIBUKBLKDEV_MAXNBQUEUES</span>];</span></span><br><span class="line">    <span class="comment">/* Name of device*/</span></span><br><span class="line">    <span class="type">const</span> <span class="type">char</span> *drv_name;</span><br><span class="line">    <span class="comment">/* Allocator */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_alloc</span> *<span class="title">a</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></li>
+<li>id：块设备的id号，id号根据系统创建顺序进行分配，从0开始。</li>
+<li>state：设备状态信息，枚举类型</li>
+<li>queue_handler[CONFIG_LIBUKBLKDEV_MAXNBQUEUES]：块设备的任务管理器<h4 id="uk-blkdev-event-handler"><a href="#uk-blkdev-event-handler" class="headerlink" title="uk_blkdev_event_handler"></a>uk_blkdev_event_handler</h4>用来实现用户的线程任务<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_event_handler</span> &#123;</span></span><br><span class="line">    <span class="comment">/* Callback */</span></span><br><span class="line">    <span class="type">uk_blkdev_queue_event_t</span> callback;</span><br><span class="line">    <span class="comment">/* Parameter for callback */</span></span><br><span class="line">    <span class="type">void</span> *cookie;</span><br><span class="line">  </span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKBLKDEV_DISPATCHERTHREADS</span></span><br><span class="line">    <span class="comment">/* Semaphore to trigger events. */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_semaphore</span> <span class="title">events</span>;</span></span><br><span class="line">    <span class="comment">/* Reference to blk device. */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev</span>    *<span class="title">dev</span>;</span></span><br><span class="line">    <span class="comment">/* Queue id which caused event. */</span></span><br><span class="line">    <span class="type">uint16_t</span>            queue_id;</span><br><span class="line">    <span class="comment">/* Dispatcher thread. */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_thread</span>    *<span class="title">dispatcher</span>;</span></span><br><span class="line">    <span class="comment">/* Reference to thread name. */</span></span><br><span class="line">    <span class="type">char</span>    *dispatcher_name;</span><br><span class="line">    <span class="comment">/* Scheduler for dispatcher. */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_sched</span>     *<span class="title">dispatcher_s</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h4 id="uk-blkdev-cap"><a href="#uk-blkdev-cap" class="headerlink" title="uk_blkdev_cap"></a>uk_blkdev_cap</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_cap</span> &#123;</span></span><br><span class="line">    <span class="comment">/* Number of sectors */</span></span><br><span class="line">    __sector sectors;</span><br><span class="line">    <span class="comment">/* Sector size */</span></span><br><span class="line">    <span class="type">size_t</span> ssize;</span><br><span class="line">    <span class="comment">/* Access mode (O_RDONLY, O_RDWR, O_WRONLY) */</span></span><br><span class="line">    <span class="type">int</span> mode;</span><br><span class="line">    <span class="comment">/* Max nb of supported sectors for an op */</span></span><br><span class="line">    __sector max_sectors_per_req;</span><br><span class="line">    <span class="comment">/* Alignment (number of bytes) for data used in future requests */</span></span><br><span class="line">    <span class="type">uint16_t</span> ioalign;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></li>
+<li>sectors：每个块设备扇区的数量</li>
+<li>ssize：每个扇区的大小</li>
+<li>mode：扇区的使用模式</li>
+<li>max_sectors_per_req：每次请求可以分配的最大数量的扇区</li>
+<li>ioalign：请求的字节对齐方式<h4 id="uk-blkdev-ops"><a href="#uk-blkdev-ops" class="headerlink" title="uk_blkdev_ops"></a>uk_blkdev_ops</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_ops</span> &#123;</span></span><br><span class="line">    <span class="comment">// virtio_blk_device的max_vqueue_pairs传入dev_info-&gt;max_queues</span></span><br><span class="line">    <span class="type">uk_blkdev_get_info_t</span>                get_info;</span><br><span class="line">    <span class="comment">// 为virtio_blk_device创建uk_blkdev_queue空间，并conf配置</span></span><br><span class="line">    <span class="type">uk_blkdev_configure_t</span>               dev_configure;</span><br><span class="line">    <span class="comment">// 根据virtio_blkdev_queue-&gt;qs[queue_id]对应的uk_blkdev_queue，获取nb_min、nb_max、nb_is_power_of_two存入qinfo</span></span><br><span class="line">    <span class="type">uk_blkdev_queue_get_info_t</span>          queue_get_info;</span><br><span class="line">    <span class="comment">// 在vbdev-&gt;qs[queue_id]建立uk_blkdev_queue的成员，并返回queue</span></span><br><span class="line">    <span class="type">uk_blkdev_queue_configure_t</span>         queue_configure;</span><br><span class="line">    <span class="comment">// virtio_blkdev配置状态更新完成</span></span><br><span class="line">    <span class="type">uk_blkdev_start_t</span>               dev_start;</span><br><span class="line">    <span class="comment">// 停止virtio_blkdev</span></span><br><span class="line">    <span class="type">uk_blkdev_stop_t</span>                dev_stop;</span><br><span class="line">    <span class="comment">// 对uk_blkdev_queue进行中断使能</span></span><br><span class="line">    <span class="type">uk_blkdev_queue_intr_enable_t</span>           queue_intr_enable;</span><br><span class="line">    <span class="comment">// 禁止uk_blkdev_queue过程进行中断</span></span><br><span class="line">    <span class="type">uk_blkdev_queue_intr_disable_t</span>          queue_intr_disable;</span><br><span class="line">    <span class="comment">// 释放uk_blkdev_queue的空间</span></span><br><span class="line">    <span class="type">uk_blkdev_queue_unconfigure_t</span>           queue_unconfigure;</span><br><span class="line">    <span class="comment">// 释放virtio_blk_device的uk_blkdev_queue空间</span></span><br><span class="line">    <span class="type">uk_blkdev_unconfigure_t</span>             dev_unconfigure;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+具体实现在<code>vitrio_blk.c</code>中<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_ops</span> <span class="title">virtio_blkdev_ops</span> =</span> &#123;</span><br><span class="line">        .get_info = virtio_blkdev_get_info,</span><br><span class="line">        .dev_configure = virtio_blkdev_configure,</span><br><span class="line">        .queue_get_info = virtio_blkdev_queue_info_get,</span><br><span class="line">        .queue_configure = virtio_blkdev_queue_setup,</span><br><span class="line">        .queue_intr_enable = virtio_blkdev_queue_intr_enable,</span><br><span class="line">        .dev_start = virtio_blkdev_start,</span><br><span class="line">        .dev_stop = virtio_blkdev_stop,</span><br><span class="line">        .queue_intr_disable = virtio_blkdev_queue_intr_disable,</span><br><span class="line">        .queue_unconfigure = virtio_blkdev_queue_release,</span><br><span class="line">        .dev_unconfigure = virtio_blkdev_unconfigure,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="操作"><a href="#操作" class="headerlink" title="操作"></a>操作</h3><h4 id="对virtio层的抽象操作"><a href="#对virtio层的抽象操作" class="headerlink" title="对virtio层的抽象操作"></a>对virtio层的抽象操作</h4>以下函数均是基于uk_blkdev_ops的成员操作实现的外层抽象<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 得到块设备支持的队列的最大数量</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_blkdev_get_info</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev, <span class="keyword">struct</span> uk_blkdev_info *dev_info)</span></span><br><span class="line"><span class="comment">// 为块设备所在的virtio块设备创建块设备队列空间，并conf配置</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_blkdev_configure</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev, <span class="type">const</span> <span class="keyword">struct</span> uk_blkdev_conf *conf)</span></span><br><span class="line"><span class="comment">// 获取块设备的第queue_id个队列描述符的最大数量、最小数量、2的幂后的数量存入qinfo</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_blkdev_queue_get_info</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev, <span class="type">uint16_t</span> queue_id,</span></span><br><span class="line"><span class="params">        <span class="keyword">struct</span> uk_blkdev_queue_info *q_info)</span></span><br><span class="line"><span class="comment">// 创建事件管理+构建块设备的第queue_id个块设备队列</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_blkdev_queue_configure</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev, <span class="type">uint16_t</span> queue_id,</span></span><br><span class="line"><span class="params">        <span class="type">uint16_t</span> nb_desc,</span></span><br><span class="line"><span class="params">        <span class="type">const</span> <span class="keyword">struct</span> uk_blkdev_queue_conf *queue_conf)</span></span><br><span class="line"><span class="comment">// virtio块设备状态更新完成，可以开始任务</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_blkdev_start</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev)</span></span><br><span class="line"><span class="comment">// 停用dev块设备，不能再向host发送任何请求</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_blkdev_stop</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev)</span></span><br><span class="line"><span class="comment">// 释放块设备中的一个队列</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_blkdev_queue_unconfigure</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev, <span class="type">uint16_t</span> queue_id)</span></span><br><span class="line"><span class="comment">// 释放virtio块设备的块队列队头成员空间</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_blkdev_unconfigure</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev)</span></span><br></pre></td></tr></table></figure>
+以下是基于块设备的submit_one、finish_reqs操作实现的外层抽象<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 通过将信息放入virtio buffer,向host提交事件请求</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_blkdev_queue_submit_one</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev, <span class="type">uint16_t</span> queue_id,</span></span><br><span class="line"><span class="params">        <span class="keyword">struct</span> uk_blkreq *req)</span></span><br><span class="line"><span class="comment">// host完成事件请求</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_blkdev_queue_finish_reqs</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev,</span></span><br><span class="line"><span class="params">        <span class="type">uint16_t</span> queue_id)</span></span><br></pre></td></tr></table></figure>
+<h4 id="事件管理结构的创建及销毁"><a href="#事件管理结构的创建及销毁" class="headerlink" title="事件管理结构的创建及销毁"></a>事件管理结构的创建及销毁</h4>创建一个event handler,并传给块设备<br>如果有线程的话，在event_handler中顺便创建线程<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> _create_event_handler(<span class="type">uk_blkdev_queue_event_t</span> callback,</span><br><span class="line">        <span class="type">void</span> *cookie,</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKBLKDEV_DISPATCHERTHREADS</span></span><br><span class="line">        <span class="keyword">struct</span> uk_blkdev *dev, <span class="type">uint16_t</span> queue_id,</span><br><span class="line">        <span class="keyword">struct</span> uk_sched *s,</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">        <span class="keyword">struct</span> uk_blkdev_event_handler *event_handler)</span><br><span class="line">&#123;</span><br><span class="line">    UK_ASSERT(event_handler);</span><br><span class="line">    UK_ASSERT(callback || (!callback &amp;&amp; !cookie));</span><br><span class="line"></span><br><span class="line">    event_handler-&gt;callback = callback;</span><br><span class="line">    event_handler-&gt;cookie = cookie;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKBLKDEV_DISPATCHERTHREADS</span></span><br><span class="line">    <span class="comment">/* If we do not have a callback, we do not need a thread */</span></span><br><span class="line">    <span class="keyword">if</span> (!callback)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    event_handler-&gt;dev = dev;</span><br><span class="line">    event_handler-&gt;queue_id = queue_id;</span><br><span class="line">    uk_semaphore_init(&amp;event_handler-&gt;events, <span class="number">0</span>);</span><br><span class="line">    event_handler-&gt;dispatcher_s = s;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Create a name for the dispatcher thread.</span></span><br><span class="line"><span class="comment">     * In case of errors, we just continue without a name</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (asprintf(&amp;event_handler-&gt;dispatcher_name,</span><br><span class="line">                <span class="string">&quot;blkdev%&quot;</span>PRIu16<span class="string">&quot;-q%&quot;</span>PRIu16<span class="string">&quot;]&quot;</span>,</span><br><span class="line">                dev-&gt;_data-&gt;id, queue_id) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        event_handler-&gt;dispatcher_name = <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Create thread */</span></span><br><span class="line">    event_handler-&gt;dispatcher = uk_sched_thread_create(</span><br><span class="line">            event_handler-&gt;dispatcher_s,</span><br><span class="line">            event_handler-&gt;dispatcher_name, <span class="literal">NULL</span>,</span><br><span class="line">            _dispatcher, (<span class="type">void</span> *)event_handler);</span><br><span class="line">    <span class="comment">// 线程没有创建成功，则释放空间，并报错  </span></span><br><span class="line">    <span class="keyword">if</span> (event_handler-&gt;dispatcher == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (event_handler-&gt;dispatcher_name) &#123;</span><br><span class="line">            <span class="built_in">free</span>(event_handler-&gt;dispatcher);</span><br><span class="line">            event_handler-&gt;dispatcher = <span class="literal">NULL</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> -ENOMEM;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+销毁事件<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> _destroy_event_handler(<span class="keyword">struct</span> uk_blkdev_event_handler *h</span><br><span class="line">        __maybe_unused)</span><br><span class="line">&#123;</span><br><span class="line">    UK_ASSERT(h);</span><br><span class="line">  </span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKBLKDEV_DISPATCHERTHREADS</span></span><br><span class="line">    <span class="keyword">if</span> (h-&gt;dispatcher) &#123;</span><br><span class="line">        uk_semaphore_up(&amp;h-&gt;events);  <span class="comment">// 信号量增加</span></span><br><span class="line">        UK_ASSERT(h-&gt;dispatcher_s);</span><br><span class="line">        uk_thread_kill(h-&gt;dispatcher);</span><br><span class="line">        uk_thread_wait(h-&gt;dispatcher);</span><br><span class="line">        h-&gt;dispatcher = <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 释放线程命名空间</span></span><br><span class="line">    <span class="keyword">if</span> (h-&gt;dispatcher_name) &#123;</span><br><span class="line">        <span class="built_in">free</span>(h-&gt;dispatcher_name);</span><br><span class="line">        h-&gt;dispatcher_name = <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="注册块设备"><a href="#注册块设备" class="headerlink" title="注册块设备"></a>注册块设备</h4><p>在virtio驱动创建块设备时使用<br>1.分配dev-&gt;_data空间<br>2.将块设备插入到块设备链表尾部<br>3.系统块设备数量+1</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">uk_blkdev_drv_register</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev, <span class="keyword">struct</span> uk_alloc *a,</span></span><br><span class="line"><span class="params">        <span class="type">const</span> <span class="type">char</span> *drv_name)</span></span><br><span class="line">&#123;</span><br><span class="line">    UK_ASSERT(dev);</span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* Data must be unallocated. */</span></span><br><span class="line">    UK_ASSERT(PTRISERR(dev-&gt;_data));</span><br><span class="line">    <span class="comment">/* Assert mandatory configuration. */</span></span><br><span class="line">    UK_ASSERT(dev-&gt;dev_ops);</span><br><span class="line">    UK_ASSERT(dev-&gt;dev_ops-&gt;dev_configure);</span><br><span class="line">    UK_ASSERT(dev-&gt;dev_ops-&gt;dev_start);</span><br><span class="line">    UK_ASSERT(dev-&gt;dev_ops-&gt;queue_configure);</span><br><span class="line">    UK_ASSERT(dev-&gt;dev_ops-&gt;get_info);</span><br><span class="line">    UK_ASSERT(dev-&gt;dev_ops-&gt;queue_get_info);</span><br><span class="line">    UK_ASSERT(dev-&gt;submit_one);</span><br><span class="line">    UK_ASSERT(dev-&gt;finish_reqs);</span><br><span class="line">    UK_ASSERT((dev-&gt;dev_ops-&gt;queue_intr_enable &amp;&amp;</span><br><span class="line">                dev-&gt;dev_ops-&gt;queue_intr_disable)</span><br><span class="line">            || (!dev-&gt;dev_ops-&gt;queue_intr_enable</span><br><span class="line">                &amp;&amp; !dev-&gt;dev_ops-&gt;queue_intr_disable));</span><br><span class="line">  </span><br><span class="line">    dev-&gt;_data = _alloc_data(a, blkdev_count,  drv_name);</span><br><span class="line">    <span class="keyword">if</span> (!dev-&gt;_data)</span><br><span class="line">        <span class="keyword">return</span> -ENOMEM;</span><br><span class="line">  </span><br><span class="line">    UK_TAILQ_INSERT_TAIL(&amp;uk_blkdev_list, dev, _list);</span><br><span class="line">    uk_pr_info(<span class="string">&quot;Registered blkdev%&quot;</span>PRIu16<span class="string">&quot;: %p (%s)\n&quot;</span>,</span><br><span class="line">            blkdev_count, dev, drv_name);</span><br><span class="line">    dev-&gt;_data-&gt;state = UK_BLKDEV_UNCONFIGURED;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> blkdev_count++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="注销块设备"><a href="#注销块设备" class="headerlink" title="注销块设备"></a>注销块设备</h4><p>1.释放dev-&gt;_data空间<br>2.将块设备从块设备链表中移除<br>3.系统块设备数量-1</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">uk_blkdev_drv_unregister</span><span class="params">(<span class="keyword">struct</span> uk_blkdev *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">uint16_t</span> id;</span><br><span class="line"></span><br><span class="line">    UK_ASSERT(dev != <span class="literal">NULL</span>);</span><br><span class="line">    UK_ASSERT(dev-&gt;_data);</span><br><span class="line">    UK_ASSERT(dev-&gt;_data-&gt;state == UK_BLKDEV_UNCONFIGURED);</span><br><span class="line">  </span><br><span class="line">    id = dev-&gt;_data-&gt;id;</span><br><span class="line">  </span><br><span class="line">    uk_free(dev-&gt;_data-&gt;a, dev-&gt;_data);</span><br><span class="line">    UK_TAILQ_REMOVE(&amp;uk_blkdev_list, dev, _list);</span><br><span class="line">    blkdev_count--;</span><br><span class="line">  </span><br><span class="line">    uk_pr_info(<span class="string">&quot;Unregistered blkdev%&quot;</span>PRIu16<span class="string">&quot;: %p\n&quot;</span>,</span><br><span class="line">            id, dev);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/11/12/ukblkdev/" title="ukblkdev源码阅读" target="_blank" rel="external">http://example.com/2022/11/12/ukblkdev/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/11/12/uk_dpdk%EF%BC%88%E9%A9%B1%E5%8A%A8%E9%83%A8%E5%88%86%EF%BC%89/" title="uk_dpdk（驱动部分）"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/11/12/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E5%8E%9F%E7%90%86/" title="Linux系统调用"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

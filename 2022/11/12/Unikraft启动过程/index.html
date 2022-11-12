@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>Unikraft启动过程 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="Unikraft启动过程启动过程中的函数关系本节内容基于官方Session2的HelloWorld + FileSystem的案例，开启debug和Info信息以后，根据日志分析得出。 简要流程分析_libkvmplat_entry该函数作为Unikraft程序的第一个入口，应该是作为bootloader的位置存在。bootloader的主要功能就是装载内核和initrd。该函数主要完成了以下功能">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unikraft启动过程">
+<meta property="og:url" content="http://example.com/2022/11/12/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Unikraft启动过程启动过程中的函数关系本节内容基于官方Session2的HelloWorld + FileSystem的案例，开启debug和Info信息以后，根据日志分析得出。 简要流程分析_libkvmplat_entry该函数作为Unikraft程序的第一个入口，应该是作为bootloader的位置存在。bootloader的主要功能就是装载内核和initrd。该函数主要完成了以下功能">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B.png">
+<meta property="og:image" content="http://example.com/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/for%E5%BE%AA%E7%8E%AF.png">
+<meta property="og:image" content="http://example.com/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/%E8%BF%9B%E7%A8%8B%E6%B1%A0_%E5%90%8C%E4%B8%80%E6%96%87%E4%BB%B6.png">
+<meta property="og:image" content="http://example.com/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/%E8%BF%9B%E7%A8%8B%E6%B1%A0_%E7%8B%AC%E7%AB%8B%E6%96%87%E4%BB%B6.png">
+<meta property="og:image" content="http://example.com/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/10vs100%E7%8B%AC%E7%AB%8B%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F.png">
+<meta property="og:image" content="http://example.com/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/10vs100%E5%85%B1%E4%BA%AB%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F.png">
+<meta property="article:published_time" content="2022-11-12T05:09:27.651Z">
+<meta property="article:modified_time" content="2022-11-12T05:04:00.166Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="Plat">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/11/12/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">9</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.8px;">Plat</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.6px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.4px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.2px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/virtio-blkdev%E6%A0%B8%E5%BF%83%E7%BB%93%E6%9E%84/" class="title">virtio-blkdev核心数据结构</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.672Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/virtio-blkdev/" class="title">virtio-blkdev源码</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.670Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/" class="title">Unikraft启动过程</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.651Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/uk_dpdk%EF%BC%88%E9%A9%B1%E5%8A%A8%E9%83%A8%E5%88%86%EF%BC%89/" class="title">uk_dpdk（驱动部分）</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.639Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/ukblkdev/" class="title">ukblkdev源码阅读</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.632Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">Unikraft启动过程</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B%E4%B8%AD%E7%9A%84%E5%87%BD%E6%95%B0%E5%85%B3%E7%B3%BB"><span class="toc-number">1.1.</span> <span class="toc-text">启动过程中的函数关系</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AE%80%E8%A6%81%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90"><span class="toc-number">1.1.1.</span> <span class="toc-text">简要流程分析</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#libkvmplat-entry"><span class="toc-number">1.1.1.1.</span> <span class="toc-text">_libkvmplat_entry</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#init-mem"><span class="toc-number">1.1.1.1.1.</span> <span class="toc-text">init_mem</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#init-initrd"><span class="toc-number">1.1.1.1.2.</span> <span class="toc-text">init_initrd</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#libkvmplat-entry2"><span class="toc-number">1.1.1.2.</span> <span class="toc-text">_libkvmplat_entry2</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#main-thread-func"><span class="toc-number">1.1.1.3.</span> <span class="toc-text">main_thread_func</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%AF%E5%8A%A8%E6%97%B6%E9%97%B4%E5%88%86%E6%9E%90"><span class="toc-number">1.2.</span> <span class="toc-text">启动时间分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%84%9A%E6%9C%AC%E7%BC%96%E5%86%99"><span class="toc-number">1.2.1.</span> <span class="toc-text">脚本编写</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C"><span class="toc-number">1.2.2.</span> <span class="toc-text">测试结果</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%B9%E6%AF%94%E5%88%86%E6%9E%90"><span class="toc-number">1.2.3.</span> <span class="toc-text">对比分析</span></a></li></ol></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-Unikraft启动过程" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Unikraft启动过程
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/11/12/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/" class="article-date">
+	  <time datetime="2022-11-12T05:09:27.651Z" itemprop="datePublished">2022-11-12</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/Plat/" rel="tag">Plat</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/11/12/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="Unikraft启动过程"><a href="#Unikraft启动过程" class="headerlink" title="Unikraft启动过程"></a>Unikraft启动过程</h1><h2 id="启动过程中的函数关系"><a href="#启动过程中的函数关系" class="headerlink" title="启动过程中的函数关系"></a>启动过程中的函数关系</h2><p>本节内容基于官方Session2的HelloWorld + FileSystem的案例，开启debug和Info信息以后，根据日志分析得出。<br><img src="/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B.png"></p>
+<h3 id="简要流程分析"><a href="#简要流程分析" class="headerlink" title="简要流程分析"></a>简要流程分析</h3><h4 id="libkvmplat-entry"><a href="#libkvmplat-entry" class="headerlink" title="_libkvmplat_entry"></a>_libkvmplat_entry</h4><p>该函数作为Unikraft程序的第一个入口，应该是作为bootloader的位置存在。bootloader的主要功能就是装载内核和initrd。<br>该函数主要完成了以下功能模块的初始化。</p>
+<ul>
+<li>初始化Trap向量表。Trap向量</li>
+<li>初始化BSP(BootStrap Process), BSP用于启动执行操作系统初始化代码。</li>
+<li>获取cmd参数、初始化堆栈、initrd。initrd被用作临时的文件系统，知道真正的文件系统被挂载。</li>
+<li>将BootStrap stack 切换到 申请到的stack</li>
+<li>启动_libkvmplat_entry2<br>从日志中可以看到，setup.c的108行打印了一句“No initrd present”。而setup.c的108行是_convert_mbinfo函数，该函数的作用应是读取multiboot提供的配置信息，然后设置boot的一些配置信息，boot的配置信息是通过一个叫做uk_bootinfo的结构体定义的。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_bootinfo</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Command line information */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 命令行信息</span></span><br><span class="line"></span><br><span class="line">    __u64 u64_cmdline;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Memmory mapping information */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 内存映射信息</span></span><br><span class="line"></span><br><span class="line">    <span class="type">size_t</span> max_addr;    <span class="comment">// 最大内存大小</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Initrd information */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// Initrd信息</span></span><br><span class="line"></span><br><span class="line">    __u8 has_initrd;    <span class="comment">// 是否存在Initrd</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uintptr_t</span> initrd_start;     <span class="comment">// initrd起始地址</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uintptr_t</span> initrd_end;       <span class="comment">// initrd终止地址</span></span><br><span class="line"></span><br><span class="line">    <span class="type">size_t</span> initrd_length;       <span class="comment">// initrd大小</span></span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[    0.000000] Info: &#123;r:0x10b8fe,f:0x1bcfd8&#125; [libkvmplat] &lt;setup.c @  468&gt; Entering from KVM (x86)...</span><br><span class="line">[    0.000000] Info: &#123;r:0x10b922,f:0x1bcfd8&#125; [libkvmplat] &lt;setup.c @  469&gt;      multiboot: 0x9500</span><br><span class="line">[    0.000000] dbg:  &#123;r:0x10ba0c,f:0x1bcfd8&#125; [libkvmplat] &lt;setup.c @  108&gt; No initrd present</span><br><span class="line">[    0.000000] Info: &#123;r:0x10bdaa,f:0x1bcfd8&#125; [libkvmplat] &lt;setup.c @  487&gt;     heap start: 0x1f0000</span><br><span class="line">[    0.000000] Info: &#123;r:0x10be04,f:0x1bcfd8&#125; [libkvmplat] &lt;setup.c @  492&gt;      stack top: 0x7fd0000</span><br><span class="line">[    0.000000] Info: &#123;r:0x10be2c,f:0x1bcfd8&#125; [libkvmplat] &lt;setup.c @  519&gt; Switch from bootstrap stack to stack @0x7fe0000</span><br></pre></td></tr></table></figure>
+<p>之后，通过bootinfo提供的信息初始化内存、initrd、cmd。</p>
+<h5 id="init-mem"><a href="#init-mem" class="headerlink" title="init_mem"></a>init_mem</h5><p>该部分主要是根据boot_info的信息，对系统的堆栈进行初始化。</p>
+<h5 id="init-initrd"><a href="#init-initrd" class="headerlink" title="init_initrd"></a>init_initrd</h5><p>由于_convert_mbinfo中，设置了has_initrd = 0；因此，unikraft在启动过程中不会初始化initrd。如果缺少了initrd，那就需要通过指定参数启动操作系统。<br>之后推出引导堆栈，进入到_libkvmplat_entry2函数中。</p>
+<hr>
+<h4 id="libkvmplat-entry2"><a href="#libkvmplat-entry2" class="headerlink" title="_libkvmplat_entry2"></a>_libkvmplat_entry2</h4><p>进入到_libkvmplat_entry2以后，经过一系列跳转会到ukplat_entry。在ukplat_entry中，到这一步，才是真正在引导系统文件启动。<br>在ukplat_entry中，主要完成了这几件事。</p>
+<ul>
+<li>准备启动main函数的参数。</li>
+<li>调用constructor，对一些本次Unikraft构建的镜像中一些库进行注册。</li>
+<li>接管底层提供的内存区域。</li>
+<li>初始化中断子系统和时间子系统。</li>
+<li>初始化cooperative scheduler、idle线程、用于执行main函数的线程。</li>
+<li>启动main_thread_func函数。<br>在调用constructor阶段，通过日志只能尝试分析出三个模块被构建。分别是vfs、标准输入输出、bus handler。其他的由于日志信息和代码原因，暂时难以分析，这是未来需要深入的一个方向。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">[    0.000000] dbg:  &#123;r:0x119c1b,f:0x7fdff48&#125; [libukboot] &lt;boot.c @  203&gt; Call constructor: 0x122a30())...</span><br><span class="line">[    0.000000] dbg:  &#123;r:0x119c39,f:0x7fdff48&#125; [libukboot] &lt;boot.c @  204&gt; ctorfn  name = 0x122a30f</span><br><span class="line">[    0.000000] dbg:  &#123;r:0x13278e,f:0x7fdff18&#125; [libvfscore] &lt;main.c @ 1915&gt; (int) uk_syscall_r_dup2((int) 0x0, (int) 0x1)</span><br><span class="line">[    0.000000] dbg:  &#123;r:0x1323fc,f:0x7fdfea8&#125; [libvfscore] &lt;main.c @ 1862&gt; (int) uk_syscall_r_dup3((int) 0x0, (int) 0x1, (int) 0x0)</span><br><span class="line">[    0.000000] dbg:  &#123;r:0x13278e,f:0x7fdff18&#125; [libvfscore] &lt;main.c @ 1915&gt; (int) uk_syscall_r_dup2((int) 0x0, (int) 0x2)</span><br><span class="line">[    0.000000] dbg:  &#123;r:0x1323fc,f:0x7fdfea8&#125; [libvfscore] &lt;main.c @ 1862&gt; (int) uk_syscall_r_dup3((int) 0x0, (int) 0x2, (int) 0x0)</span><br><span class="line">...</span><br><span class="line">[    0.000000] dbg:  &#123;r:0x119c1b,f:0x7fdff48&#125; [libukboot] &lt;boot.c @  203&gt; Call constructor: 0x13aca0())...</span><br><span class="line">[    0.000000] dbg:  &#123;r:0x119c39,f:0x7fdff48&#125; [libukboot] &lt;boot.c @  204&gt; ctorfn  name = 0x13aca0f</span><br><span class="line">[    0.000000] Info: &#123;r:0x11c444,f:0x7fdff18&#125; [libuklibparam] &lt;param.c @  113&gt; libname: vfs, 96</span><br><span class="line">[    0.000000] dbg:  &#123;r:0x119c1b,f:0x7fdff48&#125; [libukboot] &lt;boot.c @  203&gt; Call constructor: 0x10d120())...</span><br><span class="line">[    0.000000] dbg:  &#123;r:0x119c39,f:0x7fdff48&#125; [libukboot] &lt;boot.c @  204&gt; ctorfn  name = 0x10d120f</span><br><span class="line">[    0.000000] dbg:  &#123;r:0x11a0ae,f:0x7fdff28&#125; [libukbus] &lt;bus.c @   52&gt; Register bus handler: 0x1b9000</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+接下去就是对内存区域的申请划分，这段主要涉及到与qemu的交互，暂时还没有深入去看。简单地说，KVM划分好内存区域，然后unikraft对KVM提供内存区域进一步划分。</li>
+</ul>
+<p>与简单的HelloWorld相比，增加了FileSystem的HelloWorld，文件系统的挂载也是在这一部分被调用。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">[    <span class="number">0.124497</span>] dbg:  &#123;r:<span class="number">0x10d7a5</span>,f:<span class="number">0x7f1ff60</span>&#125; [libkvmpci] &lt;pci_bus_x86.c @  <span class="number">213</span>&gt; Probe PCI</span><br><span class="line">[    <span class="number">0.125827</span>] Info: &#123;r:<span class="number">0x10d49c</span>,f:<span class="number">0x7f1fe90</span>&#125; [libkvmpci] &lt;pci_bus_x86.c @  <span class="number">164</span>&gt; PCI <span class="number">00</span>:<span class="number">00.00</span> (<span class="number">0600</span> <span class="number">8086</span>:<span class="number">1237</span>): &lt;no driver&gt;</span><br><span class="line">[    <span class="number">0.127794</span>] Info: &#123;r:<span class="number">0x10d49c</span>,f:<span class="number">0x7f1fe90</span>&#125; [libkvmpci] &lt;pci_bus_x86.c @  <span class="number">164</span>&gt; PCI <span class="number">00</span>:<span class="number">01.00</span> (<span class="number">0600</span> <span class="number">8086</span>:<span class="number">7000</span>): &lt;no driver&gt;</span><br><span class="line">[    <span class="number">0.129512</span>] Info: &#123;r:<span class="number">0x10d49c</span>,f:<span class="number">0x7f1fe90</span>&#125; [libkvmpci] &lt;pci_bus_x86.c @  <span class="number">164</span>&gt; PCI <span class="number">00</span>:<span class="number">02.00</span> (<span class="number">0300</span> <span class="number">1234</span>:<span class="number">1111</span>): &lt;no driver&gt;</span><br><span class="line">[    <span class="number">0.131217</span>] Info: &#123;r:<span class="number">0x10d49c</span>,f:<span class="number">0x7f1fe90</span>&#125; [libkvmpci] &lt;pci_bus_x86.c @  <span class="number">164</span>&gt; PCI <span class="number">00</span>:<span class="number">03.00</span> (<span class="number">0200</span> <span class="number">8086</span>:<span class="number">100</span>e): &lt;no driver&gt;</span><br><span class="line">[    <span class="number">0.132905</span>] Info: &#123;r:<span class="number">0x10d49c</span>,f:<span class="number">0x7f1fe90</span>&#125; [libkvmpci] &lt;pci_bus_x86.c @  <span class="number">164</span>&gt; PCI <span class="number">00</span>:<span class="number">04.00</span> (<span class="number">0000</span> <span class="number">1</span>af4:<span class="number">1009</span>): driver <span class="number">0x1b90a0</span></span><br><span class="line">[    <span class="number">0.134817</span>] Info: &#123;r:<span class="number">0x10ee61</span>,f:<span class="number">0x7f1fea0</span>&#125; [libkvmvirtio] &lt;virtio_pci.c @  <span class="number">380</span>&gt; Added virtio-pci device <span class="number">1009</span></span><br><span class="line">[    <span class="number">0.136456</span>] Info: &#123;r:<span class="number">0x10ee88</span>,f:<span class="number">0x7f1fea0</span>&#125; [libkvmvirtio] &lt;virtio_pci.c @  <span class="number">382</span>&gt; Added virtio-pci subsystem_device_id <span class="number">0009</span></span><br><span class="line">[    <span class="number">0.138537</span>] Info: &#123;r:<span class="number">0x10da2c</span>,f:<span class="number">0x7f1fe80</span>&#125; [libkvmvirtio] &lt;virtio_bus.c @  <span class="number">127</span>&gt; Virtio device <span class="number">0x1fa010</span> initialized</span><br><span class="line">[    <span class="number">0.141215</span>] Info: &#123;r:<span class="number">0x10f87e</span>,f:<span class="number">0x7f1fe40</span>&#125; [libkvmvirtio9p] &lt;virtio_9p.c @  <span class="number">405</span>&gt; virtio<span class="number">-9</span>p: Configured: features=<span class="number">0x1</span> tag=fs0</span><br><span class="line">[    <span class="number">0.143018</span>] Info: &#123;r:<span class="number">0x10f919</span>,f:<span class="number">0x7f1fe50</span>&#125; [libkvmvirtio9p] &lt;virtio_9p.c @  <span class="number">418</span>&gt; virtio<span class="number">-9</span>p: fs0 started</span><br><span class="line">[    <span class="number">0.144825</span>] dbg:  &#123;r:<span class="number">0x11a316</span>,f:<span class="number">0x7f1ff80</span>&#125; [libukbus] &lt;bus.c @   <span class="number">88</span>&gt; Probe bus <span class="number">0x1b9060</span>...</span><br><span class="line">[    <span class="number">0.146083</span>] dbg:  &#123;r:<span class="number">0x11990b</span>,f:<span class="number">0x7f1ffb0</span>&#125; [libukboot] &lt;boot.c @   <span class="number">99</span>&gt; Call init function: <span class="number">0x13acf0</span>()...</span><br><span class="line">[    <span class="number">0.147725</span>] Info: &#123;r:<span class="number">0x13ad51</span>,f:<span class="number">0x7f1ffa0</span>&#125; [libvfscore] &lt;rootfs.c @  <span class="number">120</span>&gt; Mount <span class="number">9</span>pfs to /...</span><br><span class="line">[    <span class="number">0.149022</span>] dbg:  &#123;r:<span class="number">0x123430</span>,f:<span class="number">0x7f1fe90</span>&#125; [libvfscore] &lt;mount.c @  <span class="number">113</span>&gt; (<span class="type">int</span>) uk_syscall_r_mount((<span class="type">const</span> <span class="type">char</span>*) <span class="number">0x1b18d3</span>, (<span class="type">const</span> <span class="type">char</span>*) <span class="number">0x1b15f3</span>, (<span class="type">const</span> <span class="type">char</span>*) <span class="number">0x1b06d1</span>, (<span class="type">unsigned</span> <span class="type">long</span>) <span class="number">0x0</span>, (<span class="type">const</span> <span class="type">void</span>*) <span class="number">0x1b154a</span>)</span><br><span class="line">[    <span class="number">0.151377</span>] Info: &#123;r:<span class="number">0x12346a</span>,f:<span class="number">0x7f1fea0</span>&#125; [libvfscore] &lt;mount.c @  <span class="number">122</span>&gt; VFS: mounting <span class="number">9</span>pfs at /</span><br><span class="line">[    <span class="number">0.154595</span>] dbg:  &#123;r:<span class="number">0x114c2a</span>,f:<span class="number">0x7f1fe10</span>&#125; [libuk9p] &lt;<span class="number">9</span>p.c @  <span class="number">102</span>&gt; TVERSION msize <span class="number">520192</span> version <span class="number">9</span>P2000.u</span><br><span class="line">[    <span class="number">0.156751</span>] dbg:  &#123;r:<span class="number">0x10e1c4</span>,f:<span class="number">0x7f1fd10</span>&#125; [libkvmvirtio] &lt;virtio_ring.c @  <span class="number">362</span>&gt; Old head:<span class="number">0</span>, new head:<span class="number">2</span>, total_desc:<span class="number">2</span></span><br><span class="line">[    <span class="number">0.158436</span>] dbg:  &#123;r:<span class="number">0x10f2d0</span>,f:<span class="number">0x7f1fd50</span>&#125; [libkvmvirtio9p] &lt;virtio_9p.c @  <span class="number">285</span>&gt; notify <span class="built_in">queue</span> <span class="number">0</span></span><br><span class="line">[    <span class="number">0.160690</span>] dbg:  &#123;r:<span class="number">0x114f5c</span>,f:<span class="number">0x7f1fe00</span>&#125; [libuk9p] &lt;<span class="number">9</span>p.c @  <span class="number">112</span>&gt; RVERSION msize <span class="number">520192</span> version <span class="number">9</span>P2000.u</span><br><span class="line">[    <span class="number">0.162753</span>] dbg:  &#123;r:<span class="number">0x1150a2</span>,f:<span class="number">0x7f1fdd0</span>&#125; [libuk9p] &lt;<span class="number">9</span>p.c @  <span class="number">153</span>&gt; TATTACH fid <span class="number">0</span> afid <span class="number">4294967295</span> uname  aname  n_uname <span class="number">4294967295</span></span><br><span class="line">[    <span class="number">0.164630</span>] dbg:  &#123;r:<span class="number">0x10e1c4</span>,f:<span class="number">0x7f1fcf0</span>&#125; [libkvmvirtio] &lt;virtio_ring.c @  <span class="number">362</span>&gt; Old head:<span class="number">0</span>, new head:<span class="number">2</span>, total_desc:<span class="number">2</span></span><br><span class="line">[    <span class="number">0.166237</span>] dbg:  &#123;r:<span class="number">0x10f2d0</span>,f:<span class="number">0x7f1fd30</span>&#125; [libkvmvirtio9p] &lt;virtio_9p.c @  <span class="number">285</span>&gt; notify <span class="built_in">queue</span> <span class="number">0</span></span><br><span class="line">[    <span class="number">0.167976</span>] dbg:  &#123;r:<span class="number">0x1154c1</span>,f:<span class="number">0x7f1fde0</span>&#125; [libuk9p] &lt;<span class="number">9</span>p.c @  <span class="number">168</span>&gt; RATTACH qid type <span class="number">128</span> version <span class="number">1667131978</span> path <span class="number">37618279</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h4 id="main-thread-func"><a href="#main-thread-func" class="headerlink" title="main_thread_func"></a>main_thread_func</h4><p>在这里的main_thread_func函数其实包括了打印banner和启动真正的main函数的过程。最后就是真正进入到该系统镜像所需要执行的main函数。<br>main_thread_func函数主要完成了以下功能。</p>
+<ul>
+<li>根据init函数表，对已经注册的一些库调用init函数，例如，让一些库从一开始就启动。</li>
+<li>打印Unikraft banner信息。</li>
+<li>调用真正的main函数。<br>在这个函数中，需要注意的是main函数是什么时候被替换成我们所需要的Main函数。我们可以在ukboot下的weak_main文件中可以看到最原始的main实现。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifndef</span> __weak</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __weak                 __attribute__((weak))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Internal main */</span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> __weak <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc __unused, <span class="type">char</span> *argv[] __unused)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;weak main() called. Symbol was not replaced!\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> -EINVAL;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+在C语言中，__attribute__((weak)) 标记是一个弱标记。当链接器发现同时存在强标记和弱标记时，优先调用强标记。如果只存在弱标记，则调用弱标记；如果都不存在，则编译出错。即，如果外部模块存在一个强标记的main，则优先调用外部模块的main。<br>可以看到，该main函数就是被用于替换的。那么真正的main函数是什么时候被替换的呢？<br>查看ukboot下的makefile文件下的注释可以看到。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># The <span class="title function_">main</span><span class="params">()</span> is in the separate library to fool the LTO. Which is</span><br><span class="line"><span class="meta"># trying to resolve the main() function call to whatever is available</span></span><br><span class="line"><span class="meta"># during liking the library object file. And this will be the weak</span></span><br><span class="line"><span class="meta"># main. So even <span class="keyword">if</span> the proper main() is provided later, the weak one</span></span><br><span class="line"><span class="meta"># will be called, because the decision is already made.</span></span><br><span class="line">#</span><br><span class="line"># This does not sound right, but LTO does not work well with</span><br><span class="line"><span class="meta"># incremental linking (ld -r). This possibly will be fixed in gcc</span></span><br><span class="line"># v9. But we have to deal with it now.</span><br><span class="line">$<span class="params">(eval $(call addlib_s,libukboot_main,$(CONFIG_LIBUKBOOT)))</span></span><br><span class="line">LIBUKBOOT_MAIN_SRCS-y += $(LIBUKBOOT_BASE)/weak_main.c</span><br></pre></td></tr></table></figure>
+一开始确实链接的weak_main.c，但是在对应的工程目录下，存在一个Makefile.uk文件，该文件将真正的main函数链接，替换掉原本的weak main函数。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── build</span><br><span class="line">├── guest_fs</span><br><span class="line">├── kraft.yaml</span><br><span class="line">├── launch.sh</span><br><span class="line">├── <span class="built_in">log</span></span><br><span class="line">├── main.c</span><br><span class="line">├── Makefile</span><br><span class="line">├── Makefile.uk</span><br><span class="line">└── qemu-guest</span><br></pre></td></tr></table></figure></li>
+</ul>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$(<span class="built_in">eval</span> $(<span class="built_in">call</span> addlib,apphelloworld)</span>)</span><br><span class="line">  </span><br><span class="line">APPHELLOWORLD_SRCS-y += <span class="variable">$(APPHELLOWORLD_BASE)</span>/main.c</span><br></pre></td></tr></table></figure>
+
+<h2 id="启动时间分析"><a href="#启动时间分析" class="headerlink" title="启动时间分析"></a>启动时间分析</h2><p>在编译系统镜像的时候，开启了info信息输出，可以看到隔壁执行的时间点。由此我们可以得出各个模块的启动时间，本文粗略地对HelloWorld + FileSystem的案例进行一个启动时间的分析。</p>
+<h3 id="脚本编写"><a href="#脚本编写" class="headerlink" title="脚本编写"></a>脚本编写</h3><p>通过使用Python的multiprocess、os库，可以多进程的执行命令。就可以达到多进程同时启动unikraft进行的过程。<br>使用multiprocess的进程池，可以实现准确度比较高的并发。同时还测试了一下for循环启动进程的方式，这种方式的缺点是可能真实的并发度远远不到预期设置的标准。<br>由于本次实验的镜像需要挂载文件系统，因此就有两种情况。</p>
+<ul>
+<li>文件系统独立，即每个镜像都是独立的文件</li>
+<li>共享文件系统，就是每次启动都从一个目录启动<br>同时限制并发数量为1、10、50、100。从而得到八条数据。<h3 id="测试结果"><a href="#测试结果" class="headerlink" title="测试结果"></a>测试结果</h3>实验结果如下<br><img src="/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/for%E5%BE%AA%E7%8E%AF.png"><br><img src="/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/%E8%BF%9B%E7%A8%8B%E6%B1%A0_%E5%90%8C%E4%B8%80%E6%96%87%E4%BB%B6.png"><br><img src="/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/%E8%BF%9B%E7%A8%8B%E6%B1%A0_%E7%8B%AC%E7%AB%8B%E6%96%87%E4%BB%B6.png"><h3 id="对比分析"><a href="#对比分析" class="headerlink" title="对比分析"></a>对比分析</h3>先看独立文件系统的对比<br>先考虑独立文件系统<br>可以看到，并发数量10和并发数量100，其实平均时间都差不多，并发数量为100通常情况下要比并发数量为10要花费更多的时间。<br>通过分析可以发现，增加了文件系统的情况下，boot时间增加是最多的，其次才是main时间。<br><img src="/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/10vs100%E7%8B%AC%E7%AB%8B%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F.png"><br>然后是共享文件系统的分析<br>在共享文件系统下，反而是Main时间产生了较大差距，boot时间和挂载时间反而区别不大。<br><img src="/images/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B-Images/10vs100%E5%85%B1%E4%BA%AB%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F.png"><br>暂时就分析了这么多，还缺少了横向对比与总时间的分析。</li>
+</ul>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/11/12/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/" title="Unikraft启动过程" target="_blank" rel="external">http://example.com/2022/11/12/Unikraft启动过程/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/11/12/virtio-blkdev/" title="virtio-blkdev源码"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/11/12/uk_dpdk%EF%BC%88%E9%A9%B1%E5%8A%A8%E9%83%A8%E5%88%86%EF%BC%89/" title="uk_dpdk（驱动部分）"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

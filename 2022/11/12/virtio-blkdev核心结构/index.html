@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>virtio-blkdev核心数据结构 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="简介 virtio-blk：KVM-Qemu虚拟化生态中虚拟磁盘的一种实现方式。 利用了virtio共享内存的机制 Guest OS内核通过加载virtio-blk驱动，实现块存储的读写，无需额外的厂家专用驱动 可以当作一个pci设备来看待 实现虚拟机内外的事件通知和数据传递 前端驱动(virtio-blk)：准备好待处理的IO请求和数据存放空间并通知后端 虚拟机外部的后端程序(Hyperviso">
+<meta property="og:type" content="article">
+<meta property="og:title" content="virtio-blkdev核心数据结构">
+<meta property="og:url" content="http://example.com/2022/11/12/virtio-blkdev%E6%A0%B8%E5%BF%83%E7%BB%93%E6%9E%84/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="简介 virtio-blk：KVM-Qemu虚拟化生态中虚拟磁盘的一种实现方式。 利用了virtio共享内存的机制 Guest OS内核通过加载virtio-blk驱动，实现块存储的读写，无需额外的厂家专用驱动 可以当作一个pci设备来看待 实现虚拟机内外的事件通知和数据传递 前端驱动(virtio-blk)：准备好待处理的IO请求和数据存放空间并通知后端 虚拟机外部的后端程序(Hyperviso">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/virtio-blkdev/%E6%95%B4%E4%BD%93%E7%BB%93%E6%9E%84.png">
+<meta property="og:image" content="http://example.com/images/virtio-blkdev/%E6%89%87%E5%8C%BA%E5%9D%97%E6%AE%B5%E9%A1%B5.png">
+<meta property="og:image" content="http://example.com/images/virtio-blkdev/virtio_blk_dev%E7%BB%93%E6%9E%84%E4%BD%93%E5%85%B3%E7%B3%BB%E5%9B%BE.png">
+<meta property="og:image" content="http://example.com/images/virtio-blkdev/free_list.png">
+<meta property="article:published_time" content="2022-11-12T05:09:27.672Z">
+<meta property="article:modified_time" content="2022-11-12T02:38:56.295Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="Plat">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/virtio-blkdev/%E6%95%B4%E4%BD%93%E7%BB%93%E6%9E%84.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/11/12/virtio-blkdev%E6%A0%B8%E5%BF%83%E7%BB%93%E6%9E%84/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">9</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.8px;">Plat</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.6px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.4px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.2px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/virtio-blkdev%E6%A0%B8%E5%BF%83%E7%BB%93%E6%9E%84/" class="title">virtio-blkdev核心数据结构</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.672Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/virtio-blkdev/" class="title">virtio-blkdev源码</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.670Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/Unikraft%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/" class="title">Unikraft启动过程</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.651Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/uk_dpdk%EF%BC%88%E9%A9%B1%E5%8A%A8%E9%83%A8%E5%88%86%EF%BC%89/" class="title">uk_dpdk（驱动部分）</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.639Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/11/12/ukblkdev/" class="title">ukblkdev源码阅读</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-11-12T05:09:27.632Z" itemprop="datePublished">2022-11-12</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">简介</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9D%97%E8%AE%BE%E5%A4%87%E6%95%B4%E4%BD%93%E5%B8%83%E5%B1%80"><span class="toc-number">1.1.</span> <span class="toc-text">块设备整体布局</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%89%87%E5%8C%BA-sector-%E3%80%81%E5%9D%97-block-%E3%80%81%E6%AE%B5-segment-%E3%80%81%E9%A1%B5-page-%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="toc-number">1.2.</span> <span class="toc-text">扇区(sector)、块(block)、段(segment)、页(page)的区别</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">2.</span> <span class="toc-text">数据结构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#virtio-blk-device"><span class="toc-number">2.1.</span> <span class="toc-text">virtio_blk_device</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#uk-blkdev-queue"><span class="toc-number">2.2.</span> <span class="toc-text">uk_blkdev_queue</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#uk-sglist"><span class="toc-number">2.2.1.</span> <span class="toc-text">uk_sglist</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#uk-sglist-seg"><span class="toc-number">2.2.2.</span> <span class="toc-text">uk_sglist_seg</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#virtio-blkdev-request"><span class="toc-number">2.2.3.</span> <span class="toc-text">virtio_blkdev_request</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#uk-blkreq"><span class="toc-number">2.2.3.1.</span> <span class="toc-text">uk_blkreq</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#virtio-blk-outhdr"><span class="toc-number">2.2.3.2.</span> <span class="toc-text">virtio_blk_outhdr</span></a></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#virtio-driver"><span class="toc-number">2.3.</span> <span class="toc-text">virtio_driver</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-virtio-blkdev核心结构" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      virtio-blkdev核心数据结构
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/11/12/virtio-blkdev%E6%A0%B8%E5%BF%83%E7%BB%93%E6%9E%84/" class="article-date">
+	  <time datetime="2022-11-12T05:09:27.672Z" itemprop="datePublished">2022-11-12</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/Plat/" rel="tag">Plat</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/11/12/virtio-blkdev%E6%A0%B8%E5%BF%83%E7%BB%93%E6%9E%84/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li>virtio-blk：KVM-Qemu虚拟化生态中虚拟磁盘的一种实现方式。<ul>
+<li>利用了virtio共享内存的机制</li>
+<li>Guest OS内核通过加载virtio-blk驱动，实现块存储的读写，无需额外的厂家专用驱动</li>
+<li>可以当作一个pci设备来看待</li>
+<li>实现虚拟机内外的事件通知和数据传递<ul>
+<li>前端驱动(virtio-blk)：准备好待处理的IO请求和数据存放空间并通知后端</li>
+<li>虚拟机外部的后端程序(Hypervisor)：获取待处理的请求并交给真正的IO子系统处理，完成后将处理结果通知前端</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="块设备整体布局"><a href="#块设备整体布局" class="headerlink" title="块设备整体布局"></a>块设备整体布局</h3><p><img src="/images/virtio-blkdev/%E6%95%B4%E4%BD%93%E7%BB%93%E6%9E%84.png" alt="image.png"></p>
+<h3 id="扇区-sector-、块-block-、段-segment-、页-page-的区别"><a href="#扇区-sector-、块-block-、段-segment-、页-page-的区别" class="headerlink" title="扇区(sector)、块(block)、段(segment)、页(page)的区别"></a>扇区(sector)、块(block)、段(segment)、页(page)的区别</h3><ul>
+<li>扇区：硬盘的读写以扇区为基本单位，大小一般为512B<ul>
+<li>扇区是磁盘物理层面的概念，无法在系统中进行大小的更改</li>
+<li>操作系统是不直接与扇区交互的，而是与多个连续扇区组成的磁盘块交互</li>
+</ul>
+</li>
+<li>块：文件系统读写数据的最小单位<ul>
+<li>操作系统将相邻的扇区组合在一起，形成一个块</li>
+<li>每个磁盘块可以包括 2、4、8、16、32 或 64 个扇区</li>
+<li>操作系统规定一个磁盘块中只能放置一个文件，文件所占用的空间，只能是磁盘块的整数倍。</li>
+</ul>
+</li>
+<li>段：块驱动的传送单位<ul>
+<li>是一个内存页或内存页的一部分，它包含磁盘上物理相邻的几个数据块的内容</li>
+<li>大小不定，取决于通用块层，因为它把传送的数据下发给块驱动，而通用块还可以把几个段合并成物理段、硬件段（专门总线电路）；同时也取决于用户所访问的大小。</li>
+</ul>
+</li>
+<li>页：内存的最小存储单位，大小一般4KB<br><img src="/images/virtio-blkdev/%E6%89%87%E5%8C%BA%E5%9D%97%E6%AE%B5%E9%A1%B5.png" alt="image.png"></li>
+</ul>
+<h2 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h2><h3 id="virtio-blk-device"><a href="#virtio-blk-device" class="headerlink" title="virtio_blk_device"></a>virtio_blk_device</h3><p>与unikraft的块设备进行交互，提供接口。<br><img src="/images/virtio-blkdev/virtio_blk_dev%E7%BB%93%E6%9E%84%E4%BD%93%E5%85%B3%E7%B3%BB%E5%9B%BE.png" alt="virtio_blkdev结构体"></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">virtio_blk_device</span> &#123;</span></span><br><span class="line">    <span class="comment">/* Pointer to Unikraft Block Device */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev</span> <span class="title">blkdev</span>;</span></span><br><span class="line">    <span class="comment">/* The blkdevice identifier */</span></span><br><span class="line">    __u16 uid;</span><br><span class="line">    <span class="comment">/* Virtio Device */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_dev</span> *<span class="title">vdev</span>;</span></span><br><span class="line">    <span class="comment">/* List of all the virtqueue in the pci device */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtqueue</span> *<span class="title">vq</span>;</span></span><br><span class="line">    <span class="comment">/* Nb of max_queues supported by device */</span></span><br><span class="line">    __u16 max_vqueue_pairs;</span><br><span class="line">    <span class="comment">/* This is used when the user has decided the nb_queues to use */</span></span><br><span class="line">    __u16    nb_queues;</span><br><span class="line">    <span class="comment">/* List of queues */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span>   <span class="title">uk_blkdev_queue</span> *<span class="title">qs</span>;</span></span><br><span class="line">    <span class="comment">/* Maximum number of segments for a request */</span></span><br><span class="line">    __u32 max_segments;</span><br><span class="line">    <span class="comment">/* Maximum size of a segment */</span></span><br><span class="line">    __u32 max_size_segment;</span><br><span class="line">    <span class="comment">/* If it is set then flush request is allowed */</span></span><br><span class="line">    __u8 writeback;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>blkdev：交互的上层unikraft块设备</li>
+<li>uid：virtio的块设备号，与unikraft块设备号对应</li>
+<li>*vdev：关联的virtio设备，通过virtqueue与virtio_dev进行通信和数据传输</li>
+<li>*vq：链接到virtio_blk所使用的virtqueue，是个链表<ul>
+<li>在块设备中只使用一个队列</li>
+</ul>
+</li>
+<li>max_vqueue_pairs：设备所支持的队列数量的最大值</li>
+<li>nb_queues：所包含的队列数量</li>
+<li>*qs：unikraft块设备的队列，与virtqueue队列对应，同时只使用一个</li>
+<li>writeback：对virtio块设备进行操作flush操作<h3 id="uk-blkdev-queue"><a href="#uk-blkdev-queue" class="headerlink" title="uk_blkdev_queue"></a>uk_blkdev_queue</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_blkdev_queue</span> &#123;</span></span><br><span class="line">    <span class="comment">/* The virtqueue reference */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtqueue</span> *<span class="title">vq</span>;</span></span><br><span class="line">    <span class="comment">/* The libukblkdev queue identifier */</span></span><br><span class="line">    <span class="comment">/* It is also the virtqueue identifier */</span></span><br><span class="line">    <span class="type">uint16_t</span> lqueue_id;</span><br><span class="line">    <span class="comment">/* Allocator */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_alloc</span> *<span class="title">a</span>;</span></span><br><span class="line">    <span class="comment">/* The nr. of descriptor limit */</span></span><br><span class="line">    <span class="type">uint16_t</span> max_nb_desc;</span><br><span class="line">    <span class="comment">/* The nr. of descriptor user configured */</span></span><br><span class="line">    <span class="type">uint16_t</span> nb_desc;</span><br><span class="line">    <span class="comment">/* The flag to interrupt on the queue */</span></span><br><span class="line">    <span class="type">uint8_t</span> intr_enabled;</span><br><span class="line">    <span class="comment">/* Reference to virtio_blk_device  */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_blk_device</span> *<span class="title">vbd</span>;</span></span><br><span class="line">    <span class="comment">/* The scatter list and its associated fragments */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_sglist</span> <span class="title">sg</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_sglist_seg</span> *<span class="title">sgsegs</span>;</span></span><br><span class="line">    <span class="comment">/* List of virtio_blkdev_requests to be freed outside of interrupt</span></span><br><span class="line"><span class="comment">     * handler</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="comment">/* <span class="doctag">TODO:</span> Replace with Linux llist-style list for SMP support */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> <span class="title">free_list</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></li>
+<li>*vq：与uk_blkdev_queue关联的virtqueue，在块设备中只有一个uk_blkdev_queue,也只有一个virtqueue</li>
+<li>lqueue_id：队列号，和virtqueue的队列号一致</li>
+<li>*a：内存分配器</li>
+<li>max_nb_desc：队列所能承载的描述符数量的最大值，描述符主要记录请求事件要访问数据的地址信息</li>
+<li>nb_desc：队列中现有描述符的数量</li>
+<li>intr_enabled：标志能否对队列进行中断</li>
+<li>*vbd：uk_blkdev_queue作为vbd的成员存在</li>
+<li>sg：扇区链表，会将相邻的扇区融合成段。用于将请求要访问的磁盘扇区融合成段状的逻辑地址</li>
+<li>free_list：链接要释放的请求(已经完成的请求，或无法访问的请求)<br><img src="/images/virtio-blkdev/free_list.png" alt="free_list"><h4 id="uk-sglist"><a href="#uk-sglist" class="headerlink" title="uk_sglist"></a>uk_sglist</h4>用于存储一个一个段<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_sglist</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_sglist_seg</span> *<span class="title">sg_segs</span>;</span> <span class="comment">/* Segment management 数组 */</span></span><br><span class="line">    __atomic    sg_refs; <span class="comment">/* Reference count for the sg list */</span></span><br><span class="line">    <span class="type">uint16_t</span>    sg_nseg; <span class="comment">/* Number of segment in the sg list */</span></span><br><span class="line">    <span class="type">uint16_t</span>    sg_maxseg; <span class="comment">/* Maximum number of segment in the sg list */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h4 id="uk-sglist-seg"><a href="#uk-sglist-seg" class="headerlink" title="uk_sglist_seg"></a>uk_sglist_seg</h4>段的结构体<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_sglist_seg</span> &#123;</span></span><br><span class="line">    <span class="type">__paddr_t</span>  ss_paddr; <span class="comment">/* Physical address */</span></span><br><span class="line">    <span class="type">size_t</span>      ss_len;   <span class="comment">/* Length of the buffer */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></li>
+<li>ss_paddr：相对于unikraft(guest)的物理地址</li>
+</ul>
+<h4 id="virtio-blkdev-request"><a href="#virtio-blkdev-request" class="headerlink" title="virtio_blkdev_request"></a>virtio_blkdev_request</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 块设备请求的数据结构存储在sglist_seg中</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">virtio_blkdev_request</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_blkreq</span> *<span class="title">req</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uk_list_head</span> <span class="title">free_list_head</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">virtio_blk_outhdr</span> <span class="title">virtio_blk_outhdr</span>;</span></span><br><span class="line">    <span class="type">uint8_t</span> status;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>free_list_head：请求项可以释放时，链接到uk_blkdev_queue块队列，用于请求释放。</li>
+<li>virtio_blk_outhdr：host只读的descriptor</li>
+<li>status：host可写，用于host反馈请求的处理结果是成功（0）、失败（1）或不支持（2）<h5 id="uk-blkreq"><a href="#uk-blkreq" class="headerlink" title="uk_blkreq"></a>uk_blkreq</h5><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_blkreq</span> &#123;</span></span><br><span class="line">    <span class="comment">/* Input members */</span></span><br><span class="line">    <span class="comment">/* Operation type */</span></span><br><span class="line">    <span class="class"><span class="keyword">enum</span> <span class="title">uk_blkreq_op</span>           <span class="title">operation</span>;</span></span><br><span class="line">    <span class="comment">/* Start Sector from where the op begin */</span></span><br><span class="line">    __sector                start_sector;</span><br><span class="line">    <span class="comment">/* Size in number of sectors */</span></span><br><span class="line">    __sector                nb_sectors;</span><br><span class="line">    <span class="comment">/* Pointer to data */</span></span><br><span class="line">    <span class="type">void</span>                    *aio_buf;</span><br><span class="line">    <span class="comment">/* Request callback and its parameters */</span></span><br><span class="line">    <span class="type">uk_blkreq_event_t</span>           cb;</span><br><span class="line">    <span class="type">void</span>                    *cb_cookie;</span><br><span class="line">    <span class="comment">/* Output members */</span></span><br><span class="line">    <span class="comment">/* State of request: finished/unfinished*/</span></span><br><span class="line">    __atomic                state;</span><br><span class="line">    <span class="comment">/* Result status of operation (&lt; 0 on errors)*/</span></span><br><span class="line">    <span class="type">int</span>                 result;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></li>
+<li>operation：对磁盘相应扇区的请求操作类型(读、写、flush)</li>
+<li>start_sector：请求访问的起始磁盘扇区号</li>
+<li>nb_sectors：要访问的扇区数量</li>
+<li>*aio_buf：如果是写模式，则指向要写入的数据<h5 id="virtio-blk-outhdr"><a href="#virtio-blk-outhdr" class="headerlink" title="virtio_blk_outhdr"></a>virtio_blk_outhdr</h5><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">virtio_blk_outhdr</span> &#123;</span></span><br><span class="line">    <span class="comment">/* VIRTIO_BLK_T* */</span></span><br><span class="line">    __virtio_le32 type;</span><br><span class="line">    <span class="comment">/* io priority. */</span></span><br><span class="line">    __virtio_le32 ioprio;</span><br><span class="line">    <span class="comment">/* Sector (ie. 512 byte offset) */</span></span><br><span class="line">    __virtio_le64 sector;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></li>
+<li>type：表示请求的类型：读、写、或者其他磁盘操作命令。</li>
+<li>ioprio：表示请求的优先级，数值越大优先级越高，后端可以根据该字段决定请求处理。</li>
+<li>sector：表示读写请求的偏移位置。这里的sector表示偏移位置以扇区（512字节）为单位。</li>
+</ul>
+<h3 id="virtio-driver"><a href="#virtio-driver" class="headerlink" title="virtio_driver"></a>virtio_driver</h3><p>virtio驱动，可用于创建virtio块设备</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">virtio_driver</span> &#123;</span></span><br><span class="line">    <span class="comment">/** Next entry of the driver list */</span></span><br><span class="line">    UK_TAILQ_ENTRY(<span class="keyword">struct</span> virtio_driver) next;</span><br><span class="line">    <span class="comment">/** The id map for the virtio device */</span></span><br><span class="line">    <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">virtio_dev_id</span> *<span class="title">dev_ids</span>;</span></span><br><span class="line">    <span class="comment">/** The init function for the driver */</span></span><br><span class="line">    <span class="type">virtio_driver_init_func_t</span> init;</span><br><span class="line">    <span class="comment">/** Adding the virtio device */</span></span><br><span class="line">    <span class="type">virtio_driver_add_func_t</span> add_dev;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>*dev_ids：在块设备通信中指的是virtio块设备的<code>vblk_dev_id</code><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">virtio_dev_id</span> <span class="title">vblk_dev_id</span>[] =</span> &#123;</span><br><span class="line">    &#123;VIRTIO_ID_BLOCK&#125;,  <span class="comment">// virtio块，值为2</span></span><br><span class="line">    &#123;VIRTIO_ID_INVALID&#125; <span class="comment">// 不存在块，值为0</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></li>
+<li>init：这里主要由<code>virtio_blk_drv_init</code>实现，负责驱动初始化</li>
+<li>add_dev：这里主要由<code>virtio_blk_add_dev</code>实现，添加一个virtio块设备</li>
+</ul>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/11/12/virtio-blkdev%E6%A0%B8%E5%BF%83%E7%BB%93%E6%9E%84/" title="virtio-blkdev核心数据结构" target="_blank" rel="external">http://example.com/2022/11/12/virtio-blkdev核心结构/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    
+    <li class="next">
+      <a href="/2022/11/12/virtio-blkdev/" title="virtio-blkdev源码"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>
