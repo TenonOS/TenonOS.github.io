@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters | TenonOS-unikraft-learning</title>
+  <meta name="description" content="OSDI’21 The nanoPU: A Nanosecond Network Stack for Datacenters论文链接：https:&#x2F;&#x2F;www.usenix.org&#x2F;conference&#x2F;osdi21&#x2F;presentation&#x2F;ibanez 摘要nanoPUnanoPU 是一种新的 NIC-CPU 协同设计，用于加速使用了很多微秒级小型 RPC 的应用程序。nanoPU 的新颖之处在">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters">
+<meta property="og:url" content="http://example.com/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="OSDI’21 The nanoPU: A Nanosecond Network Stack for Datacenters论文链接：https:&#x2F;&#x2F;www.usenix.org&#x2F;conference&#x2F;osdi21&#x2F;presentation&#x2F;ibanez 摘要nanoPUnanoPU 是一种新的 NIC-CPU 协同设计，用于加速使用了很多微秒级小型 RPC 的应用程序。nanoPU 的新颖之处在">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/OSDI">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/OSDI">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/OSDI">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/OSDI">
+<meta property="article:published_time" content="2022-12-13T13:14:27.758Z">
+<meta property="article:modified_time" content="2022-12-13T13:16:59.473Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="hpc">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/hpc-zwc/OSDI">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">7</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">9</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hpc/" rel="tag">hpc</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.17px;">HPC</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.83px;">Plat</a> <a href="/tags/Serverless/" style="font-size: 13.33px;">Serverless</a> <a href="/tags/hpc/" style="font-size: 13.17px;">hpc</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.67px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.5px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.17px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/TJS%E2%80%9922%20Toward%20low%20CPU%20usage%20and%20efficient%20DPDK%20communication%20in%20a%20cluster/" class="title">TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T13:14:27.772Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/" class="title">OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T13:14:27.758Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/dpdk%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81/" class="title">dpdk 实验代码</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T13:14:27.735Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/SIGCOMM22_SPRIGHT/" class="title">SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.929Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/" class="title">EuroSys&#39;22 Memory Deduplication for Serverless Computing with Medes</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.918Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#OSDI%E2%80%9921-The-nanoPU-A-Nanosecond-Network-Stack-for-Datacenters"><span class="toc-number">1.</span> <span class="toc-text">OSDI’21 The nanoPU: A Nanosecond Network Stack for Datacenters</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%91%98%E8%A6%81"><span class="toc-number">2.</span> <span class="toc-text">摘要</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#nanoPU"><span class="toc-number">2.1.</span> <span class="toc-text">nanoPU</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%A7%E8%83%BD"><span class="toc-number">2.2.</span> <span class="toc-text">性能</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">3.</span> <span class="toc-text">简介</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9D%80%E6%89%8B%E5%9B%9E%E7%AD%94%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">3.1.</span> <span class="toc-text">着手回答的问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%84%E7%90%86-nanoRequest-%E5%8F%AF%E4%BB%A5%E8%BE%BE%E5%88%B0%E7%9A%84%E7%BB%9D%E5%AF%B9%E6%9C%80%E5%B0%8F%E5%BC%80%E9%94%80%E6%98%AF%E5%A4%9A%E5%B0%91%EF%BC%9F"><span class="toc-number">3.1.1.</span> <span class="toc-text">处理 nanoRequest 可以达到的绝对最小开销是多少？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%83%BD%E5%90%A6%E9%80%9A%E8%BF%87%E5%9C%A8%E7%A1%AE%E5%AE%9A%E7%9A%84%E6%97%B6%E9%97%B4%E5%86%85%E5%A4%84%E7%90%86-nanoRequests-%E6%9D%A5%E6%9C%80%E5%B0%8F%E5%8C%96%E5%B0%BE%E9%83%A8%E5%93%8D%E5%BA%94%E6%97%B6%E9%97%B4%EF%BC%9F"><span class="toc-number">3.1.2.</span> <span class="toc-text">能否通过在确定的时间内处理 nanoRequests 来最小化尾部响应时间？</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#nanoPU-%E7%9A%84%E8%AE%BE%E8%AE%A1"><span class="toc-number">4.</span> <span class="toc-text">nanoPU 的设计</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BD%91%E7%BB%9C%E8%B7%AF%E5%BE%84"><span class="toc-number">4.1.</span> <span class="toc-text">网络路径</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%A0%E7%BB%9F%E7%9A%84-DMA-%E8%B7%AF%E5%BE%84"><span class="toc-number">4.1.1.</span> <span class="toc-text">传统的 DMA 路径</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8A%A0%E9%80%9F%E8%B7%AF%E5%BE%84"><span class="toc-number">4.1.2.</span> <span class="toc-text">加速路径</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E5%AF%84%E5%AD%98%E5%99%A8%E6%96%87%E4%BB%B6%E6%8E%A5%E5%8F%A3"><span class="toc-number">4.2.</span> <span class="toc-text">线程安全的寄存器文件接口</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%97%9B%E7%82%B9"><span class="toc-number">4.2.1.</span> <span class="toc-text">痛点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">4.2.2.</span> <span class="toc-text">解决方案</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="toc-number">4.2.3.</span> <span class="toc-text">工作原理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A1%AC%E4%BB%B6%E4%B8%AD%E7%9A%84%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6"><span class="toc-number">4.3.</span> <span class="toc-text">硬件中的线程调度</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%97%9B%E7%82%B9-1"><span class="toc-number">4.3.1.</span> <span class="toc-text">痛点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88-1"><span class="toc-number">4.3.2.</span> <span class="toc-text">解决方案</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86-1"><span class="toc-number">4.3.3.</span> <span class="toc-text">工作原理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#nanoPU-%E4%B8%AD%E7%9A%84-NIC-%E7%AE%A1%E7%BA%BF"><span class="toc-number">4.4.</span> <span class="toc-text">nanoPU 中的 NIC 管线</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86-2"><span class="toc-number">4.4.1.</span> <span class="toc-text">工作原理</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AF%84%E4%BC%B0"><span class="toc-number">5.</span> <span class="toc-text">评估</span></a></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/" class="article-date">
+	  <time datetime="2022-12-13T13:14:27.758Z" itemprop="datePublished">2022-12-13</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/hpc/" rel="tag">hpc</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="OSDI’21-The-nanoPU-A-Nanosecond-Network-Stack-for-Datacenters"><a href="#OSDI’21-The-nanoPU-A-Nanosecond-Network-Stack-for-Datacenters" class="headerlink" title="OSDI’21 The nanoPU: A Nanosecond Network Stack for Datacenters"></a>OSDI’21 The nanoPU: A Nanosecond Network Stack for Datacenters</h1><p>论文链接：<a target="_blank" rel="noopener" href="https://www.usenix.org/conference/osdi21/presentation/ibanez">https://www.usenix.org/conference/osdi21/presentation/ibanez</a></p>
+<h1 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h1><h2 id="nanoPU"><a href="#nanoPU" class="headerlink" title="nanoPU"></a>nanoPU</h2><p>nanoPU 是一种新的 NIC-CPU 协同设计，用于加速使用了很多微秒级小型 RPC 的应用程序。nanoPU 的新颖之处在于设计了网络和应用程序之间的快速路径——绕过高速缓存和内存层次结构，并将到达的消息直接放入 CPU寄存器文件中。这条快速路径包含对低延迟传输和拥塞控制的可编程硬件支持，以及对 RPC 到核心的高效负载平衡的硬件支持。</p>
+<h2 id="性能"><a href="#性能" class="headerlink" title="性能"></a>性能</h2><ul>
+<li>通过 nanoPU 的线对线 RPC 响应时间仅为 69ns，比同类最佳的低延迟商用 NIC 快一个数量级。</li>
+<li>相对于传统线程调度技术，硬件线程调度程序能够将 RPC 尾部响应时间降（长尾延迟？）低约 5 倍，同时使系统能够承受高 20% 的负载。</li>
+</ul>
+<blockquote>
+<p>长尾延迟：</p>
+<p>假设Redis处理了100个请求，99个请求的响应时间都是1s，而有一个请求的响应时间是100s。那么，如果看平均延迟，这100个请求的平均延迟是1.99s，但是对于这个响应时间是100s的请求而言，它对应的用户体验将是非常糟糕的。如果有100万个请求，哪怕只有1%的请求是100s，这也对应了1万个糟糕的用户体验。这1%的请求延迟就属于长尾延迟。</p>
+</blockquote>
+<h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><h2 id="着手回答的问题"><a href="#着手回答的问题" class="headerlink" title="着手回答的问题"></a>着手回答的问题</h2><h3 id="处理-nanoRequest-可以达到的绝对最小开销是多少？"><a href="#处理-nanoRequest-可以达到的绝对最小开销是多少？" class="headerlink" title="处理 nanoRequest 可以达到的绝对最小开销是多少？"></a>处理 nanoRequest 可以达到的绝对最小开销是多少？</h3><p>nanoRequests 只是非常短暂的 RPC，由客户端和服务器 NIC 标记以进行特殊处理。在 nanoPU 中，nanoRequests 通过 NIC 遵循一条新的低开销路径，绕过操作系统和内存缓存层次结构并直接到达运行线程的寄存器。所有消息重组功能、传输和拥塞控制逻辑都移至硬件，线程调度和核心选择决策也是如此。传入的 nanoRequest 在到达应用程序代码之前仅通过硬件。nanoPU 原型可以在不到 40ns 的时间内将到达的 nanoRequest 传送到正在运行的应用程序线程中（如果绕过以太网 MAC，则不到15ns）</p>
+<h3 id="能否通过在确定的时间内处理-nanoRequests-来最小化尾部响应时间？"><a href="#能否通过在确定的时间内处理-nanoRequests-来最小化尾部响应时间？" class="headerlink" title="能否通过在确定的时间内处理 nanoRequests 来最小化尾部响应时间？"></a>能否通过在确定的时间内处理 nanoRequests 来最小化尾部响应时间？</h3><p>由于 nanoRequests 由固定延迟的硬件管道处理，如果单个数据包请求到达等待核心，其线程将始终在小于 40ns 的时间内开始处理消息。另一方面，如果核心很忙，或者另一个请求在前面排队，那么处理可能会延迟。在这种情况下，新型硬件线程调度器可以在特定假设下限制尾部响应时间。</p>
+<h1 id="nanoPU-的设计"><a href="#nanoPU-的设计" class="headerlink" title="nanoPU 的设计"></a>nanoPU 的设计</h1><p><img src="/images/hpc-zwc/OSDI'21-nanoPU/pipeline.png" alt="pipeline"></p>
+<h2 id="网络路径"><a href="#网络路径" class="headerlink" title="网络路径"></a>网络路径</h2><p>nanoPU 有两条独立的网络路径：</p>
+<h3 id="传统的-DMA-路径"><a href="#传统的-DMA-路径" class="headerlink" title="传统的 DMA 路径"></a>传统的 DMA 路径</h3><p>主机的 L1C 或 LLC。</p>
+<p>传统路径可以是通过硬件和软件的任何现有路径；因此，所有网络应用程序都可以在 nanoPU 的传统路径上运行而不会发生变化，并且性能至少与今天一样好。</p>
+<h3 id="加速路径"><a href="#加速路径" class="headerlink" title="加速路径"></a>加速路径</h3><p>直接访问寄存器</p>
+<ul>
+<li>硬件线程调度器（HTS）</li>
+<li>两个用于网络入口和出口数据的小 FIFO 存储器</li>
+<li>两个保留的通用寄存器（GPR）：一个作为出口 FIFO 的尾部，用于发送 nanoRequest 数据，另一个作为用于接收的入口 FIFO 的头部。</li>
+<li>CPU 内核静态分为两组：运行普通应用程序的内核和运行nanoRequest 应用程序的内核。运行常规应用程序的内核使用标准操作系统软件线程调度，操作系统会将 nanoRequest 线程的调度委托给 HTS。</li>
+</ul>
+<p>路径介绍：</p>
+<ol>
+<li>数据包到达并进入 P4 可编程PISA 管道。除了标准的报头处理（例如，匹配 IP 地址、检查版本和校验和以及删除隧道封装）之外，管道还使用匹配操作表 2 检查传输报头中的目标第 4 层端口号，以决定是否消息应该沿着快速路径传送。如果是，它继续到 2，否则它遵循通常的 DMA 处理路径 D。</li>
+<li>数据包被重组为消息；为整个消息分配一个缓冲区，并且（可能）将数据包数据重新排序为正确的顺序。</li>
+<li>传输协议保证消息可靠到达；在所有数据到达之前，消息数据和信令数据包将根据协议与对等方交换。</li>
+<li>当消息到达时，它被放置在每个应用程序的接收队列中，等待由核心选择逻辑分配给核心。</li>
+<li>轮到某个消息时，它被发送到指定内核上适当的每线程入口 FIFO，等待HTS提醒内核运行消息的线程并将第一个字放入 netRX 寄存器。</li>
+<li>核心处理数据，如果运行服务器应用程序，通常会为客户端生成响应消息。</li>
+<li>应用程序通过发出一次将一个”字”写入 netTX 寄存器的指令来传输消息，其中字的大小由 CPU 寄存器的大小定义，通常为 64 位 (8B)。</li>
+<li>消息词流入全局传输队列。</li>
+<li>在通过出口 PISA 管道离开之前，消息被分成数据包。</li>
+</ol>
+<blockquote>
+<p>Protocol Independent Switch Architecture（PISA）：协议独立交换架构。包括三个主要组成部分。第一个是解析器(Parser)，通过编程定义哪些报头字段(以及在包中的位置)将被后面的阶段识别和匹配。第二个是匹配操作单元(Match-Action Unit)，每个单元都被编程来匹配(并可能对其进行操作)一个或多个已标识的报头字段。第三个是编码器(Deparser)，将包元数据重新序列化到包中，然后在输出链路上传输。deparser根据之前处理阶段缓存在内存中的所有报头字段重新构建在链路上传输的每个包。</p>
+<p><img src="/images/hpc-zwc/OSDI'21-nanoPU/structure.png" alt="structure"></p>
+</blockquote>
+<h2 id="线程安全的寄存器文件接口"><a href="#线程安全的寄存器文件接口" class="headerlink" title="线程安全的寄存器文件接口"></a>线程安全的寄存器文件接口</h2><h3 id="痛点"><a href="#痛点" class="headerlink" title="痛点"></a>痛点</h3><p>最近的工作表明，对于小数据包，PCIe 延迟贡献了大约 90% 的 wire-to-wire 响应时间（800 - 900ns）。</p>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><p>几位作者提议将 NIC 与 CPU 集成，以将数据包直接带入缓存。而 nanoPU 更进一步，将网络快速路径直接连接到CPU 内核的寄存器文件。这样我们可以允许应用程序通过一次向/从一对专用 CPU 寄存器写入/读取一个字 (8B)来发送和接收网络消息。</p>
+<p>这样做的优点：</p>
+<ul>
+<li>消息数据绕过内存和缓存层次结构，<strong>最大限度地缩短了数据包从到达线路到可用于处理的时间</strong>。</li>
+<li><strong>减少处理时间的可变性</strong>，从而最大限度地减少尾部响应时间。</li>
+<li>由于 nanoRequests 在专用 FIFO 中缓冲，与缓存分开，nanoRequest 数据不会与其他应用程序数据竞争缓存空间，从而进一步<strong>减少应用程序的缓存未命中率</strong>。</li>
+</ul>
+<h3 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h3><p>nanoPU 在寄存器文件中为网络 IO <strong>预留了两个通用寄存器</strong>（GPR），我们称之为 netRX 和 netTX。当应用程序发出一条从 netRX 读取的指令时，它实际上是<strong>从网络接收队列的头部读取一个消息字</strong>。类似地，当应用程序发出写入 netTX 的指令时，它实际上<strong>将消息字写入网络传输队列的尾部</strong>。网络接收和发送队列存储在直接连接到寄存器文件的小型 FIFO 存储器中。除了保留的 GPR 外，还有一小组控制和状态寄存器（CSR）用于核心和 NIC 硬件相互协调。</p>
+<ul>
+<li>定界消息<br>应用程序发送和接收的每条消息都<strong>以固定的 8B “应用程序标头” 开头</strong>。在到达的消息中，此标头<strong>指示消息长度（以及源 IP 地址和第 4 层端口号）</strong>，它允许软件识别消息的结尾。类似地，离开消息的应用程序报头包含消息长度（以及目标 IP 地址和第 4 层端口号），以便 NIC 可以检测到传出消息的结尾。</li>
+<li>线程安全<br>我们需要防止错误的线程读取或写入另一个线程的消息。 nanoPU 使用硬件互锁来防止这种情况。<strong>它为每个线程维护一个单独的入口和出口 FIFO，并控制对 FIFO 的访问</strong>，以便 netRX 和 netTX始终分别映射到当前运行线程的 FIFO 的头部和尾部。</li>
+<li>软件修改<br>寄存器文件可以在一个 CPU 周期内访问，而 L1 高速缓存通常需要三个周期。如果应用程序线程可以通过串行读取 netRX 直接从入口 FIFO 处理数据，那么它会运行得更快。</li>
+</ul>
+<h2 id="硬件中的线程调度"><a href="#硬件中的线程调度" class="headerlink" title="硬件中的线程调度"></a>硬件中的线程调度</h2><h3 id="痛点-1"><a href="#痛点-1" class="headerlink" title="痛点"></a>痛点</h3><p>当前若需要运行低延迟的应用程序，通常的做法是将其<strong>固定在一个专用内核</strong>上，但这<strong>在线程空闲时是十分低效</strong>的。另一种方法是<strong>将一个内核专门用于运行软件线程调度程序</strong>来管理其他核心。而软件调度程序需要定期运行来避免被中断和相关开销所淹没，这就<strong>需要为其指定一个频率</strong>。若太快则会浪费资源，太慢则会出现不必要的线程延迟。</p>
+<h3 id="解决方案-1"><a href="#解决方案-1" class="headerlink" title="解决方案"></a>解决方案</h3><p>将 nanoRequest 线程调度器转移到硬件上，这样可以持续监控消息处理状态以及网络接收队列，并做出亚纳秒级的调度决策。</p>
+<h3 id="工作原理-1"><a href="#工作原理-1" class="headerlink" title="工作原理"></a>工作原理</h3><p>每个内核都包含自己的调度程序硬件。当一个新线程初始化时，它必须通过绑定到第 4 层端口号并选择严格的优先级（0 是最高）来向其核心的 HTS 注册自己。第 4 层端口号让 nanoPU 硬件区分线程，并确保netRX 和 netTX 始终是当前运行线程的 FIFO 的头部和尾部。</p>
+<p>HTS 跟踪正在运行的线程的优先级及其在 CPU 内核上花费的时间。当一条新消息到达时，如果它的目标线程的优先级低于或等于当前线程，则新消息被排队。如果传入消息是针对更高优先级线程的，则正在运行的线程将被挂起并将目标线程交换到核心上。每当 HTS确定必须交换线程时，它断言一个新的特定于NIC 的中断，该中断会陷入一个小型软件中断处理程序（仅在相关内核上），并且通过将目标的第 4 层端口号写入专用 CSR来告诉中断处理程序要切换到哪个线程。</p>
+<ul>
+<li>调度策略<br>HTS 实施有界的严格优先级调度策略，以确保具有待处理工作的最高优先级线程始终在核心上运行。线程被标记为活动或空闲。如果线程符合调度条件，则它被标记为活动，这意味着它已被注册（端口号和 RX/TX FIFO 已分配）并且消息正在线程的 RX FIFO中等待。该线程保持活动状态，直到它明确指示它处于空闲状态且其 RX FIFO 为空。 HTS 试图确保最高优先级的活动线程始终运行。</li>
+<li>有限响应时间<br>HTS 支持限制一个高优先级应用程序可以阻止另一个应用程序多长时间。如果优先级为 0 的线程处理一条消息的时间超过 t0，调度程序将立即将其优先级从 0 降为 1，允许它被另一个具有待处理消息的优先级为 0 的线程抢占。</li>
+</ul>
+<h2 id="nanoPU-中的-NIC-管线"><a href="#nanoPU-中的-NIC-管线" class="headerlink" title="nanoPU 中的 NIC 管线"></a>nanoPU 中的 NIC 管线</h2><p>nanoPU 快速路径的 NIC 部分由两个主要组件组成：可编程传输层和内核选择算法。</p>
+<h3 id="工作原理-2"><a href="#工作原理-2" class="headerlink" title="工作原理"></a>工作原理</h3><ul>
+<li>可编程传输层<br>nanoPU 为 nanoRequest 线程提供了一种可靠的单向消息服务。为了足够快，传输层需要在NIC 的硬件中终止。可编程传输层的核心是事件驱动的 P4 可编程 PISA 管道。可以对管道进行编程以执行正常的报头处理。我们增强它以实现可靠的消息处理，包括拥塞控制，并对其进行编程以实现低延迟消息协议。</li>
+<li>CPU 内核选择<br>如果 NIC 随机向核心发送消息，一些消息将不可避免地排在队列中等待一个繁忙的核心，而另一个核心则处于空闲状态。因此，NIC 在硬件中实现了核心选择算法。NIC 使用 Join-Bounded-Shortest-Queue 或 JBSQ(n) 算法跨内核负载平衡 nanoRequest 消息。 JBSQ(n) 使用集中式队列以及每个核心的最大深度为n的短边界队列的组合。当每个核心队列有可用空间时，集中式队列将首先补充最短队列。JBSQ（1）等效于单队列模型。</li>
+</ul>
+<p><img src="/images/hpc-zwc/OSDI'21-nanoPU/finish.png" alt="finish"></p>
+<h1 id="评估"><a href="#评估" class="headerlink" title="评估"></a>评估</h1><p><img src="/images/hpc-zwc/OSDI'21-nanoPU/exp.png" alt="exp"></p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/" title="OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters" target="_blank" rel="external">http://example.com/2022/12/13/OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/12/13/TJS%E2%80%9922%20Toward%20low%20CPU%20usage%20and%20efficient%20DPDK%20communication%20in%20a%20cluster/" title="TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/12/13/dpdk%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81/" title="dpdk 实验代码"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster | TenonOS-unikraft-learning</title>
+  <meta name="description" content="TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster论文链接：https:&#x2F;&#x2F;dl.acm.org&#x2F;doi&#x2F;abs&#x2F;10.1007&#x2F;s11227-021-03942-x 摘要存在的问题DPDK 通过轮询的方式来避免中断产生的性能损耗，但由于轮询需要一直执行循环对网卡设备进行监听，不仅会浪费大量的 CPU">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster">
+<meta property="og:url" content="http://example.com/2022/12/13/TJS%E2%80%9922%20Toward%20low%20CPU%20usage%20and%20efficient%20DPDK%20communication%20in%20a%20cluster/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster论文链接：https:&#x2F;&#x2F;dl.acm.org&#x2F;doi&#x2F;abs&#x2F;10.1007&#x2F;s11227-021-03942-x 摘要存在的问题DPDK 通过轮询的方式来避免中断产生的性能损耗，但由于轮询需要一直执行循环对网卡设备进行监听，不仅会浪费大量的 CPU">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/TJS">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/TJS">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/TJS">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/TJS">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/TJS">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/TJS">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/TJS">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/TJS">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/TJS">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/TJS">
+<meta property="og:image" content="http://example.com/images/hpc-zwc/TJS">
+<meta property="article:published_time" content="2022-12-13T13:14:27.772Z">
+<meta property="article:modified_time" content="2022-12-13T13:12:56.034Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="hpc">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/hpc-zwc/TJS">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/12/13/TJS%E2%80%9922%20Toward%20low%20CPU%20usage%20and%20efficient%20DPDK%20communication%20in%20a%20cluster/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">7</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">9</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hpc/" rel="tag">hpc</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.17px;">HPC</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.83px;">Plat</a> <a href="/tags/Serverless/" style="font-size: 13.33px;">Serverless</a> <a href="/tags/hpc/" style="font-size: 13.17px;">hpc</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.67px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.5px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.17px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/TJS%E2%80%9922%20Toward%20low%20CPU%20usage%20and%20efficient%20DPDK%20communication%20in%20a%20cluster/" class="title">TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T13:14:27.772Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/" class="title">OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T13:14:27.758Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/dpdk%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81/" class="title">dpdk 实验代码</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T13:14:27.735Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/SIGCOMM22_SPRIGHT/" class="title">SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.929Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/" class="title">EuroSys&#39;22 Memory Deduplication for Serverless Computing with Medes</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.918Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#TJS%E2%80%9922-Toward-low-CPU-usage-and-efficient-DPDK-communication-in-a-cluster"><span class="toc-number">1.</span> <span class="toc-text">TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%91%98%E8%A6%81"><span class="toc-number">2.</span> <span class="toc-text">摘要</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AD%98%E5%9C%A8%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">2.1.</span> <span class="toc-text">存在的问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%89%8D%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E5%8F%8A%E5%85%B6%E7%BC%BA%E7%82%B9"><span class="toc-number">2.2.</span> <span class="toc-text">目前的解决方案及其缺点</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%AF%E8%83%BD%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">2.3.</span> <span class="toc-text">可能的解决方案</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">3.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E6%A1%86%E6%9E%B6"><span class="toc-number">4.</span> <span class="toc-text">测试框架</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE"><span class="toc-number">5.</span> <span class="toc-text">测试数据</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%8F%90%E5%87%BA%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">6.</span> <span class="toc-text">提出解决方案</span></a></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/12/13/TJS%E2%80%9922%20Toward%20low%20CPU%20usage%20and%20efficient%20DPDK%20communication%20in%20a%20cluster/" class="article-date">
+	  <time datetime="2022-12-13T13:14:27.772Z" itemprop="datePublished">2022-12-13</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/hpc/" rel="tag">hpc</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/12/13/TJS%E2%80%9922%20Toward%20low%20CPU%20usage%20and%20efficient%20DPDK%20communication%20in%20a%20cluster/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="TJS’22-Toward-low-CPU-usage-and-efficient-DPDK-communication-in-a-cluster"><a href="#TJS’22-Toward-low-CPU-usage-and-efficient-DPDK-communication-in-a-cluster" class="headerlink" title="TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster"></a>TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster</h1><p>论文链接：<a target="_blank" rel="noopener" href="https://dl.acm.org/doi/abs/10.1007/s11227-021-03942-x">https://dl.acm.org/doi/abs/10.1007/s11227-021-03942-x</a></p>
+<h1 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h1><h2 id="存在的问题"><a href="#存在的问题" class="headerlink" title="存在的问题"></a>存在的问题</h2><p>DPDK 通过轮询的方式来避免中断产生的性能损耗，但由于轮询需要一直执行循环对网卡设备进行监听，不仅会浪费大量的 CPU 周期，还会影响到其他正在运行的应用程序。</p>
+<h2 id="目前的解决方案及其缺点"><a href="#目前的解决方案及其缺点" class="headerlink" title="目前的解决方案及其缺点"></a>目前的解决方案及其缺点</h2><p>动态电压、频率缩放和低功耗空闲技术。存在的问题是降低频率会很大程度的影响到其他正在执行的任务。</p>
+<h2 id="可能的解决方案"><a href="#可能的解决方案" class="headerlink" title="可能的解决方案"></a>可能的解决方案</h2><p>通过线程睡眠操作来让出 CPU</p>
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p><img src="/images/hpc-zwc/TJS'22-low-CPU-usage/background.png" alt="Untitled"></p>
+<p>上半部分流程在调用时不会让出 CPU，它以 spin_wait 的方式实现延迟。下半部分会让出 CPU，调用的是 OS 提供的 nanosleep 函数。</p>
+<p>使用 DPDK 提供的延迟函数与使用 OS 提供的睡眠函数进行 CPU 使用率的对比</p>
+<p><img src="/images/hpc-zwc/TJS'22-low-CPU-usage/fig1.jpeg" alt="fig1"></p>
+<p>可以看出在使用 OS 提供的 API 时可以显著降低 CPU 的使用率。</p>
+<blockquote>
+<p>此处的延迟针对 receiver</p>
+</blockquote>
+<p>当使用 DPDK 提供的延迟函数时，得出下图</p>
+<p><img src="/images/hpc-zwc/TJS'22-low-CPU-usage/fig2.jpeg" alt="fig2"></p>
+<p>当 延迟时间增加时，CPU 的使用率并没有降低</p>
+<p>而使用 OS 提供的 sleep 函数时，得出下图</p>
+<p><img src="/images/hpc-zwc/TJS'22-low-CPU-usage/fig3.jpeg" alt="fig3"></p>
+<p>在一定的延迟时间范围内，两者的传输的速率并没有出现明显的差异，但 CPU 占用率有显著的下降。</p>
+<h1 id="测试框架"><a href="#测试框架" class="headerlink" title="测试框架"></a>测试框架</h1><p><img src="/images/hpc-zwc/TJS'22-low-CPU-usage/structure.jpeg" alt="structure"></p>
+<h1 id="测试数据"><a href="#测试数据" class="headerlink" title="测试数据"></a>测试数据</h1><p><img src="/images/hpc-zwc/TJS'22-low-CPU-usage/data1.png" alt="data1"></p>
+<p>上图为不同批处理大小与数据包大小下流程的执行延迟，当数据包大小相同时，时间消耗会随着批处理大小的增加而增加。</p>
+<p><img src="/images/hpc-zwc/TJS'22-low-CPU-usage/data2.png" alt="data2"></p>
+<p>上图为不同睡眠时长和发送方不同数据包大小的传输速度与丢包率（接收方不休眠）随着发送方休眠时长的增加，传输速率和丢包率都会降低</p>
+<p><img src="/images/hpc-zwc/TJS'22-low-CPU-usage/data3.png" alt="data3"></p>
+<p><img src="/images/hpc-zwc/TJS'22-low-CPU-usage/data4.png" alt="data4"></p>
+<p>上图为发送端睡眠时长对 CPU 占用率的影响（发送速率和接收速率基本相同）</p>
+<p><img src="/images/hpc-zwc/TJS'22-low-CPU-usage/data5.png" alt="data5"></p>
+<p>上图为接收端睡眠时长对 CPU 占用率的影响</p>
+<h1 id="提出解决方案"><a href="#提出解决方案" class="headerlink" title="提出解决方案"></a>提出解决方案</h1><p>使用卡尔曼滤波器预测实时的数据包大小以及数据包传输速率，通过以上两个量结合测试数据对最佳睡眠时长进行动态搜索。</p>
+<blockquote>
+<p>卡尔曼滤波的一个典型实例是从一组有限的，包含噪声的，对物体位置的观察序列（可能有偏差）预测出物体的位置的坐标及速度。</p>
+</blockquote>
+<p><img src="/images/hpc-zwc/TJS'22-low-CPU-usage/solution.png" alt="solution"></p>
+<p>第一列为包大小，第二列为最大休眠时长，第三列为传输速度。P 表示在时间 t 估计的数据包大小，A 表示在时间 t 估计的速度大小。st 表示睡眠时间。</p>
+<p>首先根据估计值 P 得到记录表中对应的 max(A) 的值，α 代表对传输速度下降的容忍度。</p>
+<ul>
+<li>若估计的 A 大于 max(A) * α，则令 st = st + Δst，并对下方的所有行进行更新的操作：如果 st 大于 表中的 sleep time，则将 st 赋值给 sleep time。最后将 A 赋值给 max(A)。</li>
+<li>若估计的 A 小于 max(A) * α，则直接将 st 设置为表中的 sleep time。</li>
+</ul>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/12/13/TJS%E2%80%9922%20Toward%20low%20CPU%20usage%20and%20efficient%20DPDK%20communication%20in%20a%20cluster/" title="TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster" target="_blank" rel="external">http://example.com/2022/12/13/TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    
+    <li class="next">
+      <a href="/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/" title="OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

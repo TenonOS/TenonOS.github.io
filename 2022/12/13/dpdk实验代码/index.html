@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>dpdk 实验代码 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="实验代码代码结构图  prepare.sh前置准备工作 1234567891011121314151617181920212223242526272829# get dpdk# 由于链接失效，该部分跳过#cd aux#wget http:&#x2F;&#x2F;vmx.cs.pub.ro&#x2F;~vmchecker&#x2F;lib_src.zip#unzip lib_src#rm lib_src.zip# 获取 DPDK 19.1">
+<meta property="og:type" content="article">
+<meta property="og:title" content="dpdk 实验代码">
+<meta property="og:url" content="http://example.com/2022/12/13/dpdk%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="实验代码代码结构图  prepare.sh前置准备工作 1234567891011121314151617181920212223242526272829# get dpdk# 由于链接失效，该部分跳过#cd aux#wget http:&#x2F;&#x2F;vmx.cs.pub.ro&#x2F;~vmchecker&#x2F;lib_src.zip#unzip lib_src#rm lib_src.zip# 获取 DPDK 19.1">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft_ukdpdk/structure.png">
+<meta property="og:image" content="http://example.com/images/unikraft_ukdpdk/result.svg">
+<meta property="og:image" content="http://example.com/images/unikraft_ukdpdk/select.png">
+<meta property="article:published_time" content="2022-12-13T13:14:27.735Z">
+<meta property="article:modified_time" content="2022-12-13T13:12:56.041Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="外部库">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft_ukdpdk/structure.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/12/13/dpdk%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">7</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">9</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hpc/" rel="tag">hpc</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.17px;">HPC</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.83px;">Plat</a> <a href="/tags/Serverless/" style="font-size: 13.33px;">Serverless</a> <a href="/tags/hpc/" style="font-size: 13.17px;">hpc</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.67px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.5px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.17px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/TJS%E2%80%9922%20Toward%20low%20CPU%20usage%20and%20efficient%20DPDK%20communication%20in%20a%20cluster/" class="title">TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T13:14:27.772Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/" class="title">OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T13:14:27.758Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/dpdk%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81/" class="title">dpdk 实验代码</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T13:14:27.735Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/SIGCOMM22_SPRIGHT/" class="title">SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.929Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/" class="title">EuroSys&#39;22 Memory Deduplication for Serverless Computing with Medes</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.918Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81"><span class="toc-number">1.</span> <span class="toc-text">实验代码</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E7%BB%93%E6%9E%84%E5%9B%BE"><span class="toc-number">2.</span> <span class="toc-text">代码结构图</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#prepare-sh"><span class="toc-number">3.</span> <span class="toc-text">prepare.sh</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#udp-echo-sh"><span class="toc-number">4.</span> <span class="toc-text">udp_echo.sh</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#aux"><span class="toc-number">5.</span> <span class="toc-text">aux</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#dpdk"><span class="toc-number">5.1.</span> <span class="toc-text">dpdk</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#dpdk2"><span class="toc-number">5.2.</span> <span class="toc-text">dpdk2</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#lib-src"><span class="toc-number">5.3.</span> <span class="toc-text">lib_src</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#libs"><span class="toc-number">5.4.</span> <span class="toc-text">libs</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#unikraft"><span class="toc-number">5.5.</span> <span class="toc-text">unikraft</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#server"><span class="toc-number">6.</span> <span class="toc-text">server</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Makefile-uk"><span class="toc-number">6.1.</span> <span class="toc-text">Makefile.uk</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#linux"><span class="toc-number">6.2.</span> <span class="toc-text">linux</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#linux-single"><span class="toc-number">6.3.</span> <span class="toc-text">linux_single</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#linux-batch"><span class="toc-number">6.4.</span> <span class="toc-text">linux_batch</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#linux-dpdk"><span class="toc-number">6.5.</span> <span class="toc-text">linux_dpdk</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#unikraft-lwip"><span class="toc-number">6.6.</span> <span class="toc-text">unikraft_lwip</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#unikraft-raw"><span class="toc-number">6.7.</span> <span class="toc-text">unikraft_raw</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#unikraft-dpdk"><span class="toc-number">6.8.</span> <span class="toc-text">unikraft_dpdk</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#client"><span class="toc-number">7.</span> <span class="toc-text">client</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#prepare-sh-1"><span class="toc-number">7.1.</span> <span class="toc-text">prepare.sh</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#run-vhost-sh"><span class="toc-number">7.2.</span> <span class="toc-text">run_vhost.sh</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#unirkaft-uk-test-suit"><span class="toc-number">7.3.</span> <span class="toc-text">unirkaft&#x2F;uk_test_suit</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-dpdk实验代码" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      dpdk 实验代码
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/12/13/dpdk%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81/" class="article-date">
+	  <time datetime="2022-12-13T13:14:27.735Z" itemprop="datePublished">2022-12-13</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/12/13/dpdk%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="实验代码"><a href="#实验代码" class="headerlink" title="实验代码"></a>实验代码</h1><h1 id="代码结构图"><a href="#代码结构图" class="headerlink" title="代码结构图"></a>代码结构图</h1><p><img src="/images/unikraft_ukdpdk/structure.png" alt="structure"></p>
+<hr>
+<h1 id="prepare-sh"><a href="#prepare-sh" class="headerlink" title="prepare.sh"></a>prepare.sh</h1><p>前置准备工作</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># get dpdk</span></span><br><span class="line"><span class="comment"># 由于链接失效，该部分跳过</span></span><br><span class="line"><span class="comment">#cd aux</span></span><br><span class="line"><span class="comment">#wget http://vmx.cs.pub.ro/~vmchecker/lib_src.zip</span></span><br><span class="line"><span class="comment">#unzip lib_src</span></span><br><span class="line"><span class="comment">#rm lib_src.zip</span></span><br><span class="line"><span class="comment"># 获取 DPDK 19.11.6</span></span><br><span class="line">wget https://fast.dpdk.org/rel/dpdk-19.11.6.tar.xz</span><br><span class="line">tar xJf dpdk-19.11.6.tar.xz</span><br><span class="line"><span class="built_in">rm</span> dpdk-19.11.6.tar.xz</span><br><span class="line"><span class="built_in">mv</span> dpdk-stable-19.11.6/ dpdk2</span><br><span class="line"><span class="built_in">cd</span> dpdk2</span><br><span class="line"><span class="comment"># 使用 meson + ninja 进行编译</span></span><br><span class="line">meson build</span><br><span class="line"><span class="built_in">cd</span> build</span><br><span class="line">ninja</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> ../../</span><br><span class="line">wget http://vmx.cs.pub.ro/~vmchecker/dpdk3.zip</span><br><span class="line">unzip dpdk3</span><br><span class="line"><span class="built_in">cd</span> dpdk3</span><br><span class="line">meson build</span><br><span class="line"><span class="built_in">cd</span> build</span><br><span class="line">ninja</span><br><span class="line"><span class="comment"># 挂载 hugetlbfs</span></span><br><span class="line"><span class="keyword">if</span> [[ ! -d /mnt/huge1G ]]; <span class="keyword">then</span></span><br><span class="line">  <span class="built_in">mkdir</span> /mnt/huge1G</span><br><span class="line">  mount -t hugetlbfs -o pagesize=1G none /mnt/huge1G</span><br><span class="line"><span class="keyword">fi</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="udp-echo-sh"><a href="#udp-echo-sh" class="headerlink" title="udp_echo.sh"></a>udp_echo.sh</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line">file_prefix=cl_tx_rx</span><br><span class="line">pipeline=<span class="variable">$&#123;1&#125;</span></span><br><span class="line">interval=<span class="variable">$&#123;2&#125;</span></span><br><span class="line">cpufreq=<span class="variable">$&#123;3&#125;</span></span><br><span class="line">file_path=<span class="variable">$&#123;4&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">generate_requests</span></span>()</span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">cat</span> <span class="variable">$&#123;1&#125;</span> | grep -A10 <span class="string">&quot;received/transmitted&quot;</span> | grep ^[0-9] | awk -v interval=<span class="variable">$&#123;3&#125;</span> -F<span class="string">&quot;,&quot;</span> <span class="string">&#x27;BEGIN &#123;i=1; printf &quot;Interval, Number of Round Trip Requests\n&quot;; &#125; &#123;if (i%interval == 0)printf &quot;%d,%lu\n&quot;, i, $3; i++;&#125;&#x27;</span> &gt; <span class="variable">$&#123;2&#125;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">generate_latency</span></span>()</span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">cat</span> <span class="variable">$&#123;1&#125;</span> | grep -A10 <span class="string">&quot;received/transmitted&quot;</span> | grep ^[0-9] | awk -v interval=<span class="variable">$&#123;3&#125;</span> -v frequency=<span class="variable">$&#123;4&#125;</span> -F<span class="string">&quot;,&quot;</span> <span class="string">&#x27;BEGIN &#123;i=1; printf &quot;Interval, Latency for the round trip in microseconds\n&quot;; &#125; &#123;if (i%interval == 0)printf &quot;%d,%0.04f\n&quot;, i, $1/(frequency * $3); i++;&#125;&#x27;</span> &gt; <span class="variable">$&#123;2&#125;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">cl_in_file=<span class="variable">$&#123;file_path&#125;</span>/<span class="variable">$&#123;file_prefix&#125;</span>_<span class="variable">$&#123;pipeline&#125;</span>p</span><br><span class="line"><span class="built_in">printf</span> <span class="string">&quot;\n&quot;</span></span><br><span class="line">[[ -f <span class="variable">$&#123;cl_in_file&#125;</span> ]] || &#123; <span class="built_in">printf</span> <span class="string">&quot;Inputfile <span class="variable">$&#123;cl_in_file&#125;</span> missing\n&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line">cl_rqst_out_file=<span class="variable">$&#123;cl_in_file&#125;</span>_rqstpersecond_out</span><br><span class="line">cl_lat_out_file=<span class="variable">$&#123;cl_in_file&#125;</span>_latency_out</span><br><span class="line"></span><br><span class="line">generate_requests <span class="variable">$&#123;cl_in_file&#125;</span> <span class="variable">$&#123;cl_rqst_out_file&#125;</span> <span class="variable">$&#123;interval&#125;</span></span><br><span class="line">generate_latency <span class="variable">$&#123;cl_in_file&#125;</span> <span class="variable">$&#123;cl_lat_out_file&#125;</span> <span class="variable">$&#123;interval&#125;</span> <span class="variable">$&#123;cpufreq&#125;</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="aux"><a href="#aux" class="headerlink" title="aux"></a>aux</h1><h2 id="dpdk"><a href="#dpdk" class="headerlink" title="dpdk"></a>dpdk</h2><p>该文件夹为软链接，指向/aux/lib_src/dpdk。</p>
+<h2 id="dpdk2"><a href="#dpdk2" class="headerlink" title="dpdk2"></a>dpdk2</h2><p>该文件夹存放的是 19.11.6 版本的 DPDK 源码。</p>
+<h2 id="lib-src"><a href="#lib-src" class="headerlink" title="lib_src"></a>lib_src</h2><p>该文件夹原本应该从链接下载，但链接失效，目前只能推测其中包含 19.08.2 版本的 DPDK 源码</p>
+<h2 id="libs"><a href="#libs" class="headerlink" title="libs"></a>libs</h2><p>unikraft 中的 libs 文件夹，用于存放库文件。</p>
+<h2 id="unikraft"><a href="#unikraft" class="headerlink" title="unikraft"></a>unikraft</h2><p>unikraft 本体代码。</p>
+<hr>
+<h1 id="server"><a href="#server" class="headerlink" title="server"></a>server</h1><p><img src="/images/unikraft_ukdpdk/result.svg" alt="result"></p>
+<h2 id="Makefile-uk"><a href="#Makefile-uk" class="headerlink" title="Makefile.uk"></a>Makefile.uk</h2><p>在这个文件中，可以观察到每个测试分别引入了哪个文件</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$(<span class="built_in">eval</span> $(<span class="built_in">call</span> addlib,apptestsuite)</span>)</span><br><span class="line"><span class="keyword">ifeq</span> (<span class="variable">$(CONFIG_APPTESTSUITE_KERNARGS)</span>,y)</span><br><span class="line"><span class="variable">$(<span class="built_in">eval</span> $(<span class="built_in">call</span> addlib_paramprefix,apptestsuite,test)</span>)</span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line"></span><br><span class="line">APPTESTSUITE_CINCLUDES-y    += -I<span class="variable">$(APPTESTSUITE_BASE)</span>/<span class="keyword">include</span></span><br><span class="line"></span><br><span class="line">APPTESTSUITE_SRCS-y += <span class="variable">$(APPTESTSUITE_BASE)</span>/main.c</span><br><span class="line">EXTRA_LD_SCRIPT-y += <span class="variable">$(APPTESTSUITE_BASE)</span>/testsuite.ld</span><br><span class="line"></span><br><span class="line"><span class="comment">## FDT Test suite.</span></span><br><span class="line">APPTESTSUITE_CINCLUDES-<span class="variable">$(CONFIG_APPTESTSUITE_FDT)</span>     += -I<span class="variable">$(UK_PLAT_DRIVERS_BASE)</span>/<span class="keyword">include</span></span><br><span class="line">APPTESTSUITE_CINCLUDES-<span class="variable">$(CONFIG_APPTESTSUITE_FDT)</span>     += -I<span class="variable">$(LIBKVMPLAT_BASE)</span>/<span class="keyword">include</span></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_FDT)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_fdt/test_fdt.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_FDT)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_fdt/test.dts</span><br><span class="line"></span><br><span class="line"><span class="comment">## GIC Test suite.</span></span><br><span class="line">APPTESTSUITE_CINCLUDES-<span class="variable">$(CONFIG_APPTESTSUITE_GICV2)</span>     += -I<span class="variable">$(UK_PLAT_DRIVERS_BASE)</span>/<span class="keyword">include</span></span><br><span class="line">APPTESTSUITE_CINCLUDES-<span class="variable">$(CONFIG_APPTESTSUITE_GICV2)</span>     += -I<span class="variable">$(LIBKVMPLAT_BASE)</span>/<span class="keyword">include</span></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_GICV2)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/gicv2/test_gicv2.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_GICV2)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/gicv2/test.dts</span><br><span class="line"></span><br><span class="line"><span class="comment">## Adding the test for kernel arguments</span></span><br><span class="line"><span class="comment">## <span class="doctag">TODO:</span> Define a Variable to separate the Unit Test case from the Functional</span></span><br><span class="line"><span class="comment">## tests.</span></span><br><span class="line"><span class="comment">## <span class="doctag">TODO:</span> Separate Multiple makefile. Makes it easier to manage.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#APPTESTSUITE_SRCS-$(CONFIG_APPTESTSUITE_KERNARGS) +=\</span></span><br><span class="line"><span class="comment">#			 $(APPTESTPARAM_BASE)/test_libukparam/test_ucparam.c</span></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_KERNARGS)</span> +=\</span><br><span class="line">			 <span class="variable">$(APPTESTSUITE_BASE)</span>/test_libukparam/test_ukparam.c</span><br><span class="line">APPTESTSUITE_CFLAGS-<span class="variable">$(CONFIG_APPTESTSUITE_KERNARGS)</span> += \</span><br><span class="line">			-save-temps=obj -DUK_DEBUG</span><br><span class="line"></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_UC_LIBPARAM)</span> +=\</span><br><span class="line">			 <span class="variable">$(APPTESTSUITE_BASE)</span>/test_libukparam/test_ucparam.c</span><br><span class="line">APPTESTSUITE_CFLAGS-<span class="variable">$(CONFIG_APPTESTSUITE_UC_LIBPARAM)</span> += \</span><br><span class="line">					-I<span class="variable">$(CONFIG_UK_BASE)</span>/lib/uklibparam/</span><br><span class="line">APPTESTSUITE_CFLAGS-<span class="variable">$(CONFIG_APPTESTSUITE_UC_LIBPARAM)</span> += \</span><br><span class="line">		-DUK_LIBPARAM_PREFIX=apptestsuite -save-temps=obj\</span><br><span class="line">		-I<span class="variable">$(CONFIG_UK_BASE)</span>/lib/uklibparam/<span class="keyword">include</span> -DUK_DEBUG</span><br><span class="line">EXTRA_LD_SCRIPT-<span class="variable">$(CONFIG_APPTESTSUITE_UC_LIBPARAM)</span> += \</span><br><span class="line">			<span class="variable">$(APPTESTSUITE_BASE)</span>/test_libukparam/libparam.lds</span><br><span class="line"></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_VFSCORETEST_OPEN)</span> += \</span><br><span class="line">			<span class="variable">$(APPTESTSUITE_BASE)</span>/test_vfscore/test_open.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_VFSCORETEST_STAT)</span> += \</span><br><span class="line">			<span class="variable">$(APPTESTSUITE_BASE)</span>/test_vfscore/test_stat.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_VFSCORETEST_IOCTL)</span> += \</span><br><span class="line">			<span class="variable">$(APPTESTSUITE_BASE)</span>/test_vfscore/test_ioctl.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_VFSCORETEST_MOUNT)</span> += \</span><br><span class="line">			<span class="variable">$(APPTESTSUITE_BASE)</span>/test_vfscore/test_mount.c</span><br><span class="line"></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_LOCK)</span> += \</span><br><span class="line">			<span class="variable">$(APPTESTSUITE_BASE)</span>/test_lock/test_lock.c</span><br><span class="line"></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_LDS)</span> += \</span><br><span class="line">			<span class="variable">$(APPTESTSUITE_BASE)</span>/test_lds/test.ld</span><br><span class="line"></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_LDS)</span> += \</span><br><span class="line">			<span class="variable">$(APPTESTSUITE_BASE)</span>/test_lds/lds_test.c</span><br><span class="line">APPTESTSUITE_CFLAGS-<span class="variable">$(CONFIG_APPTESTSUITE_LDS)</span> += -save-temps=obj</span><br><span class="line"></span><br><span class="line"><span class="comment">## TEST SUITE FOR NETDEVICE</span></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_INITTAB)</span> += \</span><br><span class="line">			<span class="variable">$(APPTESTSUITE_BASE)</span>/test_inittab/test_inittab.c</span><br><span class="line">APPTESTSUITE_CFLAGS-<span class="variable">$(CONFIG_APPTESTSUITE_INITTAB)</span> += -save-temps=obj</span><br><span class="line"></span><br><span class="line"><span class="comment">## TEST SUITE FOR NETDEVICE</span></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_NETDEV)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_netdev/test_netdev.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_UK_LWIP)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_lwip/test_lwip.c</span><br><span class="line"></span><br><span class="line"><span class="comment">## TEST SUITE FOR DPDK</span></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_RING)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_dpdk/test_ring/test_ring.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_DPDK_INIT)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_dpdk/test_init/init.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_DPDK_MEMORY)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_dpdk/test_memory/test_memory.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_DPDK_BASIC_FWD)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_dpdk/basic_forward/pktgen.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_DPDK_BASIC_FWD)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_dpdk/basic_forward/dev.c</span><br><span class="line"></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_DPDK_TXONLY)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_dpdk/basic_forward/txonly.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_DPDK_RTT)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_dpdk/basic_forward/rtt.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_DPDK_CLOSED_LOOP)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_dpdk/basic_forward/closed_loop_latency.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_DPDK_RXONLY)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_dpdk/basic_forward/rxonly.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_DPDK_CL_SERVER)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_dpdk/basic_forward/cl_tx_rx.c</span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_DPDK_UDP_ECHO)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/test_dpdk/basic_forward/udp_echo.c</span><br><span class="line"></span><br><span class="line"><span class="comment">## Test suite for raw netdev performance.</span></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_RAW_NETDEV)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/perf_netdev/main_nolwip.c</span><br><span class="line"></span><br><span class="line"><span class="comment">## TEST SUITE FOR STRING</span></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_STRTOK_R)</span> += \</span><br><span class="line">				<span class="variable">$(APPTESTSUITE_BASE)</span>/test_string/strtok_r.c</span><br><span class="line"></span><br><span class="line"><span class="comment">## Test suite for mTCP</span></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_MTCPAPP_PERF)</span> +=  <span class="variable">$(APPTESTSUITE_BASE)</span>/mtcp/apps/perf/client.c\</span><br></pre></td></tr></table></figure>
+
+<p>我们可以使用 <code>make menuconfig</code> 对测试选项进行选择</p>
+<p><img src="/images/unikraft_ukdpdk/select.png" alt="select"></p>
+<h2 id="linux"><a href="#linux" class="headerlink" title="linux"></a>linux</h2><p>linux guest single/batch 部分测试代码</p>
+<p>该部分通过执行脚本来启动指定的 linux 虚拟机</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="keyword">if</span> [ $( <span class="built_in">id</span> -u ) != 0 ]; <span class="keyword">then</span></span><br><span class="line">	<span class="built_in">echo</span> <span class="string">&quot;Try to run as root...&quot;</span> 1&gt;&amp;2</span><br><span class="line">	<span class="built_in">exec</span> sudo <span class="string">&quot;<span class="variable">$0</span>&quot;</span> <span class="string">&quot;<span class="variable">$@</span>&quot;</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">QCOW=<span class="string">&quot;../../aux/debian.qcow2&quot;</span></span><br><span class="line">MEMPATH=<span class="string">&quot;/mnt/huge1G/test&quot;</span></span><br><span class="line">TAPNAME=<span class="string">&quot;tap88&quot;</span></span><br><span class="line">BRNAME=<span class="string">&quot;expbr0&quot;</span></span><br><span class="line"></span><br><span class="line">TAPNAME_EXP=<span class="string">&quot;tap98&quot;</span></span><br><span class="line">BRNAME_EXP=<span class="string">&quot;testbr0&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">set</span> -x</span><br><span class="line"></span><br><span class="line"><span class="comment"># setup mgmt bridge</span></span><br><span class="line">ip tuntap add dev <span class="variable">$TAPNAME</span> mode tap</span><br><span class="line">ip <span class="built_in">link</span> add <span class="variable">$BRNAME</span> <span class="built_in">type</span> bridge</span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> master <span class="variable">$BRNAME</span> dev <span class="variable">$TAPNAME</span></span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> promisc on dev <span class="variable">$BRNAME</span></span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> promisc on dev <span class="variable">$TAPNAME</span></span><br><span class="line">ip addr add 172.19.0.254/24 dev <span class="variable">$BRNAME</span></span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> dev <span class="variable">$BRNAME</span> up</span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> dev <span class="variable">$TAPNAME</span> up</span><br><span class="line"></span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> dev enp1s0f1 down</span><br><span class="line">ip <span class="built_in">link</span> add <span class="built_in">link</span> enp1s0f1 macvtap2 <span class="built_in">type</span> macvtap mode bridge</span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> promisc on dev enp1s0f1</span><br><span class="line">ip a a 172.18.0.1/24 dev macvtap2</span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> promisc on dev macvtap2</span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> dev enp1s0f1 up</span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> macvtap2 up</span><br><span class="line"></span><br><span class="line">my_fd=$(<span class="built_in">cat</span> /sys/class/net/macvtap2/ifindex)</span><br><span class="line"></span><br><span class="line"><span class="comment"># run VM</span></span><br><span class="line">taskset -c 4,5 qemu-system-x86_64 \</span><br><span class="line">	-m 6G \</span><br><span class="line">	-cpu host,+invtsc \</span><br><span class="line">	-smp cpus=2 \</span><br><span class="line">	-enable-kvm \</span><br><span class="line">	-object memory-backend-file,<span class="built_in">id</span>=mem,size=6144M,mem-path=/mnt/linux-huge,share=on -numa node,memdev=mem \</span><br><span class="line">	\</span><br><span class="line">	-netdev tap,ifname=<span class="variable">$TAPNAME</span>,<span class="built_in">id</span>=mgm0,script=no,downscript=no \</span><br><span class="line">	-device virtio-net-pci,netdev=mgm0 \</span><br><span class="line">	\</span><br><span class="line">	-netdev tap,fd=5,<span class="built_in">id</span>=testtap1,vhost=on,vhostforce=on 5&lt;&gt;/dev/tap<span class="variable">$my_fd</span>\</span><br><span class="line">	-device virtio-net-pci,netdev=testtap1,ioeventfd=on,guest_csum=off,gso=off \</span><br><span class="line">	\</span><br><span class="line">	-hda <span class="string">&quot;<span class="variable">$QCOW</span>&quot;</span> \</span><br><span class="line">	-display curses \</span><br><span class="line">	-boot c</span><br><span class="line">RET=$?</span><br><span class="line"></span><br><span class="line"><span class="comment"># destroy network setup</span></span><br><span class="line">ip <span class="built_in">link</span> del macvtap2</span><br><span class="line"></span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> dev <span class="variable">$BRNAME</span> down</span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> dev <span class="variable">$TAPNAME</span> down</span><br><span class="line">ip tuntap del dev <span class="variable">$TAPNAME</span> mode tap</span><br><span class="line">ip <span class="built_in">link</span> del <span class="variable">$BRNAME</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">exit</span> <span class="variable">$RET</span></span><br></pre></td></tr></table></figure>
+
+<p>由于虚拟机的链接失效，无法执行测试。</p>
+<h2 id="linux-single"><a href="#linux-single" class="headerlink" title="linux_single"></a>linux_single</h2><p>linux baremetal single 部分测试代码</p>
+<p>执行 <a target="_blank" rel="noopener" href="http://run.sh/">run.sh</a> 来调用 server.c</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">gcc server.c -O3 -o server</span><br><span class="line">sudo arp -s 172.18.0.4 a0:36:9f:52:29:D0</span><br><span class="line">sudo ip a a 172.18.0.114 dev enp1s0f1</span><br><span class="line">sudo ifconfig enp1s0f1 hw ether 52:54:00:12:34:57</span><br><span class="line">sudo ip l <span class="built_in">set</span> enp1s0f1 up</span><br><span class="line">sudo iptables -P INPUT ACCEPT</span><br><span class="line">sudo iptables -P OUTPUT ACCEPT</span><br><span class="line">sudo iptables -P FORWARD ACCEPT</span><br><span class="line">sudo iptables -F</span><br><span class="line">sudo sysctl -w net.core.rmem_max=26214400</span><br><span class="line">sudo sysctl -w net.core.rmem_default=26214400</span><br><span class="line">taskset -c 6 ./server</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Driver code </span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123; </span><br><span class="line">    <span class="type">int</span> sockfd; </span><br><span class="line">    <span class="type">char</span> buffer[MAXLINE]; </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">servaddr</span>, <span class="title">cliaddr</span>;</span> </span><br><span class="line">      </span><br><span class="line">    sockfd = socket(AF_INET, SOCK_DGRAM, <span class="number">0</span>);</span><br><span class="line">    assert(sockfd &gt; <span class="number">2</span>);</span><br><span class="line">    <span class="type">int</span> disable = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">if</span> (setsockopt(sockfd, SOL_SOCKET, SO_NO_CHECK, (<span class="type">void</span>*)&amp;disable, <span class="keyword">sizeof</span>(disable)) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">	        perror(<span class="string">&quot;setsockopt failed&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">memset</span>(&amp;servaddr, <span class="number">0</span>, <span class="keyword">sizeof</span>(servaddr)); </span><br><span class="line">    <span class="built_in">memset</span>(&amp;cliaddr, <span class="number">0</span>, <span class="keyword">sizeof</span>(cliaddr)); </span><br><span class="line">      </span><br><span class="line">    servaddr.sin_family    = AF_INET; <span class="comment">// IPv4 </span></span><br><span class="line">    servaddr.sin_addr.s_addr = INADDR_ANY; </span><br><span class="line">    servaddr.sin_port = htons(PORT); </span><br><span class="line">      </span><br><span class="line">    assert(bind(sockfd, (<span class="type">const</span> <span class="keyword">struct</span> sockaddr *)&amp;servaddr, <span class="keyword">sizeof</span>(servaddr)) == <span class="number">0</span>); </span><br><span class="line">      </span><br><span class="line">    <span class="type">int</span> len, ret1, ret2; </span><br><span class="line">    init_hashmap();  </span><br><span class="line">    len = <span class="keyword">sizeof</span>(cliaddr);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Server started \n&quot;</span>);</span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123; </span><br><span class="line">    	ret1 = recvfrom(sockfd, (<span class="type">char</span> *)buffer, MAXLINE,  </span><br><span class="line">                MSG_WAITALL, ( <span class="keyword">struct</span> sockaddr *) &amp;cliaddr, </span><br><span class="line">                &amp;len);</span><br><span class="line">        <span class="comment">//do_processing(buffer);</span></span><br><span class="line">    	ret2 = sendto(sockfd, (<span class="type">const</span> <span class="type">char</span> *)buffer, ret1,  </span><br><span class="line">        	<span class="number">0</span>, (<span class="type">const</span> <span class="keyword">struct</span> sockaddr *) &amp;cliaddr, </span><br><span class="line">            	len);</span><br><span class="line"></span><br><span class="line">	assert(ret1 &gt;= <span class="number">0</span>);</span><br><span class="line">	assert(ret2 &gt;= <span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">      </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="linux-batch"><a href="#linux-batch" class="headerlink" title="linux_batch"></a>linux_batch</h2><p>linux baremetal batch 部分测试代码</p>
+<p>执行 <a target="_blank" rel="noopener" href="http://run.sh/">run.sh</a> 来调用 udpreceiver1.c</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">const</span> <span class="type">char</span> *argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *listen_addr_str = <span class="string">&quot;0.0.0.0:9001&quot;</span>;</span><br><span class="line">	<span class="type">int</span> recv_buf_size = <span class="number">4</span>*<span class="number">1024</span>;</span><br><span class="line">	<span class="type">int</span> thread_num = <span class="number">1</span>;</span><br><span class="line">	<span class="type">int</span> reuseport = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">switch</span> (argc) &#123;</span><br><span class="line">	<span class="keyword">case</span> <span class="number">4</span>:</span><br><span class="line">		reuseport = atoi(argv[<span class="number">3</span>]);</span><br><span class="line">	<span class="keyword">case</span> <span class="number">3</span>:</span><br><span class="line">		thread_num = atoi(argv[<span class="number">2</span>]);</span><br><span class="line">	<span class="keyword">case</span> <span class="number">2</span>:</span><br><span class="line">		listen_addr_str = argv[<span class="number">1</span>];</span><br><span class="line">	<span class="keyword">case</span> <span class="number">1</span>:</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		FATAL(<span class="string">&quot;Usage: %s [listen ip:port] [fork cnt] [reuseport]&quot;</span>, argv[<span class="number">0</span>]);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">addr</span>;</span>	</span><br><span class="line">           <span class="type">int</span> sockfd = socket(AF_INET, SOCK_DGRAM, <span class="number">0</span>);                                                                                                                                                      </span><br><span class="line">            <span class="keyword">if</span> (sockfd == <span class="number">-1</span>) &#123;                                                                                                                                                                                   </span><br><span class="line">                perror(<span class="string">&quot;socket()&quot;</span>);                                                                                                                                                                               </span><br><span class="line">                <span class="built_in">exit</span>(EXIT_FAILURE);                                                                                                                                                                               </span><br><span class="line">            &#125;                                                                                                                                                                                                     </span><br><span class="line">                                                                                                                                                                                                                  </span><br><span class="line">            addr.sin_family = AF_INET;                                                                                                                                                                            </span><br><span class="line">            addr.sin_addr.s_addr = (inet_addr(<span class="string">&quot;172.18.0.5&quot;</span>));                                                                                                                 </span><br><span class="line">            addr.sin_port = htons(<span class="number">9000</span>);  </span><br><span class="line">			           <span class="keyword">if</span> (connect(sockfd, (<span class="keyword">struct</span> sockaddr *) &amp;addr, <span class="keyword">sizeof</span>(addr)) == <span class="number">-1</span>) &#123;</span><br><span class="line">			&#125;</span><br><span class="line">		global_sockfd = sockfd;</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">net_addr</span> <span class="title">listen_addr</span>;</span></span><br><span class="line">	parse_addr(&amp;listen_addr, listen_addr_str);</span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> main_fd = <span class="number">-1</span>;</span><br><span class="line">	<span class="keyword">if</span> (reuseport == <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;[*] Starting udpreceiver on %s, recv buffer %iKiB\n&quot;</span>,</span><br><span class="line">			addr_to_str(&amp;listen_addr), recv_buf_size / <span class="number">1024</span>);</span><br><span class="line"></span><br><span class="line">		main_fd = net_bind_udp(&amp;listen_addr, <span class="number">0</span>);</span><br><span class="line">		net_set_buffer_size(main_fd, recv_buf_size, <span class="number">0</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">state</span> *<span class="title">array_of_states</span> =</span> <span class="built_in">calloc</span>(thread_num, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> state));</span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> t;</span><br><span class="line">	<span class="keyword">for</span> (t = <span class="number">0</span>; t &lt; thread_num; t++) &#123;</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">state</span> *<span class="title">state</span> =</span> &amp;array_of_states[t];</span><br><span class="line">		state_init(state);</span><br><span class="line">		<span class="keyword">if</span> (reuseport == <span class="number">0</span>) &#123;</span><br><span class="line">			state-&gt;fd = main_fd;</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;[*] Starting udpreceiver on %s, recv buffer %iKiB\n&quot;</span>,</span><br><span class="line">				addr_to_str(&amp;listen_addr), recv_buf_size / <span class="number">1024</span>);</span><br><span class="line"></span><br><span class="line">			<span class="type">int</span> fd = net_bind_udp(&amp;listen_addr, <span class="number">1</span>);</span><br><span class="line">			net_set_buffer_size(fd, recv_buf_size, <span class="number">0</span>);</span><br><span class="line">			state-&gt;fd = fd;</span><br><span class="line">		&#125;</span><br><span class="line">		thread_spawn(thread_loop, state);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="type">uint64_t</span> last_pps = <span class="number">0</span>;</span><br><span class="line">	<span class="type">uint64_t</span> last_bps = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">timeout</span> =</span></span><br><span class="line">			NSEC_TIMEVAL(MSEC_NSEC(<span class="number">1000UL</span>));</span><br><span class="line">		<span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">			<span class="type">int</span> r = select(<span class="number">0</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, &amp;timeout);</span><br><span class="line">			<span class="keyword">if</span> (r != <span class="number">0</span>) &#123;</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (TIMEVAL_NSEC(&amp;timeout) == <span class="number">0</span>) &#123;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="type">uint64_t</span> now_pps = <span class="number">0</span>, now_bps = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">for</span> (t = <span class="number">0</span>; t &lt; thread_num; t++) &#123;</span><br><span class="line">			<span class="class"><span class="keyword">struct</span> <span class="title">state</span> *<span class="title">state</span> =</span> &amp;array_of_states[t];</span><br><span class="line">			now_pps += __atomic_load_n(&amp;state-&gt;pps, <span class="number">0</span>);</span><br><span class="line">			now_bps += __atomic_load_n(&amp;state-&gt;bps, <span class="number">0</span>);</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="type">double</span> delta_pps = now_pps - last_pps;</span><br><span class="line">		<span class="type">double</span> delta_bps = now_bps - last_bps;</span><br><span class="line">		last_pps = now_pps;</span><br><span class="line">		last_bps = now_bps;</span><br><span class="line"></span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;%7.3fM pps %7.3fMiB / %7.3fMb\n&quot;</span>,</span><br><span class="line">		       delta_pps / <span class="number">1000.0</span> / <span class="number">1000.0</span>,</span><br><span class="line">		       delta_bps / <span class="number">1024.0</span> / <span class="number">1024.0</span>,</span><br><span class="line">		       delta_bps * <span class="number">8.0</span> / <span class="number">1000.0</span> / <span class="number">1000.0</span> );</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="linux-dpdk"><a href="#linux-dpdk" class="headerlink" title="linux_dpdk"></a>linux_dpdk</h2><p>linux guest DPDK 部分测试代码</p>
+<p>该部分直接使用 testpmd 程序来完成</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">sudo ../../aux/dpdk2/build/app/dpdk-testpmd   -m 1024 -n 4 --proc-type=primary  -- -i</span><br><span class="line"></span><br><span class="line"><span class="comment"># in testpmd</span></span><br><span class="line"><span class="comment">#port stop all</span></span><br><span class="line"><span class="comment">#set fwd udpecho</span></span><br><span class="line"><span class="comment">#port start all</span></span><br><span class="line"><span class="comment">#start</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="unikraft-lwip"><a href="#unikraft-lwip" class="headerlink" title="unikraft_lwip"></a>unikraft_lwip</h2><p>unikraft guest lwip 部分测试代码</p>
+<p>该部分直接使用 app-httpreply 作为测试程序，并引入 lib-lwip</p>
+<h2 id="unikraft-raw"><a href="#unikraft-raw" class="headerlink" title="unikraft_raw"></a>unikraft_raw</h2><p>unikraft guest uknetdev 部分测试代码</p>
+<p>该部分对应的测试文件夹为 perf_netdev</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">perf_netdev</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_alloc</span> *<span class="title">a</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev</span> *<span class="title">dev</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_conf</span> <span class="title">dev_conf</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_rxqueue_conf</span> <span class="title">rxq_conf</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_txqueue_conf</span> <span class="title">txq_conf</span>;</span></span><br><span class="line">	<span class="type">int</span> devid = <span class="number">0</span>;</span><br><span class="line">	<span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">	a = uk_alloc_get_default();</span><br><span class="line">	assert(a != <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">	dev = uk_netdev_get(devid);</span><br><span class="line">	assert(dev != <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_netdev_info</span> <span class="title">info</span>;</span></span><br><span class="line">	uk_netdev_info_get(dev, &amp;info);</span><br><span class="line">	assert(info.max_tx_queues);</span><br><span class="line">	assert(info.max_rx_queues);</span><br><span class="line"></span><br><span class="line">	rx_headroom = (rx_headroom &lt; info.nb_encap_rx)</span><br><span class="line">		? info.nb_encap_rx : rx_headroom;</span><br><span class="line">	tx_headroom = (tx_headroom &lt; info.nb_encap_tx)</span><br><span class="line">		? info.nb_encap_tx : tx_headroom;</span><br><span class="line"></span><br><span class="line">	dev_conf.nb_rx_queues = <span class="number">1</span>;</span><br><span class="line">	dev_conf.nb_tx_queues = <span class="number">1</span>;</span><br><span class="line">	<span class="comment">// 配置设备</span></span><br><span class="line">	<span class="comment">/* Configure the device */</span></span><br><span class="line">	ret = uk_netdev_configure(dev, &amp;dev_conf);</span><br><span class="line">	assert(ret &gt;= <span class="number">0</span>);</span><br><span class="line">	<span class="comment">// 配置队列</span></span><br><span class="line">	<span class="comment">/* Configure the RX queue */</span></span><br><span class="line">	rxq_conf.a = a;</span><br><span class="line">	rxq_conf.alloc_rxpkts = netif_alloc_rxpkts;</span><br><span class="line">	rxq_conf.alloc_rxpkts_argp = a;</span><br><span class="line">	<span class="comment">/* No threads */</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> INTERRUPT_MODE</span></span><br><span class="line">	rxq_conf.callback = packet_handler;</span><br><span class="line">	rxq_conf.callback_cookie = <span class="literal">NULL</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LIBUKNETDEV_DISPATCHERTHREADS</span></span><br><span class="line">	rxq_conf.s = uk_sched_get_default();</span><br><span class="line">	assert(rxq_conf.s);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* CONFIG_LIBUKNETDEV_DISPATCHERTHREADS */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">	rxq_conf.callback = <span class="literal">NULL</span>;</span><br><span class="line">	rxq_conf.callback_cookie = <span class="literal">NULL</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* INTERRUPT_MODE */</span></span></span><br><span class="line"></span><br><span class="line">	ret = uk_netdev_rxq_configure(dev, <span class="number">0</span>, <span class="number">0</span>, &amp;rxq_conf);</span><br><span class="line">	assert(ret &gt;= <span class="number">0</span>);</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/*  Configure the TX queue*/</span></span><br><span class="line">	txq_conf.a = a;</span><br><span class="line">	ret = uk_netdev_txq_configure(dev, <span class="number">0</span>, <span class="number">0</span>, &amp;txq_conf);</span><br><span class="line">	assert(ret &gt;= <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* GET mTU */</span></span><br><span class="line">	<span class="type">uint16_t</span> mtu = uk_netdev_mtu_get(dev);</span><br><span class="line">	assert(mtu == <span class="number">1500</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Start the netdev */</span></span><br><span class="line">	ret = uk_netdev_start(dev);</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifndef</span> INTERRUPT_MODE</span></span><br><span class="line">	ret = uk_netdev_rxq_intr_disable(dev, <span class="number">0</span>);</span><br><span class="line">	assert(ret &gt;= <span class="number">0</span>);</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">	ret = uk_netdev_rxq_intr_enable(dev, <span class="number">0</span>);</span><br><span class="line">	assert(ret &gt;= <span class="number">0</span> );</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">ether_header</span> *<span class="title">eth_header</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">iphdr</span> *<span class="title">ip_hdr</span>;</span></span><br><span class="line">	<span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> INTERRUPT_MODE</span></span><br><span class="line">		uk_sched_yield();</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">		packet_handler(dev, <span class="number">0</span>, <span class="literal">NULL</span>);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">		<span class="comment">/* We echo all the packets that are in queue */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> USE_SIMPLE_QUEUE</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; k; i++) &#123;</span><br><span class="line">			<span class="class"><span class="keyword">struct</span> <span class="title">uk_netbuf</span> *<span class="title">nb</span>;</span></span><br><span class="line">			nb = <span class="built_in">queue</span>[i];</span><br><span class="line">			uknetdev_output(dev, nb);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>奇怪的是，该文件在 <a target="_blank" rel="noopener" href="http://makefile.uk/">Makefile.uk</a> 中被引入</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">## Test suite for raw netdev performance.</span></span><br><span class="line">APPTESTSUITE_SRCS-<span class="variable">$(CONFIG_APPTESTSUITE_RAW_NETDEV)</span> += <span class="variable">$(APPTESTSUITE_BASE)</span>/perf_netdev/main_nolwip.c</span><br></pre></td></tr></table></figure>
+
+<p>但在 Config.uk 文件中并没有发现 <code>CONFIG_APPTESTSUITE_RAW_NETDEV</code>，并且在其余的测试文件中，通常在末尾会调用 <code>TESTSUITE_REGISTER</code> 来将该测试函数注册，以便在 main.c 中可以顺利调用，此处并未发现该步骤。<br>到底跑了没 🤔</p>
+</blockquote>
+<h2 id="unikraft-dpdk"><a href="#unikraft-dpdk" class="headerlink" title="unikraft_dpdk"></a>unikraft_dpdk</h2><p>unikraft guest DPDK 部分测试代码</p>
+<p>推测测速相关代码位于 cl_tx_rx.c 中</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">test_tx_rx</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">rte_mempool</span> *<span class="title">mbuf_pool</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> nb_ports;</span><br><span class="line">	<span class="type">uint16_t</span> portid, first_portid = <span class="number">0xff</span>;</span><br><span class="line">	<span class="type">int</span> i;</span><br><span class="line">	<span class="type">int</span> pkt_in_flight = CONFIG_INPIPELINE;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> 0</span></span><br><span class="line">	<span class="comment">/* Application args process */</span></span><br><span class="line">	<span class="type">int</span> ret = test_app_args(argc, argv);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Initialize the Environment Abstraction Layer (EAL). */</span></span><br><span class="line">	<span class="type">int</span> ret = rte_eal_init(argc, argv);</span><br><span class="line">	<span class="keyword">if</span> (ret &lt; <span class="number">0</span>)</span><br><span class="line">		UK_CRASH(<span class="string">&quot;Error with EAL initialization\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">	argc -= ret;</span><br><span class="line">	argv += ret;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Check that there is an even number of ports to send/receive on. */</span></span><br><span class="line">	nb_ports = rte_eth_dev_count_avail();</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;%d number of ports detected Pool Size: %d\n&quot;</span>, nb_ports,</span><br><span class="line">		RTE_MBUF_DEFAULT_BUF_SIZE);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Creates a new mempool in memory to hold the mbufs. */</span></span><br><span class="line">	mbuf_pool = rte_pktmbuf_pool_create(<span class="string">&quot;MBUF_POOL&quot;</span>, NUM_MBUFS * nb_ports,</span><br><span class="line">					    RTE_MEMPOOL_CACHE_MAX_SIZE, <span class="number">0</span>,</span><br><span class="line">					    RTE_MBUF_DEFAULT_BUF_SIZE, rte_socket_id());</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Initialize all ports. */</span></span><br><span class="line">	RTE_ETH_FOREACH_DEV(portid) &#123;</span><br><span class="line">		<span class="keyword">if</span> (first_portid == <span class="number">0xff</span>)</span><br><span class="line">			first_portid = portid;</span><br><span class="line">		<span class="keyword">if</span> (port_init(portid, mbuf_pool) != <span class="number">0</span>)</span><br><span class="line">			UK_CRASH(<span class="string">&quot;Cannot init port %&quot;</span>PRIu16 <span class="string">&quot;\n&quot;</span>,</span><br><span class="line">					portid);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	tx_pkt_setup(arg_src_ipv4_addr, arg_dst_ipv4_addr,</span><br><span class="line">		     arg_src_port, arg_dst_port);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (rte_lcore_count() &gt; <span class="number">1</span>)</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;\nWARNING: Too many lcores enabled. Only 1 used.\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Call lcore_main on the master core only. */</span></span><br><span class="line">	i = <span class="number">0</span>;</span><br><span class="line">	<span class="type">int</span> tx_count = <span class="number">0</span>, total_tx_count = <span class="number">0</span>;</span><br><span class="line">	<span class="type">int</span> rx_count = <span class="number">0</span>, total_rx_count = <span class="number">0</span>;</span><br><span class="line">	<span class="type">uint64_t</span> start_tsc = rte_rdtsc(); </span><br><span class="line">	<span class="type">uint64_t</span> curr_tsc;</span><br><span class="line">	<span class="type">uint64_t</span> latency;</span><br><span class="line">	<span class="type">uint64_t</span> j = <span class="number">0</span>;</span><br><span class="line">	<span class="type">int</span> cnt = CONFIG_INPIPELINE;</span><br><span class="line">	<span class="type">uint64_t</span> exp_start = start_tsc, exp_curr, dur = <span class="number">0</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> 0</span></span><br><span class="line">	pkt_burst_transmit_cnt(first_portid, mbuf_pool, <span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line">	<span class="type">int</span> rc = pkt_burst_receive_arp(first_portid, mbuf_pool, <span class="number">0</span>);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	pkt_stats.rxpkt_dropped[<span class="number">0</span>] = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">do</span> &#123;</span><br><span class="line">		<span class="keyword">while</span> (dur &lt; arg_exp_end_time) &#123;</span><br><span class="line">			<span class="keyword">if</span> (cnt &gt; <span class="number">0</span>) &#123;</span><br><span class="line">				tx_count = pkt_burst_transmit_cnt(first_portid, mbuf_pool, cnt, j);</span><br><span class="line">				pkt_stats.total_txpkts_pps[j] += tx_count;</span><br><span class="line">				pkt_stats.txburst_itr[j]++;</span><br><span class="line">				cnt -= tx_count;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="type">int</span> rc = pkt_burst_receive_cnt(first_portid, mbuf_pool, j);</span><br><span class="line">			<span class="keyword">if</span> (unlikely(rc == <span class="number">-1</span>)) &#123;</span><br><span class="line">				<span class="comment">/**</span></span><br><span class="line"><span class="comment">				 * Resetting the pipeline because packet loss.</span></span><br><span class="line"><span class="comment">				 */</span></span><br><span class="line">				rx_count = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.rxpkt_dropped[j] += CONFIG_INPIPELINE;</span><br><span class="line">				cnt += CONFIG_INPIPELINE;</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				rx_count = rc;</span><br><span class="line">				pkt_stats.total_rxpkts_pps[j] += rc;</span><br><span class="line">				cnt += rx_count;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">/* Send the remaining packet */</span></span><br><span class="line">			curr_tsc = rte_rdtsc();</span><br><span class="line">			dur = curr_tsc - exp_start;</span><br><span class="line"></span><br><span class="line">			<span class="keyword">if</span> (curr_tsc - start_tsc &gt; arg_stat_timer) &#123;</span><br><span class="line">				pkt_stats.total_rxpkts += pkt_stats.total_rxpkts_pps[j];</span><br><span class="line">				pkt_stats.total_txpkts += pkt_stats.total_txpkts_pps[j];</span><br><span class="line">				j++;</span><br><span class="line">				<span class="keyword">if</span> (j == arg_print_itr) &#123;</span><br><span class="line">					<span class="comment">/* Print stat Computation */</span></span><br><span class="line">					dump_stats(j);</span><br><span class="line">					j = <span class="number">0</span>;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="comment">/* Resetting the tx count */</span></span><br><span class="line">				pkt_stats.total_txpkts_pps[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.total_rxpkts_pps[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.latency[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.rxburst_itr[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.txburst_itr[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.total_txpkts_tries_pps[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.total_txpkts_tries_dropped[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.total_txpkts_tries_ra_pps[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.total_txpkts_alloc_failed[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.txpkt_xmit_cycles[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.txpkt_gen_cycles[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.txpkt_buf_cycles[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.rxpkt_recv_cycles[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.rxpkt_zrecv_cycles[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.rxpkt_process_cycles[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.rxpkt_buf_free[j] = <span class="number">0</span>;</span><br><span class="line">				pkt_stats.rxpkt_dropped[j] = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">				<span class="comment">/* Restart a new cycle */</span></span><br><span class="line">				start_tsc = rte_rdtsc();</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		exp_start = rte_rdtsc();</span><br><span class="line">		dur = <span class="number">0</span>;</span><br><span class="line">	&#125; <span class="keyword">while</span> (<span class="number">1</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="client"><a href="#client" class="headerlink" title="client"></a>client</h1><h2 id="prepare-sh-1"><a href="#prepare-sh-1" class="headerlink" title="prepare.sh"></a>prepare.sh</h2><p>完成 client 端编译工作的脚本</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Building the unikraft image with dpdk&quot;</span></span><br><span class="line"><span class="built_in">cd</span> unikraft/uk_test_suite/ &amp;&amp; make fetch</span><br><span class="line"><span class="built_in">cd</span> build/libukdpdkbuild/origin/</span><br><span class="line"><span class="built_in">rm</span> -rf dpdk-19.08</span><br><span class="line"><span class="built_in">ln</span> -s ../../../../../../aux/lib_src/dpdk/ dpdk-19.08</span><br><span class="line"><span class="built_in">cd</span> ../../..</span><br><span class="line">make -j12</span><br><span class="line"><span class="built_in">cd</span> ../../</span><br></pre></td></tr></table></figure>
+
+<h2 id="run-vhost-sh"><a href="#run-vhost-sh" class="headerlink" title="run_vhost.sh"></a>run_vhost.sh</h2><p>启动 vhost 的脚本</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 安装内核模块</span></span><br><span class="line">sudo modprobe ixgbe</span><br><span class="line">sudo modprobe uio_pci_generic</span><br><span class="line"><span class="comment"># 会造成SSH断连，注释掉</span></span><br><span class="line"><span class="comment"># sudo ip a flush enp1s0f0</span></span><br><span class="line"><span class="comment"># 调用DPDK提供的bind来办顶网卡，需要使用ifconfig查看信息后对应修改</span></span><br><span class="line">sudo python3 ../aux/dpdk/usertools/dpdk-devbind.py --<span class="built_in">bind</span>=uio_pci_generic ens160</span><br><span class="line"><span class="comment"># 启动testpmd</span></span><br><span class="line">sudo ../aux/dpdk2/build/app/dpdk-testpmd -l 2,3 -n 4 --vdev <span class="string">&#x27;eth_vhost0,iface=vhost-net,queues=1&#x27;</span> -- -i --txd=1024 --rxd=1024 --nb-cores=1 --eth-peer=0,52:54:00:12:34:57</span><br><span class="line"></span><br><span class="line"><span class="comment"># we run in the vhost</span></span><br><span class="line"><span class="comment"># port stop all</span></span><br><span class="line"><span class="comment"># set fwd mac</span></span><br><span class="line"><span class="comment"># port start all</span></span><br><span class="line"><span class="comment"># start</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="unirkaft-uk-test-suit"><a href="#unirkaft-uk-test-suit" class="headerlink" title="unirkaft/uk_test_suit"></a>unirkaft/uk_test_suit</h2><p>测试代码主体部分。</p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/12/13/dpdk%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81/" title="dpdk 实验代码" target="_blank" rel="external">http://example.com/2022/12/13/dpdk实验代码/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/" title="OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/12/13/SIGCOMM22_SPRIGHT/" title="SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>
