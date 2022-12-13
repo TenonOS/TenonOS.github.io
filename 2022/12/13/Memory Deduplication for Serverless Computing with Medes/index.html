@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>EuroSys&#39;22 Memory Deduplication for Serverless Computing with Medes | TenonOS-unikraft-learning</title>
+  <meta name="description" content="​                                                            使用Medes实现serverless计算的内存重复数据删除 原文连接：Memory deduplication for serverless computing with Medes | Proceedings of the Seventeenth European Conf">
+<meta property="og:type" content="article">
+<meta property="og:title" content="EuroSys&#39;22 Memory Deduplication for Serverless Computing with Medes">
+<meta property="og:url" content="http://example.com/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="​                                                            使用Medes实现serverless计算的内存重复数据删除 原文连接：Memory deduplication for serverless computing with Medes | Proceedings of the Seventeenth European Conf">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/Serverless-hp1/1.png">
+<meta property="og:image" content="http://example.com/images/Serverless-hp1/2.png">
+<meta property="og:image" content="http://example.com/images/Serverless-hp1/3.png">
+<meta property="og:image" content="http://example.com/images/Serverless-hp1/4.png">
+<meta property="og:image" content="http://example.com/images/Serverless-hp1/5.png">
+<meta property="og:image" content="http://example.com/images/Serverless-hp1/6.png">
+<meta property="og:image" content="http://example.com/images/Serverless-hp1/7.png">
+<meta property="og:image" content="http://example.com/images/Serverless-hp1/8.png">
+<meta property="og:image" content="http://example.com/images/Serverless-hp1/9.png">
+<meta property="og:image" content="http://example.com/images/Serverless-hp1/10.png">
+<meta property="article:published_time" content="2022-12-13T12:26:49.918Z">
+<meta property="article:modified_time" content="2022-12-13T12:01:36.095Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="Serverless">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/Serverless-hp1/1.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">9</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.17px;">HPC</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.83px;">Plat</a> <a href="/tags/Serverless/" style="font-size: 13.33px;">Serverless</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.67px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.5px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.17px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/SIGCOMM22_SPRIGHT/" class="title">SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.929Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/" class="title">EuroSys&#39;22 Memory Deduplication for Serverless Computing with Medes</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.918Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/Demikernel/" class="title">SOSP&#39;21 The Demikernel Datapath OS Architecture for Microsecond-scale Datacenter Systems</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.894Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/ASPLOS22_Serverless-Computing-on-Heterogeneous-Computers/" class="title">ASPLOS&#39;22 Serverless Computing on Heterogeneous Computers</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.893Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" class="title">OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.891Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%BB%E8%A6%81%E8%B4%A1%E7%8C%AE"><span class="toc-number">1.</span> <span class="toc-text">主要贡献</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%83%8C%E6%99%AF%E4%BB%8B%E7%BB%8D"><span class="toc-number">2.</span> <span class="toc-text">背景介绍</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A4%A7%E8%87%B4%E5%81%9A%E6%B3%95"><span class="toc-number">3.</span> <span class="toc-text">大致做法</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E5%9C%BA%E6%99%AF"><span class="toc-number">4.</span> <span class="toc-text">测试场景</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95"><span class="toc-number">5.</span> <span class="toc-text">具体做法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E5%B7%A5%E4%BD%9C%E6%B5%81"><span class="toc-number">5.1.</span> <span class="toc-text">基本工作流</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Dedup%E5%92%8CRestore%E6%93%8D%E4%BD%9C"><span class="toc-number">5.2.</span> <span class="toc-text">Dedup和Restore操作</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E5%85%B3%E9%94%AE%E6%8A%80%E6%9C%AF"><span class="toc-number">5.3.</span> <span class="toc-text">一些关键技术</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E7%BB%93%E6%9E%9C"><span class="toc-number">6.</span> <span class="toc-text">实现结果</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8D%E5%90%8C%E7%AD%96%E7%95%A5%E5%AF%B9%E6%AF%94"><span class="toc-number">6.1.</span> <span class="toc-text">不同策略对比</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E6%AF%94%E5%86%B7%E5%90%AF%E5%8A%A8%E7%9A%84%E6%97%B6%E9%97%B4"><span class="toc-number">6.2.</span> <span class="toc-text">对比冷启动的时间</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E5%8D%A0%E7%94%A8%E7%9A%84%E8%8A%82%E7%9C%81"><span class="toc-number">6.3.</span> <span class="toc-text">内存占用的节省</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%BB%E7%BB%93%E4%B8%8E%E4%B8%AA%E4%BA%BA%E7%90%86%E8%A7%A3"><span class="toc-number">7.</span> <span class="toc-text">总结与个人理解</span></a></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-Memory Deduplication for Serverless Computing with Medes" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      EuroSys&#39;22 Memory Deduplication for Serverless Computing with Medes
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/" class="article-date">
+	  <time datetime="2022-12-13T12:26:49.918Z" itemprop="datePublished">2022-12-13</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/Serverless/" rel="tag">Serverless</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <p>​                                                            使用Medes实现serverless计算的内存重复数据删除</p>
+<p>原文连接：<a target="_blank" rel="noopener" href="https://dl.acm.org/doi/10.1145/3492321.3524272">Memory deduplication for serverless computing with Medes | Proceedings of the Seventeenth European Conference on Computer Systems (acm.org)</a></p>
+<h1 id="主要贡献"><a href="#主要贡献" class="headerlink" title="主要贡献"></a>主要贡献</h1><p>​        当今的serverless平台在资源使用和用户感知的性能之间进行了严格的权衡。通过在热状态和冷状态之间切换沙箱以及保持活动状态提供的有限控制，迫使操作员牺牲大量资源来实现良好的性能。我们提出了一个serverless的框架Medes，它打破了僵化的权衡，允许运营商平滑地导航权衡空间。</p>
+<p>​        Medes利用了这样一个事实，即在serverless平台上运行的温沙箱在其内存占用中具有很高的重复比例。我们利用这些冗余区块来开发一种新的沙箱状态，称为重复数据删除状态，它比热状态更节省内存，比冷状态恢复速度更快。我们开发了新颖的机制，以最小的开销识别内存冗余，同时确保重复数据删除容器的内存占用量很小。最后，我们开发了一个简单的沙箱管理策略，该策略为操作员提供了一个狭窄、直观的界面，以便通过联合控制热沙箱和重复数据删除沙箱来权衡性能和内存。</p>
+<h1 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h1><p>​    如今的serverless平台通过在两种状态之间切换沙箱来管理性能和效率：冷和热（或暂停）。</p>
+<ul>
+<li>“冷”沙箱不使用任何存储器资源，但是由于在沙箱中可以执行函数实例之前需要初始化和加载函数的执行环境，所以导致长时间的冷启动延迟（这可能是秒的数量级，取决于平台和运行时）。</li>
+<li>“热”或暂停的沙箱在函数执行完成后会在内存中保留一段时间（保持活动），从而消耗大量内存。它们支持沙箱重用-在保持活动过期之前到达的后续函数调用在这些沙箱上运行，经历“热启动”所用时间明显更短（根据运行时间从1ms到20ms不等）。</li>
+</ul>
+<p>热沙箱占用了明显重复的内存，具体来说：</p>
+<ul>
+<li>沙箱相同的函数可以有高达85%的重复记忆状态</li>
+<li>即使在沙箱的不同的功能，也有高达80 - 90%重复</li>
+</ul>
+<h1 id="大致做法"><a href="#大致做法" class="headerlink" title="大致做法"></a>大致做法</h1><p>​        通过引入一种新的沙箱状态来改善目前的权衡空间，这种沙箱状态的内存占用和启动性能介于冷状态和热状态之间。第三种状态是建立在将“可重用沙箱”结构扩展到可重用沙箱块（RSC，reusable sandbox chunk）的基础上的。</p>
+<p>​        新沙箱状态叫做删除处理状态(简称dedup 2 state)。在这种状态下，所有的冗余内存块的沙箱被“删除”，留下“独特”的块存储在内存中。具体而言：</p>
+<ol>
+<li>在”基础”沙箱中仅存储RSC的一个副本，并且处于dedup状态沙箱的内存中包含作为多个远程基础沙箱中的本地完全唯一块和冗余RSC;</li>
+<li>在启动功能之前，通过将唯一的本地块与通过网络从远程基础沙箱读取的冗余RSC放在一起来恢复处于dedup状态的沙箱。</li>
+</ol>
+<p>​        Medes (Memory Deduplication for Serverless)，利用一种新颖的重复数据删除机制，可以识别潜在的相似块记忆的跨集群沙箱。因为集群中沙箱数量可能会很多，并且每个沙箱所占用的内存都可能包含巨大数量的页，因此Medes使用了三个技术：</p>
+<ol>
+<li>首先，为了确保扩展和降低重复数据删除的计算成本，虽然我们在块级识别冗余（因为它是最有效的），但我们在页粒度上执行重复数据删除：对于dedup沙箱的每个页面，Medes识别集群上的类似（基础）内存页，并计算与之相关的 “补丁”。</li>
+<li>其次，为了进一步提高扩展性，我们通过划定某些沙箱为基础沙箱，只使用这些基础沙箱的内存页作为计算补丁的参考，来限制需要跟踪的基础页数量。</li>
+<li>第三，利用value-sampled fingerprints[9]来降低冗余识别的计算和存储成本–这导致了整体上比冷启动更快的函数启动时间，从而承诺更好的函数性能。</li>
+</ol>
+<p>​        Medes还允许serverless平台运营商通过一种新颖的沙箱管理策略轻松控制内存-性能权衡并导航权衡空间。</p>
+<h1 id="测试场景"><a href="#测试场景" class="headerlink" title="测试场景"></a>测试场景</h1><p>​        <img src="/images/Serverless-hp1/1.png" alt="image-20221208185206229"> </p>
+<p>内存冗余情况：</p>
+<p><img src="/images/Serverless-hp1/2.png" alt="image-20221208185147830"></p>
+<p>ASLR(address space layout randomization, 地址空间布局随机化)</p>
+<h1 id="具体做法"><a href="#具体做法" class="headerlink" title="具体做法"></a>具体做法</h1><p>Medes由一个控制器和几个节点组成。架构如下：</p>
+<p><img src="/images/Serverless-hp1/3.png" alt="image-20221208185305408"></p>
+<p>控制器有四个主要部分：</p>
+<ol>
+<li>与客户的接口，通过该接口提交功能请求，并检索结果；</li>
+<li>调度器，跟踪整个系统的状态（例如，每个节点上的资源使用情况以及温暖和重复数据删除沙箱），产生一个新的沙箱或分配一个现有的沙箱来服务一个传入的请求，并决定是否将已经完成的沙箱过渡到warm或dedup状态；</li>
+<li>指纹注册表，它是一个哈希表，包含RSC的哈希值和它们在集群中的相应位置，用于重复数据删除；</li>
+<li>策略模块，存储策略参数，如延迟和内存限制。</li>
+</ol>
+<p>节点包括两个部分：</p>
+<ol>
+<li> daemon 守护进程，其根据控制器的指令操纵本地沙箱，并更新节点状态的控制器;</li>
+<li> dedup agent 负责删除重复数据，并且负责从dedup状态恢复；</li>
+</ol>
+<h2 id="基本工作流"><a href="#基本工作流" class="headerlink" title="基本工作流"></a>基本工作流</h2><ol>
+<li> 客户端通过RPC给控制器发送请求；</li>
+<li>调度器选择一个可用的节点中的warm或者dedup状态的沙箱，并且发送请求给该节点中的daemon，如果不存在一个可用的则创建一个新的容器。如果选中一个dedup的沙箱则通过恢复(restore)操作来唤醒。</li>
+<li>当function结束后，沙箱变为warm状态，然后控制器可以决定将沙箱是否把沙箱转为dedup状态；</li>
+</ol>
+<p><img src="/images/Serverless-hp1/4.png" alt="image-20221208185325657"></p>
+<h2 id="Dedup和Restore操作"><a href="#Dedup和Restore操作" class="headerlink" title="Dedup和Restore操作"></a>Dedup和Restore操作</h2><p>Dedup操作将一个warm状态的沙箱转为dedup状态的沙箱，大致分为冗余识别和冗余消除两步：</p>
+<ul>
+<li>冗余识别：粒度为一个内存块64B。首先把容器内存状态保存为一个检查点，然后给集群的控制器去查重，并且以RSC的形式返回给agent。</li>
+<li>冗余消除：粒度为一个页4KB。收到从控制器返回的所有RSC信息后，agent会读取每一个RSC的信息并且把RSC的物理地址与占用大小的作为一个补丁(patch)替换原内存。</li>
+</ul>
+<p><img src="/images/Serverless-hp1/5.png" alt="image-20221208192033546"></p>
+<p>Restore操作将一个处于dedup状态的沙箱转为warm状态的沙箱。这个操作读取那些补丁的内存页重建原始内存页，并且保存为存档点，最后通过存档点转为warm状态。</p>
+<p><img src="/images/Serverless-hp1/6.png" alt="image-20221208201136858"></p>
+<h2 id="一些关键技术"><a href="#一些关键技术" class="headerlink" title="一些关键技术"></a>一些关键技术</h2><ul>
+<li>Page Fingerprints：页面指纹，相当于提取内存页面的特征，通过几种不同的方法来计算哈希值，一个页面4KB，每64B内存块计算一个哈希值指纹，然后对比一页中指纹相同的个数可以知道两页之间的相似度。</li>
+<li>Base Page：基页，在指纹注册中心查重的时候找到页相似度最高的页，从而在后续dedup的时候能替换最多的内存块从而节省最多的内存。</li>
+<li>Base Sandbox：基础沙箱，用于向指纹注册中心注册内存块，因为运行两个相同函数的容器之间重复的内存是相同的，所以我们基于一个阈值T来选择基础沙箱，对于运行函数a的所有容器，假设处于dedup状态的容器的数量为D，是基础沙箱的容器的数量为B，如果 <em>D/B &gt; T</em> 的话就增加一个基础沙箱。</li>
+</ul>
+<h1 id="实现结果"><a href="#实现结果" class="headerlink" title="实现结果"></a>实现结果</h1><h2 id="不同策略对比"><a href="#不同策略对比" class="headerlink" title="不同策略对比"></a>不同策略对比</h2><p>冷启动次数与端到端的延迟</p>
+<p><img src="/images/Serverless-hp1/7.png" alt="image-20221208211940685"></p>
+<hr>
+<p>占用的内存大小与冷启动次数</p>
+<p><img src="/images/Serverless-hp1/8.png" alt="image-20221208212326781"></p>
+<h2 id="对比冷启动的时间"><a href="#对比冷启动的时间" class="headerlink" title="对比冷启动的时间"></a>对比冷启动的时间</h2><p><img src="/images/Serverless-hp1/9.png" alt="image-20221208211351540"></p>
+<hr>
+<h2 id="内存占用的节省"><a href="#内存占用的节省" class="headerlink" title="内存占用的节省"></a>内存占用的节省</h2><p><img src="/images/Serverless-hp1/10.png" alt="image-20221208212648608"></p>
+<h1 id="总结与个人理解"><a href="#总结与个人理解" class="headerlink" title="总结与个人理解"></a>总结与个人理解</h1><p>​        Medes就是在沙箱warm和cold两种状态中加了一种中间态dedup，这样可以减少冷启动的次数并且节省空间。实现方式类似于指针，把重复的内存替换为指针，这样在恢复的时候可以直接用RDMA访问重复的内存以节省内存。</p>
+<p>​        用unikernel实现的不同或相同的函数在内存中也会包含很多相同的库或者数据，因此感觉也可以使用这种方法来节省内存。</p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/" title="EuroSys&#39;22 Memory Deduplication for Serverless Computing with Medes" target="_blank" rel="external">http://example.com/2022/12/13/Memory Deduplication for Serverless Computing with Medes/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/12/13/SIGCOMM22_SPRIGHT/" title="SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/12/13/Demikernel/" title="SOSP&#39;21 The Demikernel Datapath OS Architecture for Microsecond-scale Datacenter Systems"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

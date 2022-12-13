@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>ASPLOS&#39;22 Serverless Computing on Heterogeneous Computers | TenonOS-unikraft-learning</title>
+  <meta name="description" content="论文链接: https:&#x2F;&#x2F;dl.acm.org&#x2F;doi&#x2F;10.1145&#x2F;3503222.3507732 摘要​        现有的serverless computing平台是建立在同构计算机上的，限制了函数密度并且将serverless computing限制在有限的场景中。我们推出了Molecule，这是第一个使用异构计算机的无服务计算系统。Molecule实现了通用设备（如Nvidia">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ASPLOS&#39;22 Serverless Computing on Heterogeneous Computers">
+<meta property="og:url" content="http://example.com/2022/12/13/ASPLOS22_Serverless-Computing-on-Heterogeneous-Computers/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="论文链接: https:&#x2F;&#x2F;dl.acm.org&#x2F;doi&#x2F;10.1145&#x2F;3503222.3507732 摘要​        现有的serverless computing平台是建立在同构计算机上的，限制了函数密度并且将serverless computing限制在有限的场景中。我们推出了Molecule，这是第一个使用异构计算机的无服务计算系统。Molecule实现了通用设备（如Nvidia">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-1.png">
+<meta property="og:image" content="http://example.com/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-2.png">
+<meta property="og:image" content="http://example.com/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-3.png">
+<meta property="og:image" content="http://example.com/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-4.png">
+<meta property="og:image" content="http://example.com/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-5.png">
+<meta property="og:image" content="http://example.com/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-6.png">
+<meta property="og:image" content="http://example.com/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-7.png">
+<meta property="article:published_time" content="2022-12-13T12:26:49.893Z">
+<meta property="article:modified_time" content="2022-12-13T12:23:50.308Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="Serverless">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-1.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/12/13/ASPLOS22_Serverless-Computing-on-Heterogeneous-Computers/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">9</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.17px;">HPC</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.83px;">Plat</a> <a href="/tags/Serverless/" style="font-size: 13.33px;">Serverless</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.67px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.5px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.17px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/SIGCOMM22_SPRIGHT/" class="title">SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.929Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/" class="title">EuroSys&#39;22 Memory Deduplication for Serverless Computing with Medes</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.918Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/Demikernel/" class="title">SOSP&#39;21 The Demikernel Datapath OS Architecture for Microsecond-scale Datacenter Systems</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.894Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/ASPLOS22_Serverless-Computing-on-Heterogeneous-Computers/" class="title">ASPLOS&#39;22 Serverless Computing on Heterogeneous Computers</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.893Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" class="title">OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.891Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%91%98%E8%A6%81"><span class="toc-number">1.</span> <span class="toc-text">摘要</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%82%E6%9E%84%E8%AE%A1%E7%AE%97"><span class="toc-number">1.1.</span> <span class="toc-text">异构计算</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#FPGA"><span class="toc-number">1.2.</span> <span class="toc-text">FPGA</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E4%BB%8B%E7%BB%8D"><span class="toc-number">2.</span> <span class="toc-text">基本介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BA%94%E5%AF%B9%E6%8C%91%E6%88%98"><span class="toc-number">2.1.</span> <span class="toc-text">应对挑战</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Motivation"><span class="toc-number">3.</span> <span class="toc-text">Motivation</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%B3%E9%94%AE%E6%8A%BD%E8%B1%A1"><span class="toc-number">4.</span> <span class="toc-text">关键抽象</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#XPU-Shim"><span class="toc-number">4.1.</span> <span class="toc-text">XPU-Shim</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Miscellaneous-XPU-Operations"><span class="toc-number">4.2.</span> <span class="toc-text">Miscellaneous XPU Operations</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Vectorized-Sandbox-Abstraction"><span class="toc-number">4.3.</span> <span class="toc-text">Vectorized Sandbox Abstraction</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Molecule-Design"><span class="toc-number">5.</span> <span class="toc-text">Molecule Design</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%82%E6%9E%84serverless%E8%AE%A1%E7%AE%97"><span class="toc-number">5.1.</span> <span class="toc-text">异构serverless计算</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BC%98%E5%8C%96%E5%90%AF%E5%8A%A8%E5%BB%B6%E8%BF%9F"><span class="toc-number">5.2.</span> <span class="toc-text">优化启动延迟</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BC%98%E5%8C%96%E5%87%BD%E6%95%B0DAG%E9%80%9A%E4%BF%A1"><span class="toc-number">5.3.</span> <span class="toc-text">优化函数DAG通信</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E4%B8%8E%E4%BC%98%E5%8C%96"><span class="toc-number">5.4.</span> <span class="toc-text">实现与优化</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E9%AA%8C"><span class="toc-number">6.</span> <span class="toc-text">实验</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">7.</span> <span class="toc-text">总结</span></a></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-ASPLOS22_Serverless-Computing-on-Heterogeneous-Computers" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      ASPLOS&#39;22 Serverless Computing on Heterogeneous Computers
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/12/13/ASPLOS22_Serverless-Computing-on-Heterogeneous-Computers/" class="article-date">
+	  <time datetime="2022-12-13T12:26:49.893Z" itemprop="datePublished">2022-12-13</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/Serverless/" rel="tag">Serverless</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/12/13/ASPLOS22_Serverless-Computing-on-Heterogeneous-Computers/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <p>论文链接: <a target="_blank" rel="noopener" href="https://dl.acm.org/doi/10.1145/3503222.3507732">https://dl.acm.org/doi/10.1145/3503222.3507732</a></p>
+<h1 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h1><p>​        现有的serverless computing平台是建立在同构计算机上的，限制了函数密度并且将serverless computing限制在有限的场景中。我们推出了<strong>Molecule</strong>，这是第一个使用异构计算机的无服务计算系统。Molecule实现了通用设备（如Nvidia DPU）和特定领域加速器（如FPGA和GPU），从而显著提高功能密度（高了50%）和应用程序性能（高达34.6倍）。为了实现这些结果，我们首先提出了XPU-Shim，这是一种分布式shim，用于弥合底层多操作系统（当使用通用设备时）和我们的serverless服务器运行时（即Molecule）之间的差距。我们进一步介绍了vectorized sandbox，这是一种抽象硬件异构性的sandbox抽象（当使用特定领域的加速器时）。此外，我们还回顾了关于启动和通信延迟的最先进的serverless优化，并克服了在异构计算机上实现他们的挑战。我们已经具有Nvidia DPU和Xilinx FPGA的真实平台上实现了Molecule，并使用<strong>benchmarks和真实世界的应用</strong>。</p>
+<h2 id="异构计算"><a href="#异构计算" class="headerlink" title="异构计算"></a>异构计算</h2><p>异构计算主要是指使用不同类型指令集和体系<a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=%E6%9E%B6%E6%9E%84&spm=1001.2101.3001.7020">架构</a>的计算单元组成系统的计算方式。常见的计算单元类别包括CPU、GPU等协处理器、DSP、ASIC、FPGA 等。我们常说的并行计算正是异构计算中的重要组成部分异构计算近年来得到更多关注，主要是因为通过提升CPU时钟频率和内核数量而提高计算能力的传统方式遇到了散热和能耗瓶颈。而与此同时，GPU等专用计算单元虽然工作频率较低，具有更多的内核数和并行计算能力，总体性能/芯片面积的比和性能/功耗比都很高，却远远没有得到充分利用。</p>
+<h2 id="FPGA"><a href="#FPGA" class="headerlink" title="FPGA"></a>FPGA</h2><p>FPGA 的全称为 Field-Programmable Gate Array，即现场可编程门阵列。 FPGA 是在 PAL、 GAL、 CPLD 等可编程器件的基础上进一步发展的产物， 是作为专用集成电路（ ASIC）领域中的一种半定制电路而出现的，既解决了定制电路的不足，又克服了原有可编程器件门电路数有限的缺点。 简而言之， FPGA 就是一个可以通过编程来改变内部结构的芯片。</p>
+<h1 id="基本介绍"><a href="#基本介绍" class="headerlink" title="基本介绍"></a>基本介绍</h1><p>首先介绍了serverless的优点和基本概念，这点不多赘述。</p>
+<p>然后介绍了serverless目前面临的挑战，大概分为以下几点：</p>
+<ul>
+<li>同构计算机下的serverless功能密度低</li>
+<li>现在很多程序（ML，AI之类的）依赖于异构加速器来实现加速</li>
+</ul>
+<p><strong>异构计算机极大地提高了可伸缩性（即垂直扩展）、更广泛应用程序的性能以及资源隔离。有了这些好处，近年来，异构计算机正迅速渗透到数据中心。</strong></p>
+<p>介绍了第一个异构计算机上的serverless computing系统Molecule，Molecule同时考虑了通用设备（如NVIDIA DPU）和特定领域加速器（如FPGA）。Molecule利用DPU实现更好的功能密度，利用FPGA实现更好的应用程序性能</p>
+<p>但是异构计算机上的serverless目前也面临很多挑战：</p>
+<ul>
+<li>DPU和加速器本身就需要用一个专用OS去管理，这样一来异构计算机就变成了一个多OS的系统。<strong>我们如何在多操作系统系统中实现相同的功能</strong>？</li>
+<li>缺少能够抽象出serverless服务器系统的低级异构硬件和软件细节</li>
+<li>异构计算机也使无服务器功能之间的通信复杂化，现在的serverless系统依赖于OS原语，例如IPC，但是还是通过网络进行两个PU之间的通信</li>
+</ul>
+<h2 id="应对挑战"><a href="#应对挑战" class="headerlink" title="应对挑战"></a>应对挑战</h2><p>vectorized sandbox  —-&gt;  克服异构性挑战</p>
+<p>vectorized sandbox扩展了现有的抽象，<strong>以支持并发sandbox创建和调用</strong>。由于我们要求每个设备 (或PU) 实现抽象所需的接口，因此无服务器运行时可以管理异构功能，而无需考虑底层的硬件和软件细节。</p>
+<p>XPU-Shim  ——-&gt; 弥合serverless机制与多OS系统之间的差距</p>
+<p>提出了两个原语：<em>neighbor IPC</em>与<em>distributed capabilities</em></p>
+<p>neighbor IPC利用硬件互联，例如DMA，以允许不同的PU上的应用程序有效地通信，而distributed capabilities提供了一种统一的方式在multi-os系统中实施权限控制。</p>
+<h1 id="Motivation"><a href="#Motivation" class="headerlink" title="Motivation"></a>Motivation</h1><p>讲的都是一些技术背景，这里不多赘述</p>
+<h1 id="关键抽象"><a href="#关键抽象" class="headerlink" title="关键抽象"></a>关键抽象</h1><h2 id="XPU-Shim"><a href="#XPU-Shim" class="headerlink" title="XPU-Shim"></a>XPU-Shim</h2><p><img src="/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-1.png" alt="image-20221122164106836"></p>
+<p>XPU-Shim的三个特点：</p>
+<ul>
+<li>XPU-Shim 在每个 PU（称为本地操作系统）的操作系统或固件上工作，并利用矢量化沙箱的接口来管理异构功能，这显着提高了系统灵活性，因为本地操作系统和 PU 可能非常不同</li>
+<li>XPU-Shim 为应用程序提供系统调用风格的接口，称为 XPUcalls，它提供统一的抽象来管理和利用不同 PU 上的资源。</li>
+<li>XPU-Shim 即使在不同的 PU 上也支持应用程序的高效通信。 XPU-Shim 依赖于两个关键原语，distributed capabilities和neighbor IPC，来处理分布式硬件和操作系统。</li>
+</ul>
+<blockquote>
+<p> Linux capability</p>
+<p>Linux capability是一种对于对 root 权限进行更细粒度的控制，实现按需授权，从而减小系统的安全攻击面的安全机制，用于补充对于root权限粒度控制不足的划分。其实就是一种权限控制</p>
+</blockquote>
+<p><em><strong>distributed capabilities</strong></em>：XPU-Shim 使用分布式对象和功能为用户空间应用程序维护全局资源和状态。定义了两个分布式对象：<em><strong>CAP_Group</strong></em>是记录进程所有capability的对象，<em><strong>IPC</strong></em>是进程间连接的对象。然后该原语有两个功能：</p>
+<ul>
+<li>XPU-Shim为每个进程维护一个CAP_Group，保证进程具有全局唯一的ID以识别进程。</li>
+<li>在XPU-Shim中设计一个全局的权限管理方法，具体表现为：<br>CAP_Group (每个进程) 维护一个功能列表，包括目标分布式对象和权限。一个特殊权限是<code>owner</code> ，它可以使用<code>grant_cap</code>授予访问对象到另一个进程的权限。所有者可以使用<code>revoke_cap</code>撤销该能力。在XPUcalls中检查能力 (或权限)，例如，进程只有在具有读或写权限时，才能使用<code>xfifo_connect</code>连接到xpu-fifo。</li>
+</ul>
+<p><em><strong>Neighbor IPC</strong></em>：nIPC是允许进程与另一个进程 (在不同的PU上) 通信的基元。nIPC依赖于类似的基于网络的通信方法（比如PCIe），但是作为同一台机器，无服务器运行时可以使用简单的软件堆栈进行通信，并且不需要通过API网关。</p>
+<p>目前，xpu-shim支持FIFO风格的通信机制，即xpu-fifo。与现有操作系统类似，我们使用分布式功能 (或文件描述符) 来管理应用程序的fifo。</p>
+<p><img src="/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-2.png" alt="image-20221122182502689"></p>
+<h2 id="Miscellaneous-XPU-Operations"><a href="#Miscellaneous-XPU-Operations" class="headerlink" title="Miscellaneous XPU Operations"></a>Miscellaneous XPU Operations</h2><p><img src="/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-3.png" alt="image-20221125160712098"></p>
+<p>XPU-Shim引入了全局spawn，它遵循Unix系统中的spawn接口，以允许进程在其他PUs上启动新程序。如表2所示，xSpawn需要PU_id字段，该字段指示spawn的目标PU。XPU-shim在父级和子级进程之间不共享任何隐式权限，并且依赖于capv (功能数组) 来允许父级向子级显式授予权限。</p>
+<h2 id="Vectorized-Sandbox-Abstraction"><a href="#Vectorized-Sandbox-Abstraction" class="headerlink" title="Vectorized Sandbox Abstraction"></a>Vectorized Sandbox Abstraction</h2><p>docker runc以及kata等容器实现的都是OCI的接口，如表3的上半部分</p>
+<p><img src="/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-4.png" alt="image-20221122185634810"></p>
+<p>利用常规的OCI接口实现FPGA沙箱运行时（称之为runf）有一些限制：</p>
+<ul>
+<li>OCI接口在FPGA等异构设备上的可扩展性较差。与通用的PUs不同，我们只能在具有1个FPGA设备的机器中运行1个FPGA实例</li>
+<li>明确删除沙盒会产生不必要的成本，在这些情况下是不必要的。在FPGA中，刷新的功能不会占用任何资源，并且在创建新的FPGA无服务器功能时可以轻松替换。</li>
+</ul>
+<p>对于矢量化沙箱，做了以下三个扩展：</p>
+<ul>
+<li>沙盒创建被向量化为**<em>create</em> *vector&lt;sandbox, func-id&gt;***。这意味着runf可以一次创建一组FPGA沙箱。</li>
+<li>类似于创建，开始界面被向量化为***start vector&lt;sandbox-id&gt;***。该扩展支持并发执行，这有利于通过有限的 FPGA 设备实现自动扩展。</li>
+<li>Molecule 不会明确销毁 FPGA 沙箱，即删除命令将为空并直接返回（但 runf 会更新沙箱状态）。真正的销毁操作发生在下一个创建操作中，它将用新的硬件实现替换当前的硬件实现。这有效地提高了删除性能。该方法不会为下一个创建操作增加开销，因为它不包括擦除操作。</li>
+</ul>
+<p>矢量化沙箱依赖于 FPGA 中的包装器来保证实例之间的安全性和性能隔离， XPU-Shim 利用矢量化沙箱抽象来抽象具有出色性能的硬件异构性。</p>
+<h1 id="Molecule-Design"><a href="#Molecule-Design" class="headerlink" title="Molecule Design"></a>Molecule Design</h1><p>1、可以管理具有异构设备的工作机器，例如DPU，FPGA，智能I/O设备等。</p>
+<p>2、不依赖于主机OS来提供单OS抽象，而是依赖于分布式垫片XPU-shim来管理分布式OS上的功能。</p>
+<p>3、应该支持异构计算机上的无服务器机制 (例如，基于fork的启动)。</p>
+<h2 id="异构serverless计算"><a href="#异构serverless计算" class="headerlink" title="异构serverless计算"></a>异构serverless计算</h2><p>开发人员需要基于 Molecule 支持的特定语言运行时（例如 Python）来编写他们的功能。</p>
+<p>如图5a所示，我们为CPU (平台中的x86服务器) 和DPU (平台中的Arm pu) 提供了相同的语言运行时，因为它们支持通用编程。</p>
+<p><img src="/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-5.png" alt="image-20221122192335813"></p>
+<p>Molecule要求<strong>最终用户将资源显式分配给功能，并根据其价格和硬件能力选择pu的类型 (即CPU或FPGA)</strong></p>
+<p>DPU的价格最低，FPGA的价格最高。用户可以选择多个设置，让平台决定如何安排实例。然后，根据用户的配置，API网关将函数的实例调度到具有该函数可以执行的所需PU类型中的至少一种的计算机。</p>
+<p>开发人员可以在我们的FPGA运行时 (图5-b) 中编写其FPGA功能，并将功能上传到平台以生成FPGA镜像。</p>
+<p>Molecule架构如图6所示：</p>
+<p><img src="/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-6.png" alt="image-20221122193245919"></p>
+<p>Molecule 服务于来自全局管理器的无服务器请求。它可以在异构计算机中的任何PU (图中的主机CPU) 上运行，并使用xpu-shim管理其他PU中的功能。Molecule将通过xSpawn在其他pu上启动executors，后者负责使用矢量化沙箱抽象管理本地函数实例。执行器从Molecule(通过nIPC) 接收命令，在本地操作系统上执行命令，并返回结果。对于无法启动通用程序的加速器 (例如FPGA)，我们在邻居CPU/DPU上启动虚拟xpu-shim实例 (例如图中的xpu-shim For FPGA)。此实例负责运行相应的执行器并管理加速器。</p>
+<h2 id="优化启动延迟"><a href="#优化启动延迟" class="headerlink" title="优化启动延迟"></a>优化启动延迟</h2><p>函数实例可以通过冷启动或热启动来处理请求，具体取决于是否有可用的缓存沙箱。函数的第一次执行通常从冷启动开始，冷启动需要准备函数映像、创建沙箱、加载函数代码。冷启动通常会导致长延迟，例如，在复杂的Java函数中&gt; 1s; 这是大多数函数的主要成本。</p>
+<p>基于Fork的启动和基于快照的启动是两种最广泛采用的用于减少启动延迟的优化。Molecular遵循研究路线，有两个新的贡献：</p>
+<ul>
+<li>我们提出了cfork，这是第一个实现 &lt;10ms启动延迟的容器级分叉。cfork旨在支持异构计算机。</li>
+<li>像FPGA这样的加速器不能利用fork来提高启动延迟，因此Molecule利用矢量化沙箱抽象将多个无服务器实例组合成一个映像，这增加了为传入请求击中缓存实例的可能性。</li>
+</ul>
+<p>容器分叉 (cfork) 继承了Catalyzer中沙盒分叉的思想，从一个预先准备好的模板容器 (在CPU和DPU上) 生成新的实例，克服了三个挑战：</p>
+<ul>
+<li>容器可能包含多线程甚至多进程，由于Unix fork仅传播分支线程，因此很难正确有效地克隆它们。cfork提出了forkable language runtime: 一个负责分叉多线程实例的无服务器函数的包装器。语言运行时会暂时将所有线程合并为一个线程，将多线程上下文保存在内存中，并在cfork之后将其扩展为多线程。</li>
+<li>Molecule需要将分叉的函数实例从模板容器迁移到新的容器中进行隔离</li>
+<li>cfork应该支持异构计算机上的多操作系统。</li>
+</ul>
+<p>Molecule 将缓存函数实例，而不是fork，以减轻 FPGA 上的冷启动成本。</p>
+<h2 id="优化函数DAG通信"><a href="#优化函数DAG通信" class="headerlink" title="优化函数DAG通信"></a>优化函数DAG通信</h2><p>无服务器应用程序通常由链功能 (也称为无服务器DAG) 组成，因此通信延迟很重要。无服务器平台通常在所有情况下都使用网络和API网关进行通信，当功能在一台机器上运行时，这可能会产生不必要的成本。</p>
+<p>Molecule利用XPU-shim在异构计算机中支持基于IPC的通信，从而允许不同PU上的功能像通过nIPC在单个PU中进行通信。</p>
+<p>​        <em><strong>nIPC-based DAG call.</strong></em> 现有系统通常依靠中间实体 (例如，SAND中的本地总线和Nightcore中的引擎) 来传输消息。Molecule实现了一种 “直接连接” 方法，该方法直接在调用者和被调用者函数实例之间建立连接，即在两个函数之间使用fifo建立全双工连接。</p>
+<p>​        **<em>Supports for DPU.</em> **由于 nIPC 提供了 XPU-FIFO 抽象，这与单 PU 系统中使用的本地 FIFO 几乎相同，因此对 CPU-DPU 异构计算机的支持工作很小，主要区别在于函数应将其 FIFO 注册到 XPU-FIFO 以允许其他 PU 上的进程访问。</p>
+<p>​        <em><strong>Supports for FPGA.</strong></em> Molecule通过利用DRAM数据保留来实现零拷贝方法，这是一种先进的FPGA特性，允许Molecule加载新的FPGA映像，而无需擦除FPGA附加的DRAM中的数据，即数据被持久化。在这种情况下，调用者FPGA功能可以将数据留在FPGA DRAM中，而被调用者FPGA功能可以直接使用数据而无需数据移动。</p>
+<h2 id="实现与优化"><a href="#实现与优化" class="headerlink" title="实现与优化"></a>实现与优化</h2><p>我们提供了一个XPUShim库 (1,460行C代码)，它提供了进程调用的XPUcall接口。Xpu-shim将利用底层互连在pu之间连接和同步状态。在我们的设置中，DPU和CPU通过RDMA (这是唯一导出的基于PCIe的通信方法) 进行通信，而FPGA和CPU通过DMA进行通信。</p>
+<p>我们基于矢量化沙箱抽象实现了Molecule。在CPU和DPU中，抽象是基于Docker runc实现的 (通过始终传递一个大小的向量)。在FPGA中，我们实现了一个新的运行时runf，它将管理FPGA无服务器功能。Molecule支持两种最常用的语言运行时，Node.js和Python，占AWS for CPU和DPU的90% 功能，并提供一个基于OpenCL和Xilinx Vitis的FPGA语言运行时。</p>
+<p><em><strong>XPUcall optimizations</strong></em>. 由于xpu-shim是系统中的另一个进程，因此我们需要一种IPC方法来在用户进程和xpu-shim之间进行通信。如图7-a所示的两次IPC往返可导致DPU中的显著高成本。提出了两种优化方法：</p>
+<p><img src="/images/serverless-zyc/ALPOS22_scohc/ASPLOS22_serverless-computing-on-heterogeneous-computers-7.png" alt="image-20221122210401147"></p>
+<p>图 7-b 显示了 XPU-Shim 在 MPSC（多生产者单消费者）队列上轮询并依赖 IPC 通知进程 XPUcall 响应的情况。这可以将 IPC 往返次数从两次减少到一次。设备中的优化是合理的，因为 XPU-Shim 可以固定到专用内核以获得更好的性能。</p>
+<p>此外，我们可以进一步让进程轮询共享内存以获取响应，从而消除 IPC 成本，如图 7-c 所示。在我们的评估中，我们选择第二种方法作为默认方法。</p>
+<p><strong>局限性：</strong>我们的原型没有实现DPU和FPGA之间的直接通信。相反，我们依靠主机CPU来转发DPU和FPGA之间的数据，即CPU拦截的通信。</p>
+<h1 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h1><p>通过评估回答以下问题：</p>
+<ul>
+<li>XPU-Shim如何降低跨PU通信延迟</li>
+<li>Molecule 能否在异构计算机上实现更好的可扩展性和性能？</li>
+<li>Molecule能否实现比商用无服务器系统更好的性能？</li>
+<li>Molecule能否在异构计算机上实现无服务器的低启动延迟？</li>
+<li>Molecule 能否在异构计算机上实现无服务器的低通信延迟？</li>
+<li>Molecule如何减少无服务器应用的端到端延迟？</li>
+<li>Molecule 与最先进的无服务器系统相比如何？</li>
+<li>支持新的加速器有多容易？</li>
+</ul>
+<p>baseline：Molecule-homo（Molecule的同构版本），Molecule不适用XPU-Shim</p>
+<p>然后就是各种吹，这里也不多赘述，有兴趣可以去看原文</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>本文提出了Molecule，这是第一个支持异构计算机的serverless系统。Molecule经过精心设计，可以通过shim layer(xpu-shim) 和vectorized sandbox抽象来抽象出硬件分布和异质性。我们的结果表明，Moleclue在可扩展性和性能方面带来了显著的好处。我们相信Molecule将激励许多未来的异构无服务器计算工作。</p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/12/13/ASPLOS22_Serverless-Computing-on-Heterogeneous-Computers/" title="ASPLOS&#39;22 Serverless Computing on Heterogeneous Computers" target="_blank" rel="external">http://example.com/2022/12/13/ASPLOS22_Serverless-Computing-on-Heterogeneous-Computers/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2022/12/13/Demikernel/" title="SOSP&#39;21 The Demikernel Datapath OS Architecture for Microsecond-scale Datacenter Systems"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2022/12/13/A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" title="OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing | TenonOS-unikraft-learning</title>
+  <meta name="description" content="论文链接：https:&#x2F;&#x2F;dl.acm.org&#x2F;doi&#x2F;abs&#x2F;10.1145&#x2F;3544216.3544259 开源代码：https:&#x2F;&#x2F;github.com&#x2F;ucr-serverless&#x2F;spright 关于eBPF的一些背景：https:&#x2F;&#x2F;www.cnblogs.com&#x2F;dengchj&#x2F;p&#x2F;14919393.html 摘要Serverless计算承诺在云环境中提供高效、低成本的计算能力。但">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing">
+<meta property="og:url" content="http://example.com/2022/12/13/SIGCOMM22_SPRIGHT/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="论文链接：https:&#x2F;&#x2F;dl.acm.org&#x2F;doi&#x2F;abs&#x2F;10.1145&#x2F;3544216.3544259 开源代码：https:&#x2F;&#x2F;github.com&#x2F;ucr-serverless&#x2F;spright 关于eBPF的一些背景：https:&#x2F;&#x2F;www.cnblogs.com&#x2F;dengchj&#x2F;p&#x2F;14919393.html 摘要Serverless计算承诺在云环境中提供高效、低成本的计算能力。但">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/serverless-czq/SPRIGHT/author.png">
+<meta property="og:image" content="http://example.com/images/serverless-czq/SPRIGHT/knative%E9%93%BE%E8%B7%AF.png">
+<meta property="og:image" content="http://example.com/images/serverless-czq/SPRIGHT/knative%E5%BC%80%E9%94%80.png">
+<meta property="og:image" content="http://example.com/images/serverless-czq/SPRIGHT/SPRIGHT%E6%80%BB%E6%9E%B6%E6%9E%84.png">
+<meta property="og:image" content="http://example.com/images/serverless-czq/SPRIGHT/eBPF%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98.png">
+<meta property="og:image" content="http://example.com/images/serverless-czq/SPRIGHT/%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%E4%B8%8E%E8%BD%AE%E8%AF%A2%E6%AF%94%E8%BE%83.png">
+<meta property="og:image" content="http://example.com/images/serverless-czq/SPRIGHT/SPRIGHT%E5%BC%80%E9%94%80.png">
+<meta property="og:image" content="http://example.com/images/serverless-czq/SPRIGHT/Serverless%E5%9C%BA%E6%99%AF.png">
+<meta property="og:image" content="http://example.com/images/serverless-czq/SPRIGHT/%E5%9C%A8%E7%BA%BF%E8%B4%AD%E7%89%A9%E5%AE%9E%E9%AA%8C.png">
+<meta property="article:published_time" content="2022-12-13T12:26:49.929Z">
+<meta property="article:modified_time" content="2022-12-13T12:01:36.095Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="Serverless">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/serverless-czq/SPRIGHT/author.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2022/12/13/SIGCOMM22_SPRIGHT/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">9</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.17px;">HPC</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.83px;">Plat</a> <a href="/tags/Serverless/" style="font-size: 13.33px;">Serverless</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.67px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.5px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.17px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/SIGCOMM22_SPRIGHT/" class="title">SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.929Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/" class="title">EuroSys&#39;22 Memory Deduplication for Serverless Computing with Medes</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.918Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/Demikernel/" class="title">SOSP&#39;21 The Demikernel Datapath OS Architecture for Microsecond-scale Datacenter Systems</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.894Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/ASPLOS22_Serverless-Computing-on-Heterogeneous-Computers/" class="title">ASPLOS&#39;22 Serverless Computing on Heterogeneous Computers</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.893Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2022/12/13/A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" class="title">OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2022-12-13T12:26:49.891Z" itemprop="datePublished">2022-12-13</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%91%98%E8%A6%81"><span class="toc-number">1.</span> <span class="toc-text">摘要</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%95%E6%96%87"><span class="toc-number">2.</span> <span class="toc-text">引文</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF%E4%B8%8E%E6%8C%91%E6%88%98"><span class="toc-number">3.</span> <span class="toc-text">背景与挑战</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SRIGHT%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1"><span class="toc-number">4.</span> <span class="toc-text">SRIGHT系统设计</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E9%AA%8C%E4%B8%8E%E8%AF%84%E4%BC%B0"><span class="toc-number">5.</span> <span class="toc-text">实验与评估</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E5%B7%A5%E4%BD%9C"><span class="toc-number">6.</span> <span class="toc-text">相关工作</span></a></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-SIGCOMM22_SPRIGHT" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2022/12/13/SIGCOMM22_SPRIGHT/" class="article-date">
+	  <time datetime="2022-12-13T12:26:49.929Z" itemprop="datePublished">2022-12-13</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/Serverless/" rel="tag">Serverless</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2022/12/13/SIGCOMM22_SPRIGHT/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <p><img src="/images/serverless-czq/SPRIGHT/author.png" alt="image-20221212151438843"></p>
+<p>论文链接：<a target="_blank" rel="noopener" href="https://dl.acm.org/doi/abs/10.1145/3544216.3544259">https://dl.acm.org/doi/abs/10.1145/3544216.3544259</a></p>
+<p>开源代码：<a target="_blank" rel="noopener" href="https://github.com/ucr-serverless/spright">https://github.com/ucr-serverless/spright</a></p>
+<p>关于eBPF的一些背景：<a target="_blank" rel="noopener" href="https://www.cnblogs.com/dengchj/p/14919393.html">https://www.cnblogs.com/dengchj/p/14919393.html</a></p>
+<h2 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h2><p>Serverless计算承诺在云环境中提供高效、低成本的计算能力。<strong>但是，以开源平台 (例如Knative) 为代表的现有解决方案包括重量级组件，这些组件破坏了无服务器计算的这一目标。此外，这种无服务器平台缺乏数据平面优化，无法实现高效，高性能的功能链，从而促进流行的微服务开发范例。他们使用复杂和重复的功能来构建功能链，严重降低了性能。“冷启动” 延迟是另一种挑战。</strong></p>
+<p>SPRIGHT，这是一个轻量级，高性能，响应迅速的无服务器框架。<strong>SPRIGHT利用共享内存处理，通过避免不必要的协议处理和序列化反序列化开销，极大地提高了数据平面的可伸缩性。SPRIGHT通过扩展的Berkeley数据包过滤器 (eBPF) 广泛利用事件驱动的处理。我们创造性地使用eBPF的套接字消息机制来支持共享内存处理，开销严格按负载比例。</strong>相较于DPDK大幅降低了CPU在数据面上的开销。</p>
+<p>实验结果表明相较于Knative，SPRIGHT在吞吐量上实现了数量级的提高并降低了CPU开销，降低冷启动代价。</p>
+<h2 id="引文"><a href="#引文" class="headerlink" title="引文"></a>引文</h2><p>Knative平台在编排Serverless应用时存在以下问题：</p>
+<ul>
+<li>使用重量级无服务器组件。每个Pod都有Sidecar代理，它负责度量收集以用于Serverless编排。但是sidecar必须一直运行，带来的开销较大。具体的为数据副本传输、上下文切换、中断开销。此外，大多数Serverless框架关注HTTP/REST API，需要针对专门的用例进行额外的协议适配，目前的策略是将协议适配作为单独组件，但这种重量级组件设计的开销不可忽略。作者提出一种设想，即不使用这个组件，而完全基于事件驱动调用代码来解决这个问题。</li>
+<li>函数链接数据平面性差。架构解耦导致组件间通信需要上下文切换，序列化，反序列化，数据复制的开销。当前的设计还在很大程度上依赖于内核协议栈来处理网络数据包到功能pod之间的路由和转发，所有这些都会影响性能。</li>
+</ul>
+<p>SPRIGHT，这是一种高性能，事件驱动且响应迅速的无服务器云框架，该框架利用共享内存处理来实现无服务器功能链中的高性能通信。它的贡献如下：</p>
+<ol>
+<li>SPRIGHT网关，这是一个链范围的组件，以促进无服务器功能链中的共享内存处理。SPRIGHT网关合并linux内核中的协议栈处理，并将有效负载分发到链中。</li>
+<li>通过使用基于事件的共享内存通信在无服务器功能链中实现零复制消息传递。</li>
+<li>使用eBPF (扩展伯克利数据包过滤器) 设计事件驱动的代理 (即EPROXY和SPROXY)，该代理有效地替代了重量级的sidecar代理。我们支持度量集合等功能，CPU消耗低得多。</li>
+<li>通过将对私有共享内存的访问限制为仅该链的受信任功能，我们在SPRIGHT的共享内存处理中在功能链级别实现了分离。SPROXY通过对功能间通信应用消息过滤来进一步限制未经授权的访问。</li>
+<li>利用eBPF提供的数据包重定向功能来提高无服务器功能链之外的数据包转发性能。与内核网络堆栈相比，基于ebpf的数据平面大大降低了延迟和CPU消耗。</li>
+<li>我们通过将其作为附加到SPRIGHT网关的事件驱动组件运行来优化协议适配，以避免不必要的网络协议栈处理开销。这种优化可以显著减少延迟。</li>
+</ol>
+<p>总的来说就是自定义网关和协议栈，通过内存共享传递Serverless上下文，降低传递、监听的开销。</p>
+<h2 id="背景与挑战"><a href="#背景与挑战" class="headerlink" title="背景与挑战"></a>背景与挑战</h2><p>函数链的数据管道使用消息路由，如下所示:</p>
+<p>① 客户端通过集群的入口网关向消息代理/前端代理发送消息 (请求)。</p>
+<p>② 消息在消息代理/前端代理中排队并注册为事件。</p>
+<p>③ 消息代理/前端代理将消息发送到头部的活动pod (第一) 链中的功能，由用户定义。</p>
+<p>④ 调用函数pod来处理传入的请求。第一个函数处理请求后，返回响应并在消息代理/前端代理中排队，注册为链中下一个函数的新事件。</p>
+<p>⑤ 消息代理/前端代理将此新事件发送到链中下一个函数的活动pod。</p>
+<p><img src="/images/serverless-czq/SPRIGHT/knative%E9%93%BE%E8%B7%AF.png" alt="image-20221212152213083"></p>
+<p>作者总结了这个传输链路中的数据复制、上下文切换、中断、协议处理数据量以及序列化和反序列化的次数，总结出如下的表</p>
+<p><img src="/images/serverless-czq/SPRIGHT/knative%E5%BC%80%E9%94%80.png" alt="image-20221212152256245"></p>
+<p>作者认为，函数上下文传递过程中proxy -&gt; sidecar -&gt; func-container-1 -&gt; sidecar -&gt; proxy的流程太过于冗余，导致函数上下文传递经历了不必要的开销，它认为理想的情况应该是proxy -&gt; func-container-1 -&gt; func-container-2，即函数间传递不需要绕这么大的弯。</p>
+<p>原论文中是总结了四点：</p>
+<ul>
+<li><strong>过多的数据拷贝、上下文切换和中断。</strong></li>
+<li><strong>过度、重复的协议处理。</strong></li>
+<li><strong>不必要的序列化/反序列化。</strong></li>
+<li><strong>不断运行的重量级组件。</strong></li>
+</ul>
+<h2 id="SRIGHT系统设计"><a href="#SRIGHT系统设计" class="headerlink" title="SRIGHT系统设计"></a><strong>SRIGHT系统设计</strong></h2><p>总体而言SPRIGHT的设计包含以下要点</p>
+<ul>
+<li>SPRIGHT控制器与控制平面一起工作，与kubelet一起工作。这部分要控制同一个函数组合在同一节点执行。</li>
+<li>SPRIGHT网关充当功能链的反向代理，以巩固协议处理。SPRIGHT网关依赖于内核协议栈进行协议处理，并<strong>提取应用程序数据</strong> (即第7层有效载荷)。它拦截对功能链的传入请求，并<strong>将有效负载复制到共享内存区域中。</strong>这样可以在链内进行零副本处理，避免了不必要的序列化/反序列化和协议栈处理。</li>
+<li>Direct Function Route (DRF)：利用共享内存和eBPF的可配置型，允许函数在共享内存间传递数据</li>
+<li>Event Driven Proxy（EPROXY + SPROXY）：使用eBPF构造服务网格。</li>
+<li>安全：限制不同链之间未经授权的访问</li>
+<li>SPRIGHT直接在共享内存上处理负载，精简了适配器间的处理流程。</li>
+</ul>
+<p><img src="/images/serverless-czq/SPRIGHT/SPRIGHT%E6%80%BB%E6%9E%B6%E6%9E%84.png" alt="image-20221212153357148"></p>
+<p>这里的核心点在于函数间通过eBPF和共享内存绕过Sidecar产生的开销，作者在下图中展示了函数间共享数据的流程。</p>
+<p><img src="/images/serverless-czq/SPRIGHT/eBPF%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98.png" alt="image-20221212154131178"></p>
+<p>网关在收发到数据包时，唤醒第一个Serverless函数，再通过eBPF数据包的形式绕过网关直接向下一个函数传递数据。需要关注的是，这里待处理的数据都是放在共享内存中，而通过eBPF map传递的是一个描述符，它找到下一个需要传递信息的socket以及函数调用链中数据在共享内存中的信息，由于传递的信息只有描述符，且绕过了复杂的网关，因此传输开销降低。</p>
+<p>作者进一步分析了适合共享内存的事件处理机制。对比的是两种方案，一种是基于事件的共享内存处理（可以理解为传递某个中断或者信号来告知进行数据处理，S-SPRIGHT）和基于DPDK的轮询处理（D-SPRIGHT）。</p>
+<p><img src="/images/serverless-czq/SPRIGHT/%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%E4%B8%8E%E8%BD%AE%E8%AF%A2%E6%AF%94%E8%BE%83.png" alt="image-20221212155934703"></p>
+<p>得出的结论是这两种基于共享内存的处理机制在CPU开销和性能上远优于Knative本身的复杂链路。S-SPRIGHT吞吐量略逊于D-SPRIGHT，但是CPU开销在负载规模小的情况下远远优于DPDK。作者在摘要中提到的降低冷启动的代价，说的是监听的代价，降低CPU开销。</p>
+<p><img src="/images/serverless-czq/SPRIGHT/SPRIGHT%E5%BC%80%E9%94%80.png" alt="image-20221212160158078"></p>
+<p>通过上述方式得到了新的调用链开销。可以看到函数外部的调用链不变，但是内部的开销已经被大幅降低。</p>
+<p>论文后面还讨论了不同的函数调用链的内存隔离以及跨节点函数调用的实现细节，这里略过。</p>
+<h2 id="实验与评估"><a href="#实验与评估" class="headerlink" title="实验与评估"></a>实验与评估</h2><p>为了研究SPRIGHT及其组件的改进，作者考虑了几种典型的无服务器场景，包括</p>
+<ol>
+<li>流行的在线购物精品店</li>
+<li>运动检测器的IoT环境</li>
+<li>图像检测的更复杂处理和自动停车库的收费</li>
+</ol>
+<p>可以看到都是调用链相对比较复杂的场景</p>
+<p><img src="/images/serverless-czq/SPRIGHT/Serverless%E5%9C%BA%E6%99%AF.png" alt="image-20221212161057047"></p>
+<p><img src="/images/serverless-czq/SPRIGHT/%E5%9C%A8%E7%BA%BF%E8%B4%AD%E7%89%A9%E5%AE%9E%E9%AA%8C.png" alt="image-20221212161142693"></p>
+<p>作者这里使用在线购物商城（最复杂的调用链）来做实验。其中顶行: Knative，5k并发。中间行: gRPC，5k并发。底部行: {D-SPRIGHT (D)，S-SPRIGHT (S)}，25k并发。(左上校。)6种不同功能链的响应时间CDF; (Mid. col.)响应时间序列，功能链; (右列)CPU使用时间序列，网关 (GW)，功能链 (fn)，队列代理 (Knative)</p>
+<p>可以看到，最终S-SPRIGHT在时延分布，不同环节的CPU开销上都相较于gRPC以及Knative原生方案有较大的优势。</p>
+<h2 id="相关工作"><a href="#相关工作" class="headerlink" title="相关工作"></a>相关工作</h2><p>这篇文章的灵感来源可以从相关工作中获取。</p>
+<ol>
+<li>Understanding Host Network Stack Overheads. SIGCOMM21，探讨了当前Linux系统松耦合设计导致的对高带宽场景下网络的影响</li>
+<li>Parallelizing Packet Processing in Container Overlay Networks. EuroSys21 探讨容器网络堆栈的开销</li>
+<li>Zerializer: Towards Zero-Copy Serialization. HotOS21 主张通过专用硬件将序列化逻辑卸载到DMA路径，初步证明其可行性和预期效益，规避序列化开销。</li>
+</ol>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2022/12/13/SIGCOMM22_SPRIGHT/" title="SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing" target="_blank" rel="external">http://example.com/2022/12/13/SIGCOMM22_SPRIGHT/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    
+    <li class="next">
+      <a href="/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/" title="EuroSys&#39;22 Memory Deduplication for Serverless Computing with Medes"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>
