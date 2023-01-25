@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>用户与unikraft的参数传递 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="在9pfs挂载时，qemu 会传递参数给9p 1qemu-system-x86_64 -fsdev local,id&#x3D;myid,path&#x3D;guest_fs,security_model&#x3D;none -device virtio-9p-pci,fsdev&#x3D;myid,mount_tag&#x3D;fs0 -kernel build&#x2F;06-adding-filesystems_kvm-x86_64 -nograph">
+<meta property="og:type" content="article">
+<meta property="og:title" content="用户与unikraft的参数传递">
+<meta property="og:url" content="http://example.com/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="在9pfs挂载时，qemu 会传递参数给9p 1qemu-system-x86_64 -fsdev local,id&#x3D;myid,path&#x3D;guest_fs,security_model&#x3D;none -device virtio-9p-pci,fsdev&#x3D;myid,mount_tag&#x3D;fs0 -kernel build&#x2F;06-adding-filesystems_kvm-x86_64 -nograph">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/unikraft-%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/menuconfig%E9%80%89%E6%8B%A9nfs.png">
+<meta property="og:image" content="http://example.com/images/unikraft-%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/menuconfig%E4%B8%ADnfs%E9%80%89%E9%A1%B9.png">
+<meta property="og:image" content="http://example.com/images/unikraft-%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/ip%E5%9C%B0%E5%9D%80%E8%BE%93%E5%85%A5.png">
+<meta property="og:image" content="http://example.com/images/unikraft-%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/%E6%8C%82%E8%BD%BD%E8%B7%AF%E5%BE%84%E8%BE%93%E5%85%A5.png">
+<meta property="article:published_time" content="2023-01-25T11:20:55.962Z">
+<meta property="article:modified_time" content="2023-01-25T11:19:09.109Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="Plat">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/unikraft-%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/menuconfig%E9%80%89%E6%8B%A9nfs.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">10</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/InfiniBand/" rel="tag">InfiniBand</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RDMA/" rel="tag">RDMA</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Unikernel/" rel="tag">Unikernel</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hpc/" rel="tag">hpc</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.43px;">HPC</a> <a href="/tags/InfiniBand/" style="font-size: 13.57px;">InfiniBand</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.86px;">Plat</a> <a href="/tags/RDMA/" style="font-size: 13.57px;">RDMA</a> <a href="/tags/Serverless/" style="font-size: 13.29px;">Serverless</a> <a href="/tags/Unikernel/" style="font-size: 13px;">Unikernel</a> <a href="/tags/hpc/" style="font-size: 13.14px;">hpc</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.71px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.57px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.14px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/01/">一月 2023</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/" class="title">用户与unikraft的参数传递</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.962Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'22%20XRP/" class="title">OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.850Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" class="title">OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.849Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand%E8%B0%83%E7%A0%94/" class="title">InfiniBand调研</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.826Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand-LinuxIB/" class="title">Linux InfiniBand</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.824Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#menuconfig%E6%9E%84%E5%BB%BA%E6%96%B9%E6%B3%95"><span class="toc-number">1.</span> <span class="toc-text">menuconfig构建方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#kvm%E9%95%9C%E5%83%8F%E7%9A%84cmdline%E6%96%B9%E5%BC%8F"><span class="toc-number">2.</span> <span class="toc-text">kvm镜像的cmdline方式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#linuxu%E9%95%9C%E5%83%8F%E7%9A%84cmdline%E6%96%B9%E5%BC%8F"><span class="toc-number">3.</span> <span class="toc-text">linuxu镜像的cmdline方式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E6%95%B0%E8%A7%A3%E6%9E%90%E8%BF%87%E7%A8%8B"><span class="toc-number">4.</span> <span class="toc-text">参数解析过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#cmdline%E5%8F%82%E6%95%B0%E8%A7%84%E5%88%99"><span class="toc-number">5.</span> <span class="toc-text">cmdline参数规则</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A2%9D%E5%A4%96%E9%9C%80%E8%A6%81%E7%9A%84%E5%B7%A5%E4%BD%9C"><span class="toc-number">6.</span> <span class="toc-text">额外需要的工作</span></a></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-参数传递" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      用户与unikraft的参数传递
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/" class="article-date">
+	  <time datetime="2023-01-25T11:20:55.962Z" itemprop="datePublished">2023-01-25</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/Plat/" rel="tag">Plat</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <p>在9pfs挂载时，qemu 会传递参数给9p</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">qemu-system-x86_64 -fsdev local,id=myid,path=guest_fs,security_model=none -device virtio-9p-pci,fsdev=myid,mount_tag=fs0 -kernel build/06-adding-filesystems_kvm-x86_64 -nographic</span><br></pre></td></tr></table></figure>
+<p>其中<code>-fsdev</code>定义配置宿主机文件系统要共享的路径，该选项与 <code>-device</code> 驱动程序<code>virtio-9p-xxx</code>(9p与总线交互的外部设备)一起使用，所以一般只应用于9pfs。</p>
+<p>目前已知三种通用的用户向unikraft的参数传递方式：</p>
+<h3 id="menuconfig构建方法"><a href="#menuconfig构建方法" class="headerlink" title="menuconfig构建方法"></a>menuconfig构建方法</h3><ol>
+<li>先编写config.uk，负责menuconfig的执行工作。其中需要包含希望传递的参数的宏<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">// uknfs/Config.uk</span><br><span class="line">menuconfig LIBNFS</span><br><span class="line">	bool &quot;libnfs: NFS (Network Filesystem)&quot;</span><br><span class="line">	default n</span><br><span class="line">	select LIBNOLIBC if !HAVE_LIBC</span><br><span class="line">	select LIBUKTIME if !HAVE_LIBC</span><br><span class="line">	select LIBVFSCORE</span><br><span class="line"></span><br><span class="line">if LIBNFS</span><br><span class="line">	config LIBNFS_AUTOMOUNT</span><br><span class="line">	bool &quot;Automatically mount a network filesystem&quot;</span><br><span class="line">	default y</span><br><span class="line"></span><br><span class="line">	config LIBNFS_SERVADDR</span><br><span class="line">	string &quot;Default nfs server ip address&quot;</span><br><span class="line">	default &quot;&quot;</span><br><span class="line">	help</span><br><span class="line">		IP address of the nfs server you want to mount</span><br><span class="line"></span><br><span class="line">	config LIBNFS_SERVPATH</span><br><span class="line">	string &quot;Default path of nfs server&quot;</span><br><span class="line">	default &quot;&quot;</span><br><span class="line">	help</span><br><span class="line">		Directory path of the nfs server you want to mount</span><br><span class="line"></span><br><span class="line">	config LIBNFS_MOUNTPATH</span><br><span class="line">	string &quot;Default mount path of local unikraft&quot;</span><br><span class="line">	default &quot;/mnt/nfs&quot;</span><br><span class="line">	help</span><br><span class="line">		Where do you want to mount nfs? The default path is &quot;/mnt/nfs&quot;</span><br><span class="line"></span><br><span class="line">	config LIBNFS_FLAGS</span><br><span class="line">	hex &quot;Default nfs mount flags&quot;</span><br><span class="line">	default 0x0</span><br><span class="line">	help</span><br><span class="line">		Mount flags.</span><br><span class="line"></span><br><span class="line">	config LIBNFS_OPTS</span><br><span class="line">	string &quot;Default nfs mount options&quot;</span><br><span class="line">	default &quot;&quot;</span><br><span class="line">	help</span><br><span class="line">		Usually a comma-separated list of additional mount</span><br><span class="line">		options that are directly interpreted by the target</span><br><span class="line">		filesystem.</span><br><span class="line">endif</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+执行<code>make menuconfig</code>后，在<code>Library Configuration</code>里选中uk-nfs的外部库。<br><img src="/images/unikraft-%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/menuconfig%E9%80%89%E6%8B%A9nfs.png" alt="image"><br>这里默认会自动确认nfs自动挂载操作<br><img src="/images/unikraft-%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/menuconfig%E4%B8%ADnfs%E9%80%89%E9%A1%B9.png" alt="image"><br>输入想要挂载的nfs服务器的ip地址<br><img src="/images/unikraft-%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/ip%E5%9C%B0%E5%9D%80%E8%BE%93%E5%85%A5.png" alt="image"><br>输入想要挂载的nfs服务器的路径<br><img src="/images/unikraft-%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/%E6%8C%82%E8%BD%BD%E8%B7%AF%E5%BE%84%E8%BE%93%E5%85%A5.png" alt="image"><br>本地挂载路径默认为<code>mnt/nfs</code>,但也可以根据用户情况进行修改</li>
+<li>menuconfig执行后会在内核源码的顶层目录下生成一个.config文件。该文件用来保存所有的配置项，然后回到顶层Makefile开始编译。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// uknfs/Makefile.uk</span></span><br><span class="line">$(eval $(call addlib_s,libnfs,$(CONFIG_LIBNFS)))</span><br><span class="line"></span><br><span class="line">CINCLUDES-$(CONFIG_LIBNFS)	+= -I$(LIBSHFS_BASE)/include</span><br><span class="line">CXXINCLUDES-$(CONFIG_LIBNFS)	+= -I$(LIBSHFS_BASE)/include</span><br><span class="line"></span><br><span class="line"><span class="meta"># nfs项目完成后，会将所有的.c文件放进来</span></span><br><span class="line">LIBNFS_SRCS-$(CONFIG_LIBNFS_AUTOMOUNT) += $(LIBNFS_BASE)/automount.c</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>上面输入的地址、路径等都会赋给相应的宏。随后在nfs微库的c文件中提取使用</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// lib/uknfs/automount.c</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifndef</span> CONFIG_LIBNFS_SERVADDR</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="type">char</span> *servaddr  = <span class="string">&quot;&quot;</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="type">char</span> *servaddr  = CONFIG_LIBNFS_SERVADDR;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifndef</span> CONFIG_LIBNFS_SERVPATH</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="type">char</span> *nfs_path  = <span class="string">&quot;&quot;</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="type">char</span> *nfs_path  = CONFIG_LIBNFS_SERVPATH;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifndef</span> CONFIG_LIBNFS_MOUNTPATH</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="type">char</span> *mountpath  = <span class="string">&quot;/mnt/nfs&quot;</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="type">char</span> *mountpath  = CONFIG_LIBNFS_MOUNTPATH;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifndef</span> CONFIG_LIBNFS_FLAGS</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> __u64 *flags  = <span class="string">&quot;&quot;</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="type">char</span> *flags  = CONFIG_LIBNFS_FLAGS;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifndef</span> CONFIG_LIBNFS_OPTS</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="type">char</span> *opts  = <span class="string">&quot;&quot;</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="type">char</span> *opts  = LIBNFS_OPTS;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">UK_LIB_PARAM_STR(servaddr);</span><br><span class="line">UK_LIB_PARAM_STR(nfs_path);</span><br><span class="line">UK_LIB_PARAM_STR(mountpath);</span><br><span class="line">UK_LIB_PARAM(flags, __u64);</span><br><span class="line">UK_LIB_PARAM_STR(opts);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">nfs_automount</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> error;</span><br><span class="line"></span><br><span class="line">	uk_pr_info(<span class="string">&quot;Mount nfs to /mnt/nfs...&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 逐级创建本地挂载目录，如果创建失败，说明目录已经存在 */</span> </span><br><span class="line">	error =  mkdir(mountpath, S_IRWXU);</span><br><span class="line">	<span class="keyword">if</span> (error != <span class="number">0</span> &amp;&amp; errno != EEXIST) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;Failed to create /mnt/nfs: %d\n&quot;</span>, errno);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">    </span><br><span class="line">	<span class="comment">/* 创建nfs挂载数据 */</span> </span><br><span class="line">	<span class="type">void</span> *data = get_nfs_data(servaddr, nfs_path, opts);</span><br><span class="line">	</span><br><span class="line">    <span class="comment">/* <span class="doctag">TODO:</span>flags的默认值问题 */</span> </span><br><span class="line">	error = mount(<span class="string">&quot;&quot;</span>, mountpath, <span class="string">&quot;nfs&quot;</span>, flags, data);</span><br><span class="line">	<span class="keyword">if</span> (error != <span class="number">0</span>) &#123;</span><br><span class="line">		uk_pr_err(<span class="string">&quot;Failed to mount nfs to /mnt/nfs: %d\n&quot;</span>, errno);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="kvm镜像的cmdline方式"><a href="#kvm镜像的cmdline方式" class="headerlink" title="kvm镜像的cmdline方式"></a>kvm镜像的cmdline方式</h3><p>以kvm下的x86启动为例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">qemu-system-x86_64  -append [cmdline] -netdev [网络设备参数] -device [网络设备]  -kernel [镜像] -nographic</span><br></pre></td></tr></table></figure>
+<p>其中<code>-append</code>可以用来将cmdline参数传递给guest，这里可以将nfs的挂载参数传递给unikraft</p>
+<h3 id="linuxu镜像的cmdline方式"><a href="#linuxu镜像的cmdline方式" class="headerlink" title="linuxu镜像的cmdline方式"></a>linuxu镜像的cmdline方式</h3><p>以xxx镜像名<code>xxx_linuxu-x86_64</code>举例，在镜像后加入要传输的参数即可</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./build/xxx_linuxu-x86_64 cmdline</span><br></pre></td></tr></table></figure>
+
+<h3 id="参数解析过程"><a href="#参数解析过程" class="headerlink" title="参数解析过程"></a>参数解析过程</h3><p>当unikraft镜像执行后，会首先到unikraft的入口地址处调用<code>_libkvmplat_entry</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">// plat/kvm/x86/link64.lds.S</span><br><span class="line">ENTRY(_libkvmplat_entry)</span><br></pre></td></tr></table></figure>
+<p>其中传进来的<code>*arg</code>参数是Multiboot的信息结构。<br>在进入操作系统时，qemu-kvm会将部分参数存储到EBX寄存器，EBX寄存器包含Multiboot信息结构的物理地址，引导程序通过它将重要的引导信息传递给操作系统。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// plat/kvm/x86/setup.c</span></span><br><span class="line"><span class="type">void</span> _libkvmplat_entry(<span class="type">void</span> *arg)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">multiboot_info</span> *<span class="title">mi</span> =</span> (<span class="keyword">struct</span> multiboot_info *)arg;</span><br><span class="line">	</span><br><span class="line">	_mb_get_cmdline(mi);</span><br><span class="line">	_mb_init_mem(mi);</span><br><span class="line">	_mb_init_initrd(mi);</span><br><span class="line"></span><br><span class="line">	_libkvmplat_newstack(_libkvmplat_cfg.bstack.end,</span><br><span class="line">			     _libkvmplat_entry2, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>multiboot_info</code>中<code>cmdline</code>用于存储qemu的<code>-append</code>的参数<br>当flag的第2位置为1时cmdline才会使用</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// plat/kvm/include/kvm-x86/multiboot.h</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">multiboot_info</span> &#123;</span></span><br><span class="line">	<span class="comment">/* Multiboot info version number */</span></span><br><span class="line">	<span class="type">multiboot_uint32_t</span> flags;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Available memory from BIOS */</span></span><br><span class="line">	<span class="type">multiboot_uint32_t</span> mem_lower;</span><br><span class="line">	<span class="type">multiboot_uint32_t</span> mem_upper;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* &quot;root&quot; partition */</span></span><br><span class="line">	<span class="type">multiboot_uint32_t</span> boot_device;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Kernel command line */</span></span><br><span class="line">	<span class="type">multiboot_uint32_t</span> cmdline;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>随后会通过<code>_mb_get_cmdline</code>将cmdline存储到<code>setup.c</code>的<code>cmdline</code>全局变量中</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// plat/kvm/x86/setup.c</span></span><br><span class="line"><span class="type">static</span> <span class="type">char</span> cmdline[MAX_CMDLINE_SIZE];</span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> _mb_get_cmdline(<span class="keyword">struct</span> multiboot_info *mi)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">char</span> *mi_cmdline;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (mi-&gt;flags &amp; MULTIBOOT_INFO_CMDLINE) &#123;</span><br><span class="line">		mi_cmdline = (<span class="type">char</span> *)(__u64)mi-&gt;cmdline;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (<span class="built_in">strlen</span>(mi_cmdline) &gt; <span class="keyword">sizeof</span>(cmdline) - <span class="number">1</span>)</span><br><span class="line">			uk_pr_err(<span class="string">&quot;Command line too long, truncated\n&quot;</span>);</span><br><span class="line">		<span class="built_in">strncpy</span>(cmdline, mi_cmdline,</span><br><span class="line">			<span class="keyword">sizeof</span>(cmdline));</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">/* Use image name as cmdline to provide argv[0] */</span></span><br><span class="line">		uk_pr_debug(<span class="string">&quot;No command line present\n&quot;</span>);</span><br><span class="line">		<span class="built_in">strncpy</span>(cmdline, CONFIG_UK_NAME, <span class="keyword">sizeof</span>(cmdline));</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* ensure null termination */</span></span><br><span class="line">	cmdline[(<span class="keyword">sizeof</span>(cmdline) - <span class="number">1</span>)] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>随后<code>_libkvmplat_entry2</code>会调用cmdline，随后委托给<code>ukplat_entry_argp</code>进行参数的分解<br>其中，<code>uk_argnparse</code>会用来将cmdline的字符串的每一部分分开放入argv数组中，如<code>path=/mnt/nfs addr=192.168.18.120</code>则会除去空行分成两部分放入argv中</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> _libkvmplat_entry2(<span class="type">void</span> *arg __attribute__((unused)))</span><br><span class="line">&#123;</span><br><span class="line">	ukplat_entry_argp(<span class="literal">NULL</span>, cmdline, <span class="keyword">sizeof</span>(cmdline));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// lib/ukboot/boot.c</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">ukplat_entry_argp</span><span class="params">(<span class="type">char</span> *arg0, <span class="type">char</span> *argb, __sz argb_len)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">static</span> <span class="type">char</span> *argv[CONFIG_LIBUKBOOT_MAXNBARGS];</span><br><span class="line">	<span class="type">int</span> argc = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (arg0) &#123;</span><br><span class="line">		argv[<span class="number">0</span>] = arg0;</span><br><span class="line">		argc += <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (argb &amp;&amp; argb_len) &#123;</span><br><span class="line">		argc += uk_argnparse(argb, argb_len, arg0 ? &amp;argv[<span class="number">1</span>] : &amp;argv[<span class="number">0</span>],</span><br><span class="line">				     arg0 ? (CONFIG_LIBUKBOOT_MAXNBARGS - <span class="number">1</span>)</span><br><span class="line">					  : CONFIG_LIBUKBOOT_MAXNBARGS);</span><br><span class="line">	&#125;</span><br><span class="line">	ukplat_entry(argc, argv);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>ukplat_entry</code>会将qemu的传参传递给<code>thread_main_arg</code>的<code>argv</code>成员</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// lib/ukboot/boot.c</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">ukplat_entry</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">thread_main_arg</span> <span class="title">tma</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LIBUKLIBPARAM</span></span><br><span class="line">	rc = (argc &gt; <span class="number">1</span>) ? uk_libparam_parse(argv[<span class="number">0</span>], argc - <span class="number">1</span>, &amp;argv[<span class="number">1</span>]) : <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">if</span> (unlikely(rc &lt; <span class="number">0</span>))</span><br><span class="line">		uk_pr_crit(<span class="string">&quot;Failed to parse the kernel argument\n&quot;</span>);</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		kern_args = rc;</span><br><span class="line">		uk_pr_info(<span class="string">&quot;Found %d library args\n&quot;</span>, kern_args);</span><br><span class="line">	&#125;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* CONFIG_LIBUKLIBPARAM */</span></span></span><br><span class="line"></span><br><span class="line">	tma.argc = argc - kern_args;</span><br><span class="line">	tma.argv = &amp;argv[kern_args];</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_LIBUKSCHED</span></span><br><span class="line">	main_thread = uk_thread_create(<span class="string">&quot;main&quot;</span>, main_thread_func, &amp;tma);</span><br><span class="line">	<span class="keyword">if</span> (unlikely(!main_thread))</span><br><span class="line">		UK_CRASH(<span class="string">&quot;Could not create main thread\n&quot;</span>);</span><br><span class="line">	uk_sched_start(s);</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">	<span class="comment">/* Enable interrupts before starting the application */</span></span><br><span class="line">	ukplat_lcpu_enable_irq();</span><br><span class="line">	main_thread_func(&amp;tma);</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>uk_libparam_parse</code>会对cmdline参数进行解析。分为库名解析、变量名解析、赋值三步。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// lib/uklibparam/param.c</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">param_args</span> &#123;</span></span><br><span class="line">	<span class="comment">/* Reference to the start of the library */</span></span><br><span class="line">	<span class="type">char</span> *lib;</span><br><span class="line">	<span class="comment">/* Reference to the start of the parameter */</span></span><br><span class="line">	<span class="type">char</span> *param;</span><br><span class="line">	<span class="comment">/* Reference to the start of the value */</span></span><br><span class="line">	<span class="type">char</span> *value;</span><br><span class="line">	<span class="comment">/* length of the library name */</span></span><br><span class="line">	__u32 lib_len;</span><br><span class="line">	<span class="comment">/* length of the parameter */</span></span><br><span class="line">	__u32 param_len;</span><br><span class="line">	<span class="comment">/* length of the value */</span></span><br><span class="line">	__u32 value_len;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uk_param</span> &#123;</span></span><br><span class="line">	<span class="comment">/* The name of the param */</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *name;</span><br><span class="line">	<span class="comment">/* Type information for the param */</span></span><br><span class="line">	<span class="type">const</span> __u8 param_type;</span><br><span class="line">	<span class="comment">/* Type information for the variable size param */</span></span><br><span class="line">	<span class="type">const</span> __u8 param_size;</span><br><span class="line">	<span class="comment">/* Define a reference to location of the parameter */</span></span><br><span class="line">	__uptr addr;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">uk_libparam_parse</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *progname, <span class="type">int</span> argc, <span class="type">char</span> **argv)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> keindex = <span class="number">0</span>;</span><br><span class="line">	<span class="type">int</span> rc = <span class="number">0</span>, cnt = <span class="number">0</span>, args_read, i;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">param_args</span> <span class="title">pargs</span> =</span> &#123;<span class="number">0</span>&#125;;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_lib_section</span> *<span class="title">section</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">uk_param</span> *<span class="title">param</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">	<span class="comment">// 获取参数的数量</span></span><br><span class="line">	keindex = kernel_arg_range_fetch(argc, argv);</span><br><span class="line">	<span class="comment">// 遍历每一个参数</span></span><br><span class="line">	<span class="keyword">while</span> (cnt &lt; keindex) &#123;</span><br><span class="line">		args_read = <span class="number">0</span>;</span><br><span class="line">		<span class="comment">/* Fetch the argument from the input */</span></span><br><span class="line">		rc = kernel_arg_fetch(&amp;argv[cnt], (keindex - cnt),</span><br><span class="line">				      &amp;pargs, &amp;args_read);</span><br><span class="line">		cnt += args_read;</span><br><span class="line">		<span class="comment">/* Fetch library for the argument */</span></span><br><span class="line">		rc = kernel_lib_fetch(&amp;pargs, &amp;section);</span><br><span class="line">		<span class="comment">/* Fetch the parameter for the argument */</span></span><br><span class="line">		rc = kernel_parse_arg(&amp;pargs, section, &amp;param);</span><br><span class="line">		<span class="comment">// 去除参数周围的引号</span></span><br><span class="line">		rc = kernel_value_sanitize(&amp;pargs);</span><br><span class="line">		<span class="comment">// 将参数传给unikraft对应的全局变量</span></span><br><span class="line">		rc = kernel_args_set(&amp;pargs, param);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Replacing the -- with progname */</span></span><br><span class="line">	argv[keindex] = DECONST(<span class="type">char</span> *, progname);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> keindex + <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>kernel_args_set</code>首先会对参数进行相关检查，随后通过委托<code>kernel_arg_set</code>将值分配给用户指定的变量</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// lib/uklibparam/param.c</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">kernel_args_set</span><span class="params">(<span class="keyword">struct</span> param_args *pargs,</span></span><br><span class="line"><span class="params">			   <span class="keyword">struct</span> uk_param *param)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> rc = <span class="number">0</span>;</span><br><span class="line">	<span class="type">int</span> i  = <span class="number">0</span>;</span><br><span class="line">	<span class="type">char</span> *start, *value;</span><br><span class="line">	<span class="type">int</span> sign = (param-&gt;param_type &gt;&gt; PARAM_SIGN_SHIFT) &amp; PARAM_SIGN_MASK;</span><br><span class="line">	<span class="type">int</span> scopy = (param-&gt;param_type &gt;&gt; PARAM_SCOPY_SHIFT) &amp; PARAM_SCOPY_MASK;</span><br><span class="line">	<span class="type">int</span> param_type = (param-&gt;param_type &gt;&gt; PARAM_SIZE_SHIFT)</span><br><span class="line">				&amp; PARAM_SIZE_MASK;</span><br><span class="line">	<span class="keyword">if</span> (scopy == <span class="number">1</span>)</span><br><span class="line">		<span class="comment">/* Reference the pointer instead of copying the value */</span></span><br><span class="line">		*((__uptr *)param-&gt;addr) = (__uptr) pargs-&gt;value;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="keyword">if</span> (param-&gt;param_size &gt; <span class="number">1</span>) &#123;</span><br><span class="line">			<span class="comment">/* Adding support for array */</span></span><br><span class="line">			i = <span class="number">0</span>;</span><br><span class="line">			value = &amp;pargs-&gt;value[i];</span><br><span class="line">			<span class="keyword">while</span> (value &amp;&amp; i &lt; param-&gt;param_size) &#123;</span><br><span class="line">				start = value;</span><br><span class="line">				value = <span class="built_in">strchr</span>(value, ARRAY_SEP);</span><br><span class="line">				<span class="keyword">if</span> (value) &#123;</span><br><span class="line">					*value = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">					<span class="comment">/* Search from the next index */</span></span><br><span class="line">					value++;</span><br><span class="line">				&#125;</span><br><span class="line">				rc = kernel_arg_set((<span class="type">void</span> *)(param-&gt;addr +</span><br><span class="line">						    (i * param_type)),</span><br><span class="line">						    start, param_type, sign);</span><br><span class="line">				<span class="keyword">if</span> (rc &lt; <span class="number">0</span>)</span><br><span class="line">					<span class="keyword">break</span>;</span><br><span class="line">				i++;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; </span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="cmdline参数规则"><a href="#cmdline参数规则" class="headerlink" title="cmdline参数规则"></a>cmdline参数规则</h3><p>linuxu镜像和kvm镜像的cmdline参数传递均需要按照以下规则进行传入，以空格为间隔：<br><code>[库名].[变量名]=value [库名].[变量名]=value --</code></p>
+<ul>
+<li>库名是在Unikraft构建系统中注册的名称，如uknfs。</li>
+<li>变量名是程序中全局或静态变量的名称，如servaddr。</li>
+<li><code>--</code>是分隔符，后面可以跟应用程序的参数</li>
+</ul>
+<h3 id="额外需要的工作"><a href="#额外需要的工作" class="headerlink" title="额外需要的工作"></a>额外需要的工作</h3><p>对以上三种形式的参数传递，变量名都需要在对应的库中进行提前定义声明，随后通过<code>libparam.h</code>的三个接口将变量注册为参数</p>
+<ul>
+<li><code> UK_LIB_PARAM(变量名, 变量类型)</code>：将指定类型的值传递给变量。</li>
+<li><code>UK_LIB_PARAM_STR(变量名)</code>：将值以空结尾的字符串传递给变量。</li>
+<li><code>UK_LIB_PARAM_ARR(变量名, 变量类型)</code>：将指定类型的值以空格分隔转成数组的形式传递给变量。</li>
+</ul>
+<p>如：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> *<span class="type">char</span> servaddr = <span class="string">&quot;&quot;</span>;</span><br><span class="line">UK_LIB_PARAM_STR(servaddr);</span><br></pre></td></tr></table></figure>
+
+<p>为了让库在执行时配置选项，它需要在配置Unikraft构建时选择<code>uklibparam</code>库。<br>同时，哪个库使用<code>uklibaram</code>，还应使用库的<code>Makefile.uk</code>中的<code>addlib_paramprefix</code>向<code>uklibaram</code>库注册该库<br>如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$(eval $(call addlib_paramprefix,libuknfs,nfs))</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/" title="用户与unikraft的参数传递" target="_blank" rel="external">http://example.com/2023/01/25/参数传递/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    
+    <li class="next">
+      <a href="/2023/01/25/OSDI'22%20XRP/" title="OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

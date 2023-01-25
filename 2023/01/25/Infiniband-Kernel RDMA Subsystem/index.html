@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>InfiniBand Kernel RDMA Subsystem | TenonOS-unikraft-learning</title>
+  <meta name="description" content="RDMA内核态Verbs学习 本文参考了知乎博主Savir创建的知乎RDMA专栏。 本文还参考了知乎博主围城的博客内容。 本文阅读的Linux内核版本为6.0.1。内核态API与用户态APIVerbs API是一组用于使用RDMA服务的接口。Verbs API向用户提供了有关RDMA的一切功能，包括注册MR, 创建QP等操作。在Linux中，Verbs API功能由用户态的rdma-core和内核">
+<meta property="og:type" content="article">
+<meta property="og:title" content="InfiniBand Kernel RDMA Subsystem">
+<meta property="og:url" content="http://example.com/2023/01/25/Infiniband-Kernel%20RDMA%20Subsystem/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="RDMA内核态Verbs学习 本文参考了知乎博主Savir创建的知乎RDMA专栏。 本文还参考了知乎博主围城的博客内容。 本文阅读的Linux内核版本为6.0.1。内核态API与用户态APIVerbs API是一组用于使用RDMA服务的接口。Verbs API向用户提供了有关RDMA的一切功能，包括注册MR, 创建QP等操作。在Linux中，Verbs API功能由用户态的rdma-core和内核">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API/Node%E4%B8%8EQPN.png">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API/RDMA%E5%B7%A5%E4%BD%9C%E8%BF%87%E7%A8%8B.png">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API/WR-SGE%E8%AF%B4%E6%98%8E.png">
+<meta property="article:published_time" content="2023-01-25T11:20:55.823Z">
+<meta property="article:modified_time" content="2023-01-25T11:19:09.108Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="RDMA">
+<meta property="article:tag" content="InfiniBand">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API/Node%E4%B8%8EQPN.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2023/01/25/Infiniband-Kernel%20RDMA%20Subsystem/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">10</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/InfiniBand/" rel="tag">InfiniBand</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RDMA/" rel="tag">RDMA</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Unikernel/" rel="tag">Unikernel</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hpc/" rel="tag">hpc</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.43px;">HPC</a> <a href="/tags/InfiniBand/" style="font-size: 13.57px;">InfiniBand</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.86px;">Plat</a> <a href="/tags/RDMA/" style="font-size: 13.57px;">RDMA</a> <a href="/tags/Serverless/" style="font-size: 13.29px;">Serverless</a> <a href="/tags/Unikernel/" style="font-size: 13px;">Unikernel</a> <a href="/tags/hpc/" style="font-size: 13.14px;">hpc</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.71px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.57px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.14px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/01/">一月 2023</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/" class="title">用户与unikraft的参数传递</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.962Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'22%20XRP/" class="title">OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.850Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" class="title">OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.849Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand%E8%B0%83%E7%A0%94/" class="title">InfiniBand调研</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.826Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand-LinuxIB/" class="title">Linux InfiniBand</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.824Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#RDMA%E5%86%85%E6%A0%B8%E6%80%81Verbs%E5%AD%A6%E4%B9%A0"><span class="toc-number">1.</span> <span class="toc-text">RDMA内核态Verbs学习</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E6%A0%B8%E6%80%81API%E4%B8%8E%E7%94%A8%E6%88%B7%E6%80%81API"><span class="toc-number">1.1.</span> <span class="toc-text">内核态API与用户态API</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#RDMA%E5%8F%91%E9%80%81%E5%9F%BA%E6%9C%AC%E8%BF%87%E7%A8%8B"><span class="toc-number">1.2.</span> <span class="toc-text">RDMA发送基本过程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="toc-number">1.2.1.</span> <span class="toc-text">基本概念</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E8%BF%87%E7%A8%8B"><span class="toc-number">1.2.2.</span> <span class="toc-text">基本过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E5%B1%82%E9%9D%A2"><span class="toc-number">1.2.3.</span> <span class="toc-text">代码层面</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#post-send%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.2.3.1.</span> <span class="toc-text">post_send的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%90%91%E4%B8%8B%E6%8E%A2%E7%B4%A2"><span class="toc-number">1.2.3.1.1.</span> <span class="toc-text">向下探索</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%90%91%E4%B8%8A%E6%8E%A2%E7%B4%A2"><span class="toc-number">1.2.3.1.2.</span> <span class="toc-text">向上探索</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#WR%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.2.3.2.</span> <span class="toc-text">WR的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#SGE"><span class="toc-number">1.2.3.2.1.</span> <span class="toc-text">SGE</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#RECV%E8%BF%87%E7%A8%8B%E4%B8%AD%E7%9A%84WR%E8%A1%8C%E4%B8%BA"><span class="toc-number">1.2.3.2.2.</span> <span class="toc-text">RECV过程中的WR行为</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">1.3.</span> <span class="toc-text">总结</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-Infiniband-Kernel RDMA Subsystem" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      InfiniBand Kernel RDMA Subsystem
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2023/01/25/Infiniband-Kernel%20RDMA%20Subsystem/" class="article-date">
+	  <time datetime="2023-01-25T11:20:55.823Z" itemprop="datePublished">2023-01-25</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/InfiniBand/" rel="tag">InfiniBand</a>, <a class="article-tag-link-link" href="/tags/RDMA/" rel="tag">RDMA</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2023/01/25/Infiniband-Kernel%20RDMA%20Subsystem/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="RDMA内核态Verbs学习"><a href="#RDMA内核态Verbs学习" class="headerlink" title="RDMA内核态Verbs学习"></a>RDMA内核态Verbs学习</h1><ul>
+<li>本文参考了知乎博主Savir创建的知乎RDMA专栏。</li>
+<li>本文还参考了知乎博主围城的博客内容。</li>
+<li>本文阅读的Linux内核版本为6.0.1。<h2 id="内核态API与用户态API"><a href="#内核态API与用户态API" class="headerlink" title="内核态API与用户态API"></a>内核态API与用户态API</h2>Verbs API是一组用于使用RDMA服务的接口。Verbs API向用户提供了有关RDMA的一切功能，包括注册MR, 创建QP等操作。<br>在Linux中，Verbs API功能由用户态的rdma-core和内核中的Kernel RDMA Subsystem系统。其中分别以ibv_和ib_作为前缀区分。<br>RDMA希望数据通路上的调用尽可能绕开内核，而控制面上则需要在内核做出一定量的工作，因此就存在部分的内核态API。<h2 id="RDMA发送基本过程"><a href="#RDMA发送基本过程" class="headerlink" title="RDMA发送基本过程"></a>RDMA发送基本过程</h2><h3 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h3></li>
+<li>WQ : Work Queue。WQ是存储工作请求的队列。</li>
+<li>WQE : Work Queue Element。WQE是WQ存放的元素，涉及到具体的意义。WQ是一份“任务书”。任务通常是由软件下达给硬件的。</li>
+<li>QP : Queue Pair。一对WQ，通信过程需要两端，QP是发送队列和接收队列的组合。且在RDMA中，通信的基本单位是QP，对于每个节点来说，每个进程可以使用若干QP。每个节点的QP都有一个唯一的编号，称为QPN。</li>
+<li>CQ ：Complete Queue。完成队列，通常存放一个任务的完成报告。其中元素的名字是CQE，和WQE是一组相反的概念。如果说WQE是软件下达给硬件的，那么CQE则是硬件反馈给软件的。<br><img src="/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API/Node%E4%B8%8EQPN.png" alt="Node与QPN"><h3 id="基本过程"><a href="#基本过程" class="headerlink" title="基本过程"></a>基本过程</h3>基本的工作流程如下图所示。下图说明了可靠服务类型的交互流程，因此第五步是由接收端返回ACK给发送端。<br><img src="/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API/RDMA%E5%B7%A5%E4%BD%9C%E8%BF%87%E7%A8%8B.png" alt="RDMA工作过程"><br>而RQ是一个被动的过程，只有收到Send报文的时候，硬件才会消耗RQ中的WQE。<br>因此在APP眼中，又将引入以下两个概念。</li>
+<li>WC：Work Complete。就是CQE在用户APP中的映射。</li>
+<li>WR：Work Request。就是WQE在用户APP中的映射。<h3 id="代码层面"><a href="#代码层面" class="headerlink" title="代码层面"></a>代码层面</h3><h4 id="post-send的实现"><a href="#post-send的实现" class="headerlink" title="post_send的实现"></a>post_send的实现</h4>先看到内核中的发送函数ib_post_send()，最终也是调用与设备相关的函数post_send。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">ib_post_send</span><span class="params">(<span class="keyword">struct</span> ib_qp *qp,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">                   <span class="type">const</span> <span class="keyword">struct</span> ib_send_wr *send_wr,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">                   <span class="type">const</span> <span class="keyword">struct</span> ib_send_wr **bad_send_wr)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">ib_send_wr</span> *<span class="title">dummy</span>;</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> qp-&gt;device-&gt;ops.post_send(qp, send_wr, bad_send_wr ? : &amp;dummy);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+而ops.post_send是ops结构体中的一个函数指针，ops是ib_device_ops类型的。看结构应该是定义了从设备到具体硬件的过程。通过函数指针的形式，引用到真正的post_send实现之中去。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ib_device_ops</span> &#123;</span></span><br><span class="line">	....</span><br><span class="line">    <span class="type">int</span> (*post_send)(<span class="keyword">struct</span> ib_qp *qp, <span class="type">const</span> <span class="keyword">struct</span> ib_send_wr *send_wr,</span><br><span class="line"></span><br><span class="line">             <span class="type">const</span> <span class="keyword">struct</span> ib_send_wr **bad_send_wr);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> (*post_recv)(<span class="keyword">struct</span> ib_qp *qp, <span class="type">const</span> <span class="keyword">struct</span> ib_recv_wr *recv_wr,</span><br><span class="line"></span><br><span class="line">             <span class="type">const</span> <span class="keyword">struct</span> ib_recv_wr **bad_recv_wr);</span><br><span class="line">   ....</span><br></pre></td></tr></table></figure>
+post_send函数是在指定的QP上进行操作的。而QP又与device绑定，而与设备相关的操作device_ops又与device绑定。<br>那么post_send具体的实现，又是在哪步被挂上的呢？<br>看到Linux内核源码中的drivers/infiniband/hw/mlx5/main.c文件中，存在以下代码。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">ib_device_ops</span> <span class="title">mlx5_ib_dev_ops</span> =</span> &#123;</span><br><span class="line">	...</span><br><span class="line">	.post_recv = mlx5_ib_post_recv_nodrain,</span><br><span class="line"></span><br><span class="line">    .post_send = mlx5_ib_post_send_nodrain,</span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+可以看到在此处绑定了mlx5_ib_dev_ops的具体函数。那么接下去就有两个探索方向，一个是向下到硬件实现去，另外一个则是向上探索mlx5_ib_dev_ops在何处被启用。<h5 id="向下探索"><a href="#向下探索" class="headerlink" title="向下探索"></a>向下探索</h5>继续跳转代码<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">mlx5_ib_post_send_nodrain</span><span class="params">(<span class="keyword">struct</span> ib_qp *ibqp,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">                        <span class="type">const</span> <span class="keyword">struct</span> ib_send_wr *wr,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">                        <span class="type">const</span> <span class="keyword">struct</span> ib_send_wr **bad_wr)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> mlx5_ib_post_send(ibqp, wr, bad_wr, <span class="literal">false</span>);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+进入到mlx5_ib_post_send的具体实现之中，按照章节<em>RDMA发送基本过程</em>中所说，硬件设备会提取RQ中的一个WR(WQE),根据WR的内容处理消息。在这里还没有仔细阅读。<h5 id="向上探索"><a href="#向上探索" class="headerlink" title="向上探索"></a>向上探索</h5>查找mlx5_ib_dev_ops的定义，可以看到在函数mlx5_ib_stage_caps_init中绑定了设备操作与设备。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">mlx5_ib_stage_caps_init</span><span class="params">(<span class="keyword">struct</span> mlx5_ib_dev *dev)</span> &#123;</span><br><span class="line">	<span class="comment">// .... 省略</span></span><br><span class="line">    <span class="keyword">if</span> (MLX5_CAP_DEV_MEM(mdev, memic) ||</span><br><span class="line"></span><br><span class="line">        MLX5_CAP_GEN_64(dev-&gt;mdev, general_obj_types) &amp;</span><br><span class="line"></span><br><span class="line">        MLX5_GENERAL_OBJ_TYPES_CAP_SW_ICM)</span><br><span class="line"></span><br><span class="line">        ib_set_device_ops(&amp;dev-&gt;ib_dev, &amp;mlx5_ib_dev_dm_ops);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    ib_set_device_ops(&amp;dev-&gt;ib_dev, &amp;mlx5_ib_dev_ops);</span><br><span class="line">	<span class="comment">// .... 省略</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+查找mlx5_ib_stage_caps_init在何时被调用。找到mlx5_ib_stage_caps_init在struct mlx5_ib_profile中被定义。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">mlx5_ib_profile</span> <span class="title">pf_profile</span> =</span> &#123;</span><br><span class="line">	<span class="comment">// .... 省略</span></span><br><span class="line">    STAGE_CREATE(MLX5_IB_STAGE_CAPS,</span><br><span class="line"></span><br><span class="line">             mlx5_ib_stage_caps_init,</span><br><span class="line"></span><br><span class="line">             mlx5_ib_stage_caps_cleanup),</span><br><span class="line">	<span class="comment">// .... 省略</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+而pf_profile在mlx5r_probe函数被引用。而该函数形成了mlx5 driver的一部分。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">auxiliary_driver</span> <span class="title">mlx5r_driver</span> =</span> &#123;</span><br><span class="line"></span><br><span class="line">    .name = <span class="string">&quot;rdma&quot;</span>,</span><br><span class="line"></span><br><span class="line">    .probe = mlx5r_probe,</span><br><span class="line"></span><br><span class="line">    .remove = mlx5r_remove,</span><br><span class="line"></span><br><span class="line">    .id_table = mlx5r_id_table,</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+该驱动在mlx5_ib_init函数中被使用。该函数通过module_init被加载。module_init是一个宏，用于在载入内核的模块。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line">module_init(mlx5_ib_init);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">mlx5_ib_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    xlt_emergency_page = (<span class="type">void</span> *)__get_free_page(GFP_KERNEL);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!xlt_emergency_page)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> -ENOMEM;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    mlx5_ib_event_wq = alloc_ordered_workqueue(<span class="string">&quot;mlx5_ib_event_wq&quot;</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!mlx5_ib_event_wq) &#123;</span><br><span class="line"></span><br><span class="line">        free_page((<span class="type">unsigned</span> <span class="type">long</span>)xlt_emergency_page);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> -ENOMEM;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    mlx5_ib_odp_init();</span><br><span class="line"></span><br><span class="line">    ret = mlx5r_rep_init();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (ret)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> rep_err;</span><br><span class="line"></span><br><span class="line">    ret = auxiliary_driver_register(&amp;mlx5r_mp_driver);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (ret)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> mp_err;</span><br><span class="line"></span><br><span class="line">    ret = auxiliary_driver_register(&amp;mlx5r_driver);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (ret)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> drv_err;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">drv_err:</span><br><span class="line"></span><br><span class="line">    auxiliary_driver_unregister(&amp;mlx5r_mp_driver);</span><br><span class="line"></span><br><span class="line">mp_err:</span><br><span class="line"></span><br><span class="line">    mlx5r_rep_cleanup();</span><br><span class="line"></span><br><span class="line">rep_err:</span><br><span class="line"></span><br><span class="line">    destroy_workqueue(mlx5_ib_event_wq);</span><br><span class="line"></span><br><span class="line">    free_page((<span class="type">unsigned</span> <span class="type">long</span>)xlt_emergency_page);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+如果将前文所述内容反过来看，就是一个完整的Linux Kernel绑定Verbs API和具体的驱动的过程。<h4 id="WR的实现"><a href="#WR的实现" class="headerlink" title="WR的实现"></a>WR的实现</h4>而send_wr的定义如下。ib_send_wr在内核Verbs API中是最基本的WR数据结构，随之衍生的WR数据结构还有<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ib_send_wr</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ib_send_wr</span>      *<span class="title">next</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line"></span><br><span class="line">        u64     wr_id;</span><br><span class="line"></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">ib_cqe</span>   *<span class="title">wr_cqe</span>;</span></span><br><span class="line"></span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ib_sge</span>          *<span class="title">sg_list</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>         num_sge;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">enum</span> <span class="title">ib_wr_opcode</span>   <span class="title">opcode</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>         send_flags;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line"></span><br><span class="line">        __be32      imm_data;</span><br><span class="line"></span><br><span class="line">        u32     invalidate_rkey;</span><br><span class="line"></span><br><span class="line">    &#125; ex;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h5 id="SGE"><a href="#SGE" class="headerlink" title="SGE"></a>SGE</h5>可以在ib_send_wr中看到以下的定义。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ib_sge</span>          *<span class="title">sg_list</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>         num_sge;</span><br></pre></td></tr></table></figure>
+sg_list用来存放SGE元素，每一个SG是一个数据段。SG(Scatter/Gather),从名字中可以看出，该数据段的用处就是聚合分散的地址空间。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ib_sge</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    u64 addr;</span><br><span class="line"></span><br><span class="line">    u32 length;</span><br><span class="line"></span><br><span class="line">    u32 lkey;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+字段说明如下所示。</li>
+<li>addr : 数据段所在的虚拟内存的起始地址。</li>
+<li>length : 数据段长度。</li>
+<li>lkey : 数据段对应的lkey。<br><img src="/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API/WR-SGE%E8%AF%B4%E6%98%8E.png" alt="WR-SGE"><h5 id="RECV过程中的WR行为"><a href="#RECV过程中的WR行为" class="headerlink" title="RECV过程中的WR行为"></a>RECV过程中的WR行为</h5>本来是想在post_send中寻找使用SGE聚合消息，然后组装成数据帧的过程。但是没有发现相关内容。<br>但是在post_recv中却发现了相关内容。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">mlx5_ib_post_recv</span><span class="params">(<span class="keyword">struct</span> ib_qp *ibqp, <span class="type">const</span> <span class="keyword">struct</span> ib_recv_wr *wr,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">              <span class="type">const</span> <span class="keyword">struct</span> ib_recv_wr **bad_wr, <span class="type">bool</span> drain)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">// 省略</span></span><br><span class="line">        <span class="keyword">if</span> (qp-&gt;flags_en &amp; MLX5_QP_FLAG_SIGNATURE)</span><br><span class="line"></span><br><span class="line">            scat++;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line">		<span class="comment">// 遍历WR</span></span><br><span class="line">		<span class="comment">// 此处的WR是ib_recv_wr</span></span><br><span class="line">        <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; wr-&gt;num_sge; i++)</span><br><span class="line"></span><br><span class="line">            set_data_ptr_seg(scat + i, wr-&gt;sg_list + i);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 省略</span></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+scat是mlx5_wqe_data_seg类型的消息，根据RDMA接收消息的过程进行合理推测。</li>
+<li>当接收端设备接收到消息后，调用post_recv回调函数。</li>
+<li>此时post_recv回调函数消费一个WR，根据WR中的SGE配置内存区域。聚合成scat。</li>
+<li>根据scat的地址信息对数据进行复制。<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2></li>
+<li>分析了Linux RDMA InfiniBand实现，从上到底层，驱动的初始化过程。</li>
+</ul>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2023/01/25/Infiniband-Kernel%20RDMA%20Subsystem/" title="InfiniBand Kernel RDMA Subsystem" target="_blank" rel="external">http://example.com/2023/01/25/Infiniband-Kernel RDMA Subsystem/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2023/01/25/InfiniBand-LinuxIB/" title="Linux InfiniBand"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2023/01/25/IB%20%E9%A9%B1%E5%8A%A8%E6%BA%90%E7%A0%81/" title="Infiniband 驱动"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

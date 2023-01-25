@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>Infiniband 内核态API | TenonOS-unikraft-learning</title>
+  <meta name="description" content="Linux RDMA 内核态VerbsRDMA Verbs API和Verbs消费者分类RDMA Verbs不是所有用户都可以任意使用的。RDMA Verbs分为两种，第一种是User-level，另外一种是Privileged。即Verbs API分为用户态和内核态两种。用户态的Verbs API在Linux-RDMA-Core这个项目中被实现。而内核态的Verbs API是集中于Linux内核">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Infiniband 内核态API">
+<meta property="og:url" content="http://example.com/2023/01/25/Infiniband-IB%E5%86%85%E6%A0%B8%E6%80%81API2/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Linux RDMA 内核态VerbsRDMA Verbs API和Verbs消费者分类RDMA Verbs不是所有用户都可以任意使用的。RDMA Verbs分为两种，第一种是User-level，另外一种是Privileged。即Verbs API分为用户态和内核态两种。用户态的Verbs API在Linux-RDMA-Core这个项目中被实现。而内核态的Verbs API是集中于Linux内核">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/VerbClass1.png">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/VerbClass2.png">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/VerbClass3.png">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/ABI.png">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/CQP-CMD.png">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/CQP-RESP.png">
+<meta property="article:published_time" content="2023-01-25T11:20:55.820Z">
+<meta property="article:modified_time" content="2023-01-25T11:19:09.107Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="RDMA">
+<meta property="article:tag" content="InfiniBand">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/VerbClass1.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2023/01/25/Infiniband-IB%E5%86%85%E6%A0%B8%E6%80%81API2/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">10</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/InfiniBand/" rel="tag">InfiniBand</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RDMA/" rel="tag">RDMA</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Unikernel/" rel="tag">Unikernel</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hpc/" rel="tag">hpc</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.43px;">HPC</a> <a href="/tags/InfiniBand/" style="font-size: 13.57px;">InfiniBand</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.86px;">Plat</a> <a href="/tags/RDMA/" style="font-size: 13.57px;">RDMA</a> <a href="/tags/Serverless/" style="font-size: 13.29px;">Serverless</a> <a href="/tags/Unikernel/" style="font-size: 13px;">Unikernel</a> <a href="/tags/hpc/" style="font-size: 13.14px;">hpc</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.71px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.57px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.14px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/01/">一月 2023</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/" class="title">用户与unikraft的参数传递</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.962Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'22%20XRP/" class="title">OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.850Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" class="title">OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.849Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand%E8%B0%83%E7%A0%94/" class="title">InfiniBand调研</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.826Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand-LinuxIB/" class="title">Linux InfiniBand</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.824Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Linux-RDMA-%E5%86%85%E6%A0%B8%E6%80%81Verbs"><span class="toc-number">1.</span> <span class="toc-text">Linux RDMA 内核态Verbs</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#RDMA-Verbs-API%E5%92%8CVerbs%E6%B6%88%E8%B4%B9%E8%80%85%E5%88%86%E7%B1%BB"><span class="toc-number">1.1.</span> <span class="toc-text">RDMA Verbs API和Verbs消费者分类</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%86%85%E6%A0%B8%E6%80%81Verbs-API"><span class="toc-number">1.1.1.</span> <span class="toc-text">为什么需要内核态Verbs API</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8D%E9%9C%80%E8%A6%81%E7%BB%8F%E8%BF%87%E5%86%85%E6%A0%B8%E7%9A%84Verbs-API"><span class="toc-number">1.1.2.</span> <span class="toc-text">不需要经过内核的Verbs API</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#ibv-wr-send"><span class="toc-number">1.1.2.1.</span> <span class="toc-text">ibv_wr_send</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#ibv-post-send"><span class="toc-number">1.1.2.2.</span> <span class="toc-text">ibv_post_send</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9C%80%E8%A6%81%E7%BB%8F%E8%BF%87%E5%86%85%E6%A0%B8%E7%9A%84Verbs-API"><span class="toc-number">1.1.3.</span> <span class="toc-text">需要经过内核的Verbs API</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ABI"><span class="toc-number">1.1.4.</span> <span class="toc-text">ABI</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">1.2.</span> <span class="toc-text">总结</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%AC%E5%91%A8%E6%80%BB%E7%BB%93"><span class="toc-number">1.2.1.</span> <span class="toc-text">本周总结</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%AA%E5%AE%9E%E7%8E%B0%E7%9A%84"><span class="toc-number">1.2.2.</span> <span class="toc-text">未实现的</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%AF%E9%80%89%E7%9A%84%E6%B7%B1%E5%85%A5%E7%9A%84%E6%96%B9%E5%90%91"><span class="toc-number">1.2.3.</span> <span class="toc-text">可选的深入的方向</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8B%E5%91%A8%E5%B7%A5%E4%BD%9C"><span class="toc-number">1.2.4.</span> <span class="toc-text">下周工作</span></a></li></ol></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-Infiniband-IB内核态API2" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Infiniband 内核态API
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2023/01/25/Infiniband-IB%E5%86%85%E6%A0%B8%E6%80%81API2/" class="article-date">
+	  <time datetime="2023-01-25T11:20:55.820Z" itemprop="datePublished">2023-01-25</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/InfiniBand/" rel="tag">InfiniBand</a>, <a class="article-tag-link-link" href="/tags/RDMA/" rel="tag">RDMA</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2023/01/25/Infiniband-IB%E5%86%85%E6%A0%B8%E6%80%81API2/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="Linux-RDMA-内核态Verbs"><a href="#Linux-RDMA-内核态Verbs" class="headerlink" title="Linux RDMA 内核态Verbs"></a>Linux RDMA 内核态Verbs</h1><h2 id="RDMA-Verbs-API和Verbs消费者分类"><a href="#RDMA-Verbs-API和Verbs消费者分类" class="headerlink" title="RDMA Verbs API和Verbs消费者分类"></a>RDMA Verbs API和Verbs消费者分类</h2><p>RDMA Verbs不是所有用户都可以任意使用的。RDMA Verbs分为两种，第一种是User-level，另外一种是Privileged。即Verbs API分为用户态和内核态两种。用户态的Verbs API在<a target="_blank" rel="noopener" href="https://github.com/linux-rdma/rdma-core">Linux-RDMA-Core</a>这个项目中被实现。而内核态的Verbs API是集中于Linux内核，形成了Linux Kernel RDMA subsystem。<br>在InfiniBand的规范定义中，将使用Verbs API的用户分为了两类，第一种是特权级消费者，特权级消费者可以使用所有的Verbs。另外一种是用户级消费者，普通用户只允许使用User-level的Verbs API。<br>按照InfiniBand规范中的说明，二者的区别如下所示。</p>
+<ul>
+<li>特权级消费者：需要操作一个特权级别的指令去访问操作系统内部的数据结构，并且实现对Channel接口的控制。</li>
+<li>用户级消费者：必须要通过其他代理的方式去操作操作系统的数据结构，只能使用特定的Verbs API。<br>对于Verbs API的级别，在InfiniBand的规范中也有相应的说明。<br>对于这张表格，第二个标签是实现必要性，如果值为Mandatory，那么就强制要求实现，否则可以选择性实现。<br>第三个标签Consumer Accessibility则是说明了这条Verbs API需要的权限。<br><img src="/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/VerbClass1.png" alt="VerbClass1"><br><img src="/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/VerbClass2.png" alt="VerbClass2"><br><img src="/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/VerbClass3.png" alt="VerbClass3"><br>可以从表中看到，User-Level等级的Verbs API不多，一共就以下几个。<br>用户级别的消费者可以使用的Verbs API为Post Send和Post Recv、对AH的增删查改、绑定Memory Window这几个。</li>
+<li>AH ：Address Handle，用于保存地址信息。以指针或者句柄的形式标记一个远程的地址。<br>我们可以发现，这几个Verbs API的特点都是数据交互相关的，而涉及到对内核数据结构修改，例如QP的增删查改、内存相关的Verbs API，都需要Privileged权限才可以使用。<h3 id="为什么需要内核态Verbs-API"><a href="#为什么需要内核态Verbs-API" class="headerlink" title="为什么需要内核态Verbs API"></a>为什么需要内核态Verbs API</h3>参考了一部分的网上资料，总结起来就一句话。为了实现数据的绕开内核功能，需要控制平面在内核做出相应的调整。<br>控制路径上的调用一般会陷入到内核态，而数据路径上则直接从用户态到硬件。因此Verbs API从功能上来说可以分为数据平面Verbs和控制平面Verbs。总体上，数据平面的Verbs API是所有消费者都可以使用的，而控制平面的Verbs API则只有特权级消费者才能调用。</li>
+<li>控制平面<ul>
+<li>QP的增删查改</li>
+<li>Memory Region的增删查改</li>
+</ul>
+</li>
+<li>数据平面<ul>
+<li>Post Send</li>
+<li>Post Recv</li>
+<li>Poll CQ</li>
+<li>Bind Memory Window<br>这部分推测是出于安全的考虑，例如DMA设备注册内存区域这个操作，就需要陷入到内核，不允许普通用户直接使用相关的API注册。<h3 id="不需要经过内核的Verbs-API"><a href="#不需要经过内核的Verbs-API" class="headerlink" title="不需要经过内核的Verbs API"></a>不需要经过内核的Verbs API</h3>这部分，我们以Post Send为例，从rdma-core的代码不断向下挖掘分析。<br>分析rdma-core/libibverbs/examples/rc_pingpong.c文件。这是一个使用rdma-core提供的用户态API实现rdma通信的案例程序。<br>首先在main函数里，调用了pp_post_send函数，而参数ctx是struct pingpong_context类型的结构体，它的定义如下所示。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">        <span class="keyword">if</span> (pp_post_send(ctx)) &#123;</span><br><span class="line"></span><br><span class="line">            <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;Couldn&#x27;t post send\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
+struct pingpong_context的定义如下所示。它更加仔细的封装了ib在通信时所需要的一些东西。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pingpong_context</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_context</span>  *<span class="title">context</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_comp_channel</span> *<span class="title">channel</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_pd</span>       *<span class="title">pd</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_mr</span>       *<span class="title">mr</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_dm</span>       *<span class="title">dm</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line"></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">ibv_cq</span>       *<span class="title">cq</span>;</span></span><br><span class="line"></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">ibv_cq_ex</span>    *<span class="title">cq_ex</span>;</span></span><br><span class="line"></span><br><span class="line">    &#125; cq_s;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_qp</span>       *<span class="title">qp</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_qp_ex</span>    *<span class="title">qpx</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">char</span>            *buf;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>          size;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>          send_flags;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>          rx_depth;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>          pending;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_port_attr</span>     <span class="title">portinfo</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">uint64_t</span>         completion_timestamp_mask;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+从pp_post_send继续分析。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">pp_post_send</span><span class="params">(<span class="keyword">struct</span> pingpong_context *ctx)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_sge</span> <span class="title">list</span> =</span> &#123;</span><br><span class="line"></span><br><span class="line">        .addr   = use_dm ? <span class="number">0</span> : (<span class="type">uintptr_t</span>) ctx-&gt;buf,</span><br><span class="line"></span><br><span class="line">        .length = ctx-&gt;size,</span><br><span class="line"></span><br><span class="line">        .lkey   = ctx-&gt;mr-&gt;lkey</span><br><span class="line"></span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_send_wr</span> <span class="title">wr</span> =</span> &#123;</span><br><span class="line"></span><br><span class="line">        .wr_id      = PINGPONG_SEND_WRID,</span><br><span class="line"></span><br><span class="line">        .sg_list    = &amp;<span class="built_in">list</span>,</span><br><span class="line"></span><br><span class="line">        .num_sge    = <span class="number">1</span>,</span><br><span class="line"></span><br><span class="line">        .opcode     = IBV_WR_SEND,</span><br><span class="line"></span><br><span class="line">        .send_flags = ctx-&gt;send_flags,</span><br><span class="line"></span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_send_wr</span> *<span class="title">bad_wr</span>;</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (use_new_send) &#123;</span><br><span class="line"></span><br><span class="line">        ibv_wr_start(ctx-&gt;qpx);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        ctx-&gt;qpx-&gt;wr_id = PINGPONG_SEND_WRID;</span><br><span class="line"></span><br><span class="line">        ctx-&gt;qpx-&gt;wr_flags = ctx-&gt;send_flags;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        ibv_wr_send(ctx-&gt;qpx);</span><br><span class="line"></span><br><span class="line">        ibv_wr_set_sge(ctx-&gt;qpx, <span class="built_in">list</span>.lkey, <span class="built_in">list</span>.addr, <span class="built_in">list</span>.length);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> ibv_wr_complete(ctx-&gt;qpx);</span><br><span class="line"></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> ibv_post_send(ctx-&gt;qp, &amp;wr, &amp;bad_wr);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+在这个位置出现了分支结构，其中涉及到两个send函数，一个是ibv_wr_send,另外一个是ibv_post_send。<br>区别该分支的变量为use_new_send，可以从变量名推断，这是用于判断是否是第一次发送数据。<h4 id="ibv-wr-send"><a href="#ibv-wr-send" class="headerlink" title="ibv_wr_send"></a>ibv_wr_send</h4>调用该函数的情况为use_new_send == 1的情况，根据变量的真实含义推断，该情况应为第一次发送数据的情况。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">ibv_wr_send</span><span class="params">(<span class="keyword">struct</span> ibv_qp_ex *qp)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    qp-&gt;wr_send(qp);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+而这里调用了qp结构体的wr_send函数。找到wr_send函数继续向下分析。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">wr_send</span><span class="params">(<span class="keyword">struct</span> ibv_qp_ex *ibqp)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rxe_qp</span> *<span class="title">qp</span> =</span> container_of(ibqp, <span class="keyword">struct</span> rxe_qp, vqp.qp_ex);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rxe_send_wqe</span> *<span class="title">wqe</span> =</span> addr_from_index(qp-&gt;sq.<span class="built_in">queue</span>, qp-&gt;cur_index);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (check_qp_queue_full(qp))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(wqe, <span class="number">0</span>, <span class="keyword">sizeof</span>(*wqe));</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    wqe-&gt;wr.wr_id = qp-&gt;vqp.qp_ex.wr_id;</span><br><span class="line"></span><br><span class="line">    wqe-&gt;wr.opcode = IBV_WR_SEND;</span><br><span class="line"></span><br><span class="line">    wqe-&gt;wr.send_flags = qp-&gt;vqp.qp_ex.wr_flags;</span><br><span class="line"></span><br><span class="line">    wqe-&gt;ssn = qp-&gt;ssn++;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    advance_qp_cur_index(qp);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+那么到这里，就无法继续深入了。可以看到，代码声明了一个wqe，而wqe是作为wq的一个元素。那么接下去，就应该是硬件负责的部分了。<br>并且在rdma-core/providers目录下，出现了mlx5的内容。可以推测，该目录是负责与硬件驱动相关的部分。<br>翻阅rdma-core/providers/mlx5/qp.c文件，出现了下列相关的代码。我认为也许是与发送wqe相关的操作。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">mlx5_post_send</span><span class="params">(<span class="keyword">struct</span> ibv_qp *ibqp, <span class="keyword">struct</span> ibv_send_wr *wr,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">           <span class="keyword">struct</span> ibv_send_wr **bad_wr)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> MW_DEBUG</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (wr-&gt;opcode == IBV_WR_BIND_MW) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (wr-&gt;bind_mw.mw-&gt;type == IBV_MW_TYPE_1)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> EINVAL;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!wr-&gt;bind_mw.bind_info.mr ||</span><br><span class="line"></span><br><span class="line">            !wr-&gt;bind_mw.bind_info.addr ||</span><br><span class="line"></span><br><span class="line">            !wr-&gt;bind_mw.bind_info.length)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> EINVAL;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (wr-&gt;bind_mw.bind_info.mr-&gt;pd != wr-&gt;bind_mw.mw-&gt;pd)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> EINVAL;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> _mlx5_post_send(ibqp, wr, bad_wr);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+这就是说，在rdma-core这个用户态的RMDA Verbs API项目中，也存在与硬件驱动的部分。<br>这部分可以说明，在用户态下调用post_send函数，可以直接与相关的硬件进行交互。<h4 id="ibv-post-send"><a href="#ibv-post-send" class="headerlink" title="ibv_post_send"></a>ibv_post_send</h4>而另外一条路，ibv_post_send函数则与内核态下的内容高度相似，通过调用设备绑定的post_send函数实现该功能。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">ibv_post_send</span><span class="params">(<span class="keyword">struct</span> ibv_qp *qp, <span class="keyword">struct</span> ibv_send_wr *wr,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">                <span class="keyword">struct</span> ibv_send_wr **bad_wr)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> qp-&gt;context-&gt;ops.post_send(qp, wr, bad_wr);</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ibv_context_ops</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> (*_compat_query_device)(<span class="keyword">struct</span> ibv_context *context,</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">struct</span> ibv_device_attr *device_attr);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> (*_compat_query_port)(<span class="keyword">struct</span> ibv_context *context,</span><br><span class="line"></span><br><span class="line">                  <span class="type">uint8_t</span> port_num,</span><br><span class="line"></span><br><span class="line">                  <span class="keyword">struct</span> _compat_ibv_port_attr *port_attr);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_alloc_pd)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_dealloc_pd)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_reg_mr)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_rereg_mr)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_dereg_mr)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_mw</span> *     (*<span class="title">alloc_mw</span>)(<span class="keyword">struct</span> <span class="title">ibv_pd</span> *<span class="title">pd</span>, <span class="title">enum</span> <span class="title">ibv_mw_type</span> <span class="title">type</span>);</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>         (*bind_mw)(<span class="keyword">struct</span> ibv_qp *qp, <span class="keyword">struct</span> ibv_mw *mw,</span><br><span class="line"></span><br><span class="line">                       <span class="keyword">struct</span> ibv_mw_bind *mw_bind);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>         (*dealloc_mw)(<span class="keyword">struct</span> ibv_mw *mw);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_create_cq)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>         (*poll_cq)(<span class="keyword">struct</span> ibv_cq *cq, <span class="type">int</span> num_entries, <span class="keyword">struct</span> ibv_wc *wc);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>         (*req_notify_cq)(<span class="keyword">struct</span> ibv_cq *cq, <span class="type">int</span> solicited_only);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_cq_event)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_resize_cq)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_destroy_cq)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_create_srq)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_modify_srq)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_query_srq)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_destroy_srq)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>         (*post_srq_recv)(<span class="keyword">struct</span> ibv_srq *srq,</span><br><span class="line"></span><br><span class="line">                         <span class="keyword">struct</span> ibv_recv_wr *recv_wr,</span><br><span class="line"></span><br><span class="line">                         <span class="keyword">struct</span> ibv_recv_wr **bad_recv_wr);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_create_qp)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_query_qp)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_modify_qp)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_destroy_qp)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>         (*post_send)(<span class="keyword">struct</span> ibv_qp *qp, <span class="keyword">struct</span> ibv_send_wr *wr,</span><br><span class="line"></span><br><span class="line">                         <span class="keyword">struct</span> ibv_send_wr **bad_wr);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>         (*post_recv)(<span class="keyword">struct</span> ibv_qp *qp, <span class="keyword">struct</span> ibv_recv_wr *wr,</span><br><span class="line"></span><br><span class="line">                         <span class="keyword">struct</span> ibv_recv_wr **bad_wr);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_create_ah)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_destroy_ah)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_attach_mcast)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_detach_mcast)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *(*_compat_async_event)(<span class="type">void</span>);</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+软硬件交汇处，并不是本周的探索重点。但是相信继续往下探索，会出现ibv_context_ops结构体与mlx5设备驱动绑定的地方。<br>以上两条路径，均未发现有以ib_开头的函数，即没有出现调用内核态Verbs API的地方。因此，可以认为，post_send函数是没有经过内核态的。<br>这里一路看下来，发现post_send完直接到硬件去了，根本没发现数据包封装的细节，这里推测数据包这部分可能是在网卡上完成的。<h3 id="需要经过内核的Verbs-API"><a href="#需要经过内核的Verbs-API" class="headerlink" title="需要经过内核的Verbs API"></a>需要经过内核的Verbs API</h3>该章节，以ibv_reg_mr为例，从ibv_reg_mr的定义开始。这里其实非常复杂，参考了一部分网上的资料。<br>如果直接参考ibv_reg_mr宏的入口，是找不到相关的调用路径的。最终我查阅了资料，发现ibv_cmd_reg_mr函数才是真正进入到内核态的入口。<br>但是目前还不了解ibv_cmd_reg_mr与ibv_reg_mr之间的关系。<br>ibv_cmd_reg_mr的定义如下。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">ibv_cmd_reg_mr</span><span class="params">(<span class="keyword">struct</span> ibv_pd *pd, <span class="type">void</span> *addr, <span class="type">size_t</span> length,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">           <span class="type">uint64_t</span> hca_va, <span class="type">int</span> access,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">           <span class="keyword">struct</span> verbs_mr *vmr, <span class="keyword">struct</span> ibv_reg_mr *cmd,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">           <span class="type">size_t</span> cmd_size,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">           <span class="keyword">struct</span> ib_uverbs_reg_mr_resp *resp, <span class="type">size_t</span> resp_size)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    cmd-&gt;start    = (<span class="type">uintptr_t</span>) addr;</span><br><span class="line"></span><br><span class="line">    cmd-&gt;length       = length;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* On demand access and entire address space means implicit.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * In that case set the value in the command to what kernel expects.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (access &amp; IBV_ACCESS_ON_DEMAND) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (length == SIZE_MAX &amp;&amp; addr) &#123;</span><br><span class="line"></span><br><span class="line">            errno = EINVAL;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> EINVAL;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (length == SIZE_MAX)</span><br><span class="line"></span><br><span class="line">            cmd-&gt;length = UINT64_MAX;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    cmd-&gt;hca_va       = hca_va;</span><br><span class="line"></span><br><span class="line">    cmd-&gt;pd_handle    = pd-&gt;handle;</span><br><span class="line"></span><br><span class="line">    cmd-&gt;access_flags = access;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    ret = execute_cmd_write(pd-&gt;context, IB_USER_VERBS_CMD_REG_MR, cmd,</span><br><span class="line"></span><br><span class="line">                cmd_size, resp, resp_size);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (ret)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    vmr-&gt;ibv_mr.handle  = resp-&gt;mr_handle;</span><br><span class="line"></span><br><span class="line">    vmr-&gt;ibv_mr.lkey    = resp-&gt;lkey;</span><br><span class="line"></span><br><span class="line">    vmr-&gt;ibv_mr.rkey    = resp-&gt;rkey;</span><br><span class="line"></span><br><span class="line">    vmr-&gt;ibv_mr.context = pd-&gt;context;</span><br><span class="line"></span><br><span class="line">    vmr-&gt;mr_type        = IBV_MR_TYPE_MR;</span><br><span class="line"></span><br><span class="line">    vmr-&gt;access = access;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+这里通过write命令写一条命令到操作系统内核。命令的类型就是IB_USER_VERBS_CMD_REG_MR。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">    ret = execute_cmd_write(pd-&gt;context, IB_USER_VERBS_CMD_REG_MR, cmd,</span><br><span class="line"></span><br><span class="line">                cmd_size, resp, resp_size);</span><br></pre></td></tr></table></figure>
+然后我们查看Linux内核中的InfiniBand的相关代码。<br>可以在drivers/infiniband/core/uverbs_cmd.c这个目录下找到相关的代码。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">        DECLARE_UVERBS_WRITE(</span><br><span class="line"></span><br><span class="line">            IB_USER_VERBS_CMD_REG_MR,</span><br><span class="line"></span><br><span class="line">            ib_uverbs_reg_mr,</span><br><span class="line"></span><br><span class="line">            UAPI_DEF_WRITE_UDATA_IO(<span class="keyword">struct</span> ib_uverbs_reg_mr,</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">struct</span> ib_uverbs_reg_mr_resp),</span><br><span class="line"></span><br><span class="line">            UAPI_DEF_METHOD_NEEDS_FN(reg_user_mr)),</span><br></pre></td></tr></table></figure>
+这里可以找到一个叫做ib_uverbs_reg_mr的函数。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">ib_uverbs_rereg_mr</span><span class="params">(<span class="keyword">struct</span> uverbs_attr_bundle *attrs)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// 省略前文</span></span><br><span class="line">	<span class="comment">// 注册过程</span></span><br><span class="line">    new_mr = ib_dev-&gt;ops.rereg_user_mr(mr, cmd.flags, cmd.start, cmd.length,</span><br><span class="line"></span><br><span class="line">                       cmd.hca_va, cmd.access_flags, new_pd,</span><br><span class="line"></span><br><span class="line">                       &amp;attrs-&gt;driver_udata);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (IS_ERR(new_mr)) &#123;</span><br><span class="line"></span><br><span class="line">        ret = PTR_ERR(new_mr);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> put_new_uobj;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (new_mr) &#123;</span><br><span class="line"></span><br><span class="line">        new_mr-&gt;device = new_pd-&gt;device;</span><br><span class="line"></span><br><span class="line">        new_mr-&gt;pd = new_pd;</span><br><span class="line"></span><br><span class="line">        new_mr-&gt;type = IB_MR_TYPE_USER;</span><br><span class="line"></span><br><span class="line">        new_mr-&gt;uobject = uobj;</span><br><span class="line"></span><br><span class="line">        <span class="type">atomic_inc</span>(&amp;new_pd-&gt;usecnt);</span><br><span class="line"></span><br><span class="line">        new_uobj-&gt;object = new_mr;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        rdma_restrack_new(&amp;new_mr-&gt;res, RDMA_RESTRACK_MR);</span><br><span class="line"></span><br><span class="line">        rdma_restrack_set_name(&amp;new_mr-&gt;res, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">        rdma_restrack_add(&amp;new_mr-&gt;res);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">         * The new uobj for the new HW object is put into the same spot</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">         * in the IDR and the old uobj &amp; HW object is deleted.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line"></span><br><span class="line">        rdma_assign_uobject(uobj, new_uobj, attrs);</span><br><span class="line"></span><br><span class="line">        rdma_alloc_commit_uobject(new_uobj, attrs);</span><br><span class="line"></span><br><span class="line">        uobj_put_destroy(uobj);</span><br><span class="line"></span><br><span class="line">        new_uobj = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">        uobj = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">        mr = new_mr;</span><br><span class="line"></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (cmd.flags &amp; IB_MR_REREG_PD) &#123;</span><br><span class="line"></span><br><span class="line">            <span class="type">atomic_dec</span>(&amp;orig_pd-&gt;usecnt);</span><br><span class="line"></span><br><span class="line">            mr-&gt;pd = new_pd;</span><br><span class="line"></span><br><span class="line">            <span class="type">atomic_inc</span>(&amp;new_pd-&gt;usecnt);</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (cmd.flags &amp; IB_MR_REREG_TRANS)</span><br><span class="line"></span><br><span class="line">            mr-&gt;iova = cmd.hca_va;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(&amp;resp, <span class="number">0</span>, <span class="keyword">sizeof</span>(resp));</span><br><span class="line"></span><br><span class="line">    resp.lkey      = mr-&gt;lkey;</span><br><span class="line"></span><br><span class="line">    resp.rkey      = mr-&gt;rkey;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    ret = uverbs_response(attrs, &amp;resp, <span class="keyword">sizeof</span>(resp));</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">put_new_uobj:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (new_uobj)</span><br><span class="line"></span><br><span class="line">        uobj_alloc_abort(new_uobj, attrs);</span><br><span class="line"></span><br><span class="line">put_uobj_pd:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (cmd.flags &amp; IB_MR_REREG_PD)</span><br><span class="line"></span><br><span class="line">        uobj_put_obj_read(new_pd);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">put_uobjs:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (uobj)</span><br><span class="line"></span><br><span class="line">        uobj_put_write(uobj);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+到这里，就可以看到从用户态到内核态的全貌。而用户态和内核态的交互是通过一个叫做ABI的东西实现的。<h3 id="ABI"><a href="#ABI" class="headerlink" title="ABI"></a>ABI</h3>这部分参考了<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/346708569">RDMA之用户态和内核态的交互</a>的相关内容。<br>ABI就是应用程序二进制接口（Application Binary Interface，ABI）。<br>ABI定义了运行时的程序之间交流的格式，比如参数以什么形式传递（分别写到指定的寄存器/使用栈）、以什么格式传递以及返回值放到哪里等等。<br>uverbs API规定了用户态和内核态之间的命令消息cmd的格式和返回消息resp的格式。<br>RDMA软件栈通过设计uverbs ABI接口来<strong>保证不同版本的用户态和内核态之间的兼容性，即某个版本的用户态库，可以直接运行在各种版本的内核上</strong>。<br><img src="/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/ABI.png" alt="ABI"><br>拿Create QP这个函数距离。IB规范上这样定义用户态传入内核态的cmd格式。<br><img src="/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/CQP-CMD.png" alt="CQP-CMD"><br>resp的定义如下。<br><img src="/images/Images-Infiniband-%E5%86%85%E6%A0%B8%E6%80%81API2/CQP-RESP.png" alt="CQP-RESP"><br>在rdma-core/libibverbs/kern-abi.h文件中有如下定义。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">DECLARE_CMD(IB_USER_VERBS_CMD_ALLOC_MW, ibv_alloc_mw, ib_uverbs_alloc_mw);</span><br><span class="line"></span><br><span class="line">DECLARE_CMD(IB_USER_VERBS_CMD_ALLOC_PD, ibv_alloc_pd, ib_uverbs_alloc_pd);</span><br><span class="line"></span><br><span class="line">DECLARE_CMDX(IB_USER_VERBS_CMD_ATTACH_MCAST, ibv_attach_mcast, ib_uverbs_attach_mcast, empty);</span><br><span class="line"></span><br><span class="line">DECLARE_CMDX(IB_USER_VERBS_CMD_CLOSE_XRCD, ibv_close_xrcd, ib_uverbs_close_xrcd, empty);</span><br><span class="line"></span><br><span class="line">DECLARE_CMD(IB_USER_VERBS_CMD_CREATE_AH, ibv_create_ah, ib_uverbs_create_ah);</span><br><span class="line"></span><br><span class="line">DECLARE_CMD(IB_USER_VERBS_CMD_CREATE_COMP_CHANNEL, ibv_create_comp_channel, ib_uverbs_create_comp_channel);</span><br><span class="line"></span><br><span class="line">DECLARE_CMD(IB_USER_VERBS_CMD_CREATE_CQ, ibv_create_cq, ib_uverbs_create_cq);</span><br><span class="line"></span><br><span class="line">DECLARE_CMD(IB_USER_VERBS_CMD_CREATE_QP, ibv_create_qp, ib_uverbs_create_qp);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 省略。。。</span></span><br></pre></td></tr></table></figure>
+看这部分代码，可以看到规定了内核态API和用户态API的映射。例如下列代码。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DECLARE_CMD(IB_USER_VERBS_CMD_ALLOC_MW, ibv_alloc_mw, ib_uverbs_alloc_mw);</span><br></pre></td></tr></table></figure>
+IB_USER_VERBS_CMD_ALLOC_MW是cmd的类型，ibv_开头的函数是用户态的API，而ib_开头的函数是内核态的API。<br>那么可以推测，在该头文件中出现定义的函数，只要调用，那么就需要陷入到内核态里去。<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><h3 id="本周总结"><a href="#本周总结" class="headerlink" title="本周总结"></a>本周总结</h3></li>
+</ul>
+</li>
+<li>对用户态和内核态的Verbs API做了一定的了解。</li>
+<li>了解了用户态API与内核态API交互的大体框架。<h3 id="未实现的"><a href="#未实现的" class="headerlink" title="未实现的"></a>未实现的</h3></li>
+<li>了解IB网络数据包封装的细节。<h3 id="可选的深入的方向"><a href="#可选的深入的方向" class="headerlink" title="可选的深入的方向"></a>可选的深入的方向</h3></li>
+<li>RDMA通信细节</li>
+<li>了解RDMA Verbs ABI的内容</li>
+<li>了解RDMA与IB网卡交互的内容<h3 id="下周工作"><a href="#下周工作" class="headerlink" title="下周工作"></a>下周工作</h3>按照张老师意见，IB数据包应该是在驱动里面完成封装的，可以具体看看驱动的代码。</li>
+</ul>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2023/01/25/Infiniband-IB%E5%86%85%E6%A0%B8%E6%80%81API2/" title="Infiniband 内核态API" target="_blank" rel="external">http://example.com/2023/01/25/Infiniband-IB内核态API2/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2023/01/25/IB%20%E9%A9%B1%E5%8A%A8%E6%BA%90%E7%A0%81/" title="Infiniband 驱动"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2023/01/25/ASPLOS22_FlexOS/" title="ASPLOS&#39;22 FlexOS Towards Flexible OS Isolocation"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

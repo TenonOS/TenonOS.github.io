@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>Infiniband 驱动 | TenonOS-unikraft-learning</title>
+  <meta name="description" content="IB 驱动源码Doorbell机制首先需要了解一个完整的发送过程，才能确定门铃机制在那个过程中起作用。下图是一张简略的IB发送数据流程。在图中可以看到，门铃主要是起到通知硬件的作用。类似于DMA过程中告诉CPU，数据已经存取完毕的过程。post_send函数主要完成了下列操作。  从QP Buffer获取下一个WQE的内存地址。 解析WR的内容，填入到WQE中。 填写完毕，敲响Doorbell，d">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Infiniband 驱动">
+<meta property="og:url" content="http://example.com/2023/01/25/IB%20%E9%A9%B1%E5%8A%A8%E6%BA%90%E7%A0%81/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="IB 驱动源码Doorbell机制首先需要了解一个完整的发送过程，才能确定门铃机制在那个过程中起作用。下图是一张简略的IB发送数据流程。在图中可以看到，门铃主要是起到通知硬件的作用。类似于DMA过程中告诉CPU，数据已经存取完毕的过程。post_send函数主要完成了下列操作。  从QP Buffer获取下一个WQE的内存地址。 解析WR的内容，填入到WQE中。 填写完毕，敲响Doorbell，d">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-IB%E9%A9%B1%E5%8A%A8/IB%E6%95%B0%E6%8D%AE%E6%B5%81.png">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-IB%E9%A9%B1%E5%8A%A8/IOVA.png">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-IB%E9%A9%B1%E5%8A%A8/MTT.png">
+<meta property="article:published_time" content="2023-01-25T11:20:55.820Z">
+<meta property="article:modified_time" content="2023-01-25T11:19:09.106Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="RDMA">
+<meta property="article:tag" content="InfiniBand">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/Images-Infiniband-IB%E9%A9%B1%E5%8A%A8/IB%E6%95%B0%E6%8D%AE%E6%B5%81.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2023/01/25/IB%20%E9%A9%B1%E5%8A%A8%E6%BA%90%E7%A0%81/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">10</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/InfiniBand/" rel="tag">InfiniBand</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RDMA/" rel="tag">RDMA</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Unikernel/" rel="tag">Unikernel</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hpc/" rel="tag">hpc</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.43px;">HPC</a> <a href="/tags/InfiniBand/" style="font-size: 13.57px;">InfiniBand</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.86px;">Plat</a> <a href="/tags/RDMA/" style="font-size: 13.57px;">RDMA</a> <a href="/tags/Serverless/" style="font-size: 13.29px;">Serverless</a> <a href="/tags/Unikernel/" style="font-size: 13px;">Unikernel</a> <a href="/tags/hpc/" style="font-size: 13.14px;">hpc</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.71px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.57px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.14px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/01/">一月 2023</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/" class="title">用户与unikraft的参数传递</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.962Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'22%20XRP/" class="title">OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.850Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" class="title">OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.849Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand%E8%B0%83%E7%A0%94/" class="title">InfiniBand调研</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.826Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand-LinuxIB/" class="title">Linux InfiniBand</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.824Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#IB-%E9%A9%B1%E5%8A%A8%E6%BA%90%E7%A0%81"><span class="toc-number">1.</span> <span class="toc-text">IB 驱动源码</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Doorbell%E6%9C%BA%E5%88%B6"><span class="toc-number">1.1.</span> <span class="toc-text">Doorbell机制</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8B%E5%8F%91WR"><span class="toc-number">1.1.1.</span> <span class="toc-text">下发WR</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#DoorBell"><span class="toc-number">1.1.2.</span> <span class="toc-text">DoorBell</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ib%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="toc-number">1.2.</span> <span class="toc-text">ib中的内存管理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#MR"><span class="toc-number">1.2.1.</span> <span class="toc-text">MR</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#VA-gt-PA"><span class="toc-number">1.2.1.1.</span> <span class="toc-text">VA-&gt;PA</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%BF%9D%E6%B3%95%E7%9A%84VA"><span class="toc-number">1.2.1.2.</span> <span class="toc-text">违法的VA</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%98%B2%E6%AD%A2%E6%8D%A2%E9%A1%B5"><span class="toc-number">1.2.1.3.</span> <span class="toc-text">防止换页</span></a></li></ol></li></ol></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-IB 驱动源码" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Infiniband 驱动
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2023/01/25/IB%20%E9%A9%B1%E5%8A%A8%E6%BA%90%E7%A0%81/" class="article-date">
+	  <time datetime="2023-01-25T11:20:55.820Z" itemprop="datePublished">2023-01-25</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/InfiniBand/" rel="tag">InfiniBand</a>, <a class="article-tag-link-link" href="/tags/RDMA/" rel="tag">RDMA</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2023/01/25/IB%20%E9%A9%B1%E5%8A%A8%E6%BA%90%E7%A0%81/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="IB-驱动源码"><a href="#IB-驱动源码" class="headerlink" title="IB 驱动源码"></a>IB 驱动源码</h1><h2 id="Doorbell机制"><a href="#Doorbell机制" class="headerlink" title="Doorbell机制"></a>Doorbell机制</h2><p>首先需要了解一个完整的发送过程，才能确定门铃机制在那个过程中起作用。<br>下图是一张简略的IB发送数据流程。<br><img src="/images/Images-Infiniband-IB%E9%A9%B1%E5%8A%A8/IB%E6%95%B0%E6%8D%AE%E6%B5%81.png" alt="IB数据流"><br>在图中可以看到，门铃主要是起到通知硬件的作用。类似于DMA过程中告诉CPU，数据已经存取完毕的过程。<br>post_send函数主要完成了下列操作。</p>
+<ul>
+<li>从QP Buffer获取下一个WQE的内存地址。</li>
+<li>解析WR的内容，填入到WQE中。</li>
+<li>填写完毕，敲响Doorbell，doorbell是一个地址。</li>
+<li>硬件从QP中取出WQE，解析WQE。</li>
+<li>硬件取出数据，组包，发送数据。<br>查阅资料发现，doorbell地址是在ibv_open_device函数中映射过来的。<h3 id="下发WR"><a href="#下发WR" class="headerlink" title="下发WR"></a>下发WR</h3>主要是关注post_send函数将WR放哪去了。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 内核</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">mlx5_ib_post_send</span><span class="params">(<span class="keyword">struct</span> ib_qp *ibqp, <span class="type">const</span> <span class="keyword">struct</span> ib_send_wr *wr,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">              <span class="type">const</span> <span class="keyword">struct</span> ib_send_wr **bad_wr, <span class="type">bool</span> drain)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 用户</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">ibv_post_send</span><span class="params">(<span class="keyword">struct</span> ibv_qp *qp, <span class="keyword">struct</span> ibv_send_wr *wr,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">                <span class="keyword">struct</span> ibv_send_wr **bad_wr)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> qp-&gt;context-&gt;ops.post_send(qp, wr, bad_wr);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+可以看到用户态下是直接调用qp的post_send操作，在这里我推测实际与驱动绑定还是在内核态下完成的。所以我们只用看内核态下的post_send函数，流程应该是一样的。<br>mlx5_ib_post_send的代码很长，其中发现了一个叫做mlx5r_finish_wqe的调用，这段应该是完成了对wqe的封装，准备塞入到QP中。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 取下一个WQE的内存地址</span></span><br><span class="line">err = begin_wqe(qp, &amp;seg, &amp;ctrl, wr, &amp;idx, &amp;size, &amp;cur_edge,</span><br><span class="line"></span><br><span class="line">                nreq);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">mlx5r_finish_wqe(qp, ctrl, seg, size, cur_edge, idx, wr-&gt;wr_id,</span><br><span class="line"></span><br><span class="line">                 nreq, fence, mlx5_ib_opcode[wr-&gt;opcode]);</span><br><span class="line">         </span><br></pre></td></tr></table></figure>
+进入到mlx5r_finish_wqe函数中。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">mlx5r_finish_wqe</span><span class="params">(<span class="keyword">struct</span> mlx5_ib_qp *qp, <span class="keyword">struct</span> mlx5_wqe_ctrl_seg *ctrl,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">              <span class="type">void</span> *seg, u8 size, <span class="type">void</span> *cur_edge, <span class="type">unsigned</span> <span class="type">int</span> idx,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">              u64 wr_id, <span class="type">int</span> nreq, u8 fence, u32 mlx5_opcode)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    u8 opmod = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    ctrl-&gt;opmod_idx_opcode = cpu_to_be32(((u32)(qp-&gt;sq.cur_post) &lt;&lt; <span class="number">8</span>) |</span><br><span class="line"></span><br><span class="line">                         mlx5_opcode | ((u32)opmod &lt;&lt; <span class="number">24</span>));</span><br><span class="line"></span><br><span class="line">    ctrl-&gt;qpn_ds = cpu_to_be32(size | (qp-&gt;trans_qp.base.mqp.qpn &lt;&lt; <span class="number">8</span>));</span><br><span class="line"></span><br><span class="line">    ctrl-&gt;fm_ce_se |= fence;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (unlikely(qp-&gt;flags_en &amp; MLX5_QP_FLAG_SIGNATURE))</span><br><span class="line"></span><br><span class="line">        ctrl-&gt;signature = wq_sig(ctrl);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    qp-&gt;sq.wrid[idx] = wr_id;</span><br><span class="line"></span><br><span class="line">    qp-&gt;sq.w_list[idx].opcode = mlx5_opcode;</span><br><span class="line"></span><br><span class="line">    qp-&gt;sq.wqe_head[idx] = qp-&gt;sq.head + nreq;</span><br><span class="line"></span><br><span class="line">    qp-&gt;sq.cur_post += DIV_ROUND_UP(size * <span class="number">16</span>, MLX5_SEND_WQE_BB);</span><br><span class="line"></span><br><span class="line">    qp-&gt;sq.w_list[idx].next = qp-&gt;sq.cur_post;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* We save the edge which was possibly updated during the WQE</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * construction, into SQ&#x27;s cache.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    seg = PTR_ALIGN(seg, MLX5_SEND_WQE_BB);</span><br><span class="line"></span><br><span class="line">    qp-&gt;sq.cur_edge = (unlikely(seg == cur_edge)) ?</span><br><span class="line"></span><br><span class="line">              get_sq_edge(&amp;qp-&gt;sq, qp-&gt;sq.cur_post &amp;</span><br><span class="line"></span><br><span class="line">                      (qp-&gt;sq.wqe_cnt - <span class="number">1</span>)) :</span><br><span class="line"></span><br><span class="line">              cur_edge;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="DoorBell"><a href="#DoorBell" class="headerlink" title="DoorBell"></a>DoorBell</h3>Hardware doorbell本身是设备的一个MMIO寄存器，一旦写这个地址硬件就能感知。<br>既然在post_send函数中，将WR对应的WQE塞入到了指定的QP中。那么可以去QP中看看DoorBell是如何起作用的。<br>但是这部分的代码实在过于复杂，并没有发现确定的敲响门铃的地方，只发现了相关的蛛丝马迹。<br>在drivers/InfiniBand/hw/mlx5/doorbell.c文件中只有以下两个函数出现。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">mlx5_ib_db_map_user</span><span class="params">(<span class="keyword">struct</span> mlx5_ib_ucontext *context, <span class="type">unsigned</span> <span class="type">long</span> virt,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">            <span class="keyword">struct</span> mlx5_db *db)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">mlx5_ib_db_unmap_user</span><span class="params">(<span class="keyword">struct</span> mlx5_ib_ucontext *context, <span class="keyword">struct</span> mlx5_db *db)</span>;</span><br></pre></td></tr></table></figure>
+这是两个功能相反的函数，我们只需要看mlx5_ib_db_map_user做什么就行。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">mlx5_ib_db_map_user</span><span class="params">(<span class="keyword">struct</span> mlx5_ib_ucontext *context, <span class="type">unsigned</span> <span class="type">long</span> virt,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">            <span class="keyword">struct</span> mlx5_db *db)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mlx5_ib_user_db_page</span> *<span class="title">page</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> err = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    mutex_lock(&amp;context-&gt;db_page_mutex);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    list_for_each_entry(page, &amp;context-&gt;db_page_list, <span class="built_in">list</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> ((current-&gt;mm == page-&gt;mm) &amp;&amp;</span><br><span class="line"></span><br><span class="line">            (page-&gt;user_virt == (virt &amp; PAGE_MASK)))</span><br><span class="line"></span><br><span class="line">            <span class="keyword">goto</span> found;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    page = kmalloc(<span class="keyword">sizeof</span>(*page), GFP_KERNEL);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!page) &#123;</span><br><span class="line"></span><br><span class="line">        err = -ENOMEM;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    page-&gt;user_virt = (virt &amp; PAGE_MASK);</span><br><span class="line"></span><br><span class="line">    page-&gt;refcnt    = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    page-&gt;umem = ib_umem_get(context-&gt;ibucontext.device, virt &amp; PAGE_MASK,</span><br><span class="line"></span><br><span class="line">                 PAGE_SIZE, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (IS_ERR(page-&gt;umem)) &#123;</span><br><span class="line"></span><br><span class="line">        err = PTR_ERR(page-&gt;umem);</span><br><span class="line"></span><br><span class="line">        kfree(page);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    mmgrab(current-&gt;mm);</span><br><span class="line"></span><br><span class="line">    page-&gt;mm = current-&gt;mm;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    list_add(&amp;page-&gt;<span class="built_in">list</span>, &amp;context-&gt;db_page_list);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">found:</span><br><span class="line"></span><br><span class="line">    db-&gt;dma = sg_dma_address(page-&gt;umem-&gt;sgt_append.sgt.sgl) +</span><br><span class="line"></span><br><span class="line">          (virt &amp; ~PAGE_MASK);</span><br><span class="line"></span><br><span class="line">    db-&gt;u.user_page = page;</span><br><span class="line"></span><br><span class="line">    ++page-&gt;refcnt;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">out:</span><br><span class="line"></span><br><span class="line">    mutex_unlock(&amp;context-&gt;db_page_mutex);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+从该函数细节来看，该函数主要完成了将db和qp进行绑定的操作。<br>继续看一下mlx5_ib_db_map_user在哪里被使用过，搜索一下应用。mlx5_ib_db_map_user该函数被调用的地方全都在创建相关qp的时候，因此是将db和qp进行绑定<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> _create_user_qp(<span class="keyword">struct</span> mlx5_ib_dev *dev, <span class="keyword">struct</span> ib_pd *pd,</span><br><span class="line"></span><br><span class="line">               <span class="keyword">struct</span> mlx5_ib_qp *qp, <span class="keyword">struct</span> ib_udata *udata,</span><br><span class="line"></span><br><span class="line">               <span class="keyword">struct</span> ib_qp_init_attr *attr, u32 **in,</span><br><span class="line"></span><br><span class="line">               <span class="keyword">struct</span> mlx5_ib_create_qp_resp *resp, <span class="type">int</span> *inlen,</span><br><span class="line"></span><br><span class="line">               <span class="keyword">struct</span> mlx5_ib_qp_base *base,</span><br><span class="line"></span><br><span class="line">               <span class="keyword">struct</span> mlx5_ib_create_qp *ucmd);</span><br></pre></td></tr></table></figure>
+然后在driver/infiniband/hw/mlx5/wr.c文件中有这样的代码。从函数的命名来看，ring_db的含义就是敲响门铃的意思。先不管函数是怎么实现的，该函数的功能就是准备好了wqe，这时候敲响门铃通知硬件。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">mlx5r_ring_db</span><span class="params">(<span class="keyword">struct</span> mlx5_ib_qp *qp, <span class="type">unsigned</span> <span class="type">int</span> nreq,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">           <span class="keyword">struct</span> mlx5_wqe_ctrl_seg *ctrl)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mlx5_bf</span> *<span class="title">bf</span> =</span> &amp;qp-&gt;bf;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    qp-&gt;sq.head += nreq;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Make sure that descriptors are written before</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * updating doorbell record and ringing the doorbell</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    wmb();</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    qp-&gt;db.db[MLX5_SND_DBR] = cpu_to_be32(qp-&gt;sq.cur_post);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Make sure doorbell record is visible to the HCA before</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * we hit doorbell.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    wmb();</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    mlx5_write64((__be32 *)ctrl, bf-&gt;bfreg-&gt;<span class="built_in">map</span> + bf-&gt;offset);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Make sure doorbells don&#x27;t leak out of SQ spinlock</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     * and reach the HCA out of order.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"></span><br><span class="line">    bf-&gt;offset ^= bf-&gt;buf_size;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+在mlx5_post_send函数的结尾处，在上次提过，该函数是硬件相关的一个post_send函数。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">mlx5_ib_post_send</span><span class="params">(<span class="keyword">struct</span> ib_qp *ibqp, <span class="type">const</span> <span class="keyword">struct</span> ib_send_wr *wr,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">              <span class="type">const</span> <span class="keyword">struct</span> ib_send_wr **bad_wr, <span class="type">bool</span> drain)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 省略</span></span><br><span class="line"></span><br><span class="line">out:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (likely(nreq))</span><br><span class="line"></span><br><span class="line">        mlx5r_ring_db(qp, nreq, ctrl);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    spin_unlock_irqrestore(&amp;qp-&gt;sq.lock, flags);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+在另外一个post_send函数中，结尾也出现了类似的调用。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">mlx5r_umr_post_send</span><span class="params">(<span class="keyword">struct</span> ib_qp *ibqp, u32 mkey, <span class="keyword">struct</span> ib_cqe *cqe,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">                   <span class="keyword">struct</span> mlx5r_umr_wqe *wqe, <span class="type">bool</span> with_data)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 省略</span></span><br><span class="line"></span><br><span class="line">    spin_lock_irqsave(&amp;qp-&gt;sq.lock, flags);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    err = mlx5r_begin_wqe(qp, &amp;seg, &amp;ctrl, &amp;idx, &amp;size, &amp;cur_edge, <span class="number">0</span>,</span><br><span class="line"></span><br><span class="line">                  cpu_to_be32(mkey), <span class="literal">false</span>, <span class="literal">false</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (WARN_ON(err))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    qp-&gt;sq.wr_data[idx] = MLX5_IB_WR_UMR;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    mlx5r_memcpy_send_wqe(&amp;qp-&gt;sq, &amp;cur_edge, &amp;seg, &amp;size, wqe, wqe_size);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    id.ib_cqe = cqe;</span><br><span class="line"></span><br><span class="line">    mlx5r_finish_wqe(qp, ctrl, seg, size, cur_edge, idx, id.wr_id, <span class="number">0</span>,</span><br><span class="line"></span><br><span class="line">             MLX5_FENCE_MODE_INITIATOR_SMALL, MLX5_OPCODE_UMR);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    mlx5r_ring_db(qp, <span class="number">1</span>, ctrl);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">out:</span><br><span class="line"></span><br><span class="line">    spin_unlock_irqrestore(&amp;qp-&gt;sq.lock, flags);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+虽然整个RDMA驱动中，存在很多个post_send函数，但到最终的post_send函数，就会敲响该门铃。<br>但是敲响门铃后的硬件解析WQE，还没有发现。<h2 id="ib中的内存管理"><a href="#ib中的内存管理" class="headerlink" title="ib中的内存管理"></a>ib中的内存管理</h2>这部分主要是想看一下wr中指示的数据存放地址是如何通过RDMA技术传输的。<h3 id="MR"><a href="#MR" class="headerlink" title="MR"></a>MR</h3>MR，memory region，用于解决内存地址虚实映射和保护的问题。<br>MR是RDMA软件在内存中划定的一片区域，用于存放数据。用户必须通过IB提供的API才允许访问MR，并且MR需要提取申请。<br>实际上,MR只是一块特殊的内存区域。<br>引入MR主要是为了解决以下两个问题。</li>
+</ul>
+<ol>
+<li>RDMA网卡如何将VA转化为PA。</li>
+<li>RDMA网卡如何保证违法的VA不会被访问。<h4 id="VA-gt-PA"><a href="#VA-gt-PA" class="headerlink" title="VA-&gt;PA"></a>VA-&gt;PA</h4>在CPU中，VA-&gt;PA是通过MMU等转化机制完成的。在RDMA中，APP下发的WR中的地址都是VA，无论是本地地址还是远程地址。因此在注册MR的过程中，硬件会在内存中注册一个VA-&gt;PA的映射表。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ib_rdma_wr</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ib_send_wr</span>   <span class="title">wr</span>;</span></span><br><span class="line"></span><br><span class="line">    u64         remote_addr;</span><br><span class="line"></span><br><span class="line">    u32         rkey;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ib_send_wr</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ib_send_wr</span>      *<span class="title">next</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line"></span><br><span class="line">        u64     wr_id;</span><br><span class="line"></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">ib_cqe</span>   *<span class="title">wr_cqe</span>;</span></span><br><span class="line"></span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ib_sge</span>          *<span class="title">sg_list</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>         num_sge;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">enum</span> <span class="title">ib_wr_opcode</span>   <span class="title">opcode</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>         send_flags;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line"></span><br><span class="line">        __be32      imm_data;</span><br><span class="line"></span><br><span class="line">        u32     invalidate_rkey;</span><br><span class="line"></span><br><span class="line">    &#125; ex;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ib_sge</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    u64 addr;</span><br><span class="line"></span><br><span class="line">    u32 length;</span><br><span class="line"></span><br><span class="line">    u32 lkey;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+并且访问该映射表是有RDMA硬件完成，不需要对应的CPU参与。<br>查阅资料发现，在RDMA中，是通过IOVA访问地址的。<br><img src="/images/Images-Infiniband-IB%E9%A9%B1%E5%8A%A8/IOVA.png" alt="IOVA"><br>IOVA是IO的虚拟地址，DMA设备可以通过IOMMU将IOVA转化为真实的PA。<br>实际上，在RDMA中，需要先将VA转化为IOVA。在mlx5驱动中，使用MTT(Memory Translation Table)来存放VA-IOVA的映射。<br><img src="/images/Images-Infiniband-IB%E9%A9%B1%E5%8A%A8/MTT.png" alt="MTT"><br>这里直接看到<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">populate_mtts</span><span class="params">(<span class="keyword">struct</span> mlx5_vdpa_direct_mr *mr, __be64 *mtt)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">scatterlist</span> *<span class="title">sg</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> nsg = mr-&gt;nsg;</span><br><span class="line"></span><br><span class="line">    u64 dma_addr;</span><br><span class="line"></span><br><span class="line">    u64 dma_len;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> j = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> i;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    for_each_sg(mr-&gt;sg_head.sgl, sg, mr-&gt;nent, i) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (dma_addr = sg_dma_address(sg), dma_len = sg_dma_len(sg);</span><br><span class="line"></span><br><span class="line">             nsg &amp;&amp; dma_len;</span><br><span class="line"></span><br><span class="line">             nsg--, dma_addr += BIT(mr-&gt;log_size), dma_len -= BIT(mr-&gt;log_size))</span><br><span class="line"></span><br><span class="line">            mtt[j++] = cpu_to_be64(dma_addr);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+查看populate_mtts被调用的地方。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">create_direct_mr</span><span class="params">(<span class="keyword">struct</span> mlx5_vdpa_dev *mvdev, <span class="keyword">struct</span> mlx5_vdpa_direct_mr *mr)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">   <span class="comment">// 省略</span></span><br><span class="line"></span><br><span class="line">    populate_mtts(mr, MLX5_ADDR_OF(create_mkey_in, in, klm_pas_mtt));</span><br><span class="line"></span><br><span class="line">    err = mlx5_vdpa_create_mkey(mvdev, &amp;mr-&gt;mr, in, inlen);</span><br><span class="line"></span><br><span class="line">    kvfree(in);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (err) &#123;</span><br><span class="line"></span><br><span class="line">        mlx5_vdpa_warn(mvdev, <span class="string">&quot;Failed to create direct MR\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+klm_pas_mtt的定义如下，<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mlx5_ifc_create_mkey_in_bits</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    u8         opcode[<span class="number">0x10</span>];</span><br><span class="line"></span><br><span class="line">    u8         uid[<span class="number">0x10</span>];</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    u8         reserved_at_20[<span class="number">0x10</span>];</span><br><span class="line"></span><br><span class="line">    u8         op_mod[<span class="number">0x10</span>];</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    u8         reserved_at_40[<span class="number">0x20</span>];</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    u8         pg_access[<span class="number">0x1</span>];</span><br><span class="line"></span><br><span class="line">    u8         mkey_umem_valid[<span class="number">0x1</span>];</span><br><span class="line"></span><br><span class="line">    u8         reserved_at_62[<span class="number">0x1e</span>];</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mlx5_ifc_mkc_bits</span> <span class="title">memory_key_mkey_entry</span>;</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    u8         reserved_at_280[<span class="number">0x80</span>];</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    u8         translations_octword_actual_size[<span class="number">0x20</span>];</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    u8         reserved_at_320[<span class="number">0x560</span>];</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    u8         klm_pas_mtt[][<span class="number">0x20</span>];   </span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+这里可以挖掘的地方还很多，例如MTT是如何组织数据的。或者是MTT将被存放于内存的哪个区域等，都是日后可以钻研的点。<h4 id="违法的VA"><a href="#违法的VA" class="headerlink" title="违法的VA"></a>违法的VA</h4>可以通过违法的VA，访问到不被允许的PA。因此在MR中引入key对访存进行鉴权。key分为l_key(Local Key)和r_key(Remote Key)。用户保证RDMA Write过程中对两边地址的保护。<br>这部分可以看到ib_mr结构体的成员。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ib_mr</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ib_device</span>  *<span class="title">device</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ib_pd</span>      *<span class="title">pd</span>;</span></span><br><span class="line"></span><br><span class="line">    u32        lkey;</span><br><span class="line"></span><br><span class="line">    u32        rkey;</span><br><span class="line"></span><br><span class="line">    u64        iova;</span><br><span class="line"></span><br><span class="line">    u64        length;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 省略</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h4 id="防止换页"><a href="#防止换页" class="headerlink" title="防止换页"></a>防止换页</h4>现代CPU的内存管理中，页表是经常会被换入换出的。一旦换出，那么原先存在的VA-&gt;PA映射就失去作用了。<br>因此MR还有一个作用就是将这篇内存区域固定在内存中，这个动作被形象地称为pin。<br>在这部分，我们可以先看看注册mr是如何进行的。<br>如果从用户态的ibv_reg_mr()函数出发，通过ABI命令进入到内核，最终会落入到网卡相关的函数mlx5_ib_reg_user_mr()函数中，因此我们直接看mlx5_ib_reg_user_mr函数即可。<br>而mlx5_ib_reg_user_mr函数最终调用了create_real_mr函数。<br>在Linux中，可以通过mlock函数锁住内存页，但是在整个ibv_reg_mr调用路径中，均未发现mlock的调用。</li>
+</ol>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2023/01/25/IB%20%E9%A9%B1%E5%8A%A8%E6%BA%90%E7%A0%81/" title="Infiniband 驱动" target="_blank" rel="external">http://example.com/2023/01/25/IB 驱动源码/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2023/01/25/Infiniband-Kernel%20RDMA%20Subsystem/" title="InfiniBand Kernel RDMA Subsystem"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2023/01/25/Infiniband-IB%E5%86%85%E6%A0%B8%E6%80%81API2/" title="Infiniband 内核态API"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

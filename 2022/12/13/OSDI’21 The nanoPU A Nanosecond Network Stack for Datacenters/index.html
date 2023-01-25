@@ -17,20 +17,20 @@
   <meta http-equiv="window-target" content="_top" />
   
   
-  <title>OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters | TenonOS-unikraft-learning</title>
-  <meta name="description" content="OSDI’21 The nanoPU: A Nanosecond Network Stack for Datacenters论文链接：https:&#x2F;&#x2F;www.usenix.org&#x2F;conference&#x2F;osdi21&#x2F;presentation&#x2F;ibanez 摘要nanoPUnanoPU 是一种新的 NIC-CPU 协同设计，用于加速使用了很多微秒级小型 RPC 的应用程序。nanoPU 的新颖之处在">
+  <title>OSDI’21 The nanoPU-A Nanosecond Network Stack for Datacenters | TenonOS-unikraft-learning</title>
+  <meta name="description" content="OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters论文链接：https:&#x2F;&#x2F;www.usenix.org&#x2F;conference&#x2F;osdi21&#x2F;presentation&#x2F;ibanez 摘要nanoPUnanoPU 是一种新的 NIC-CPU 协同设计，用于加速使用了很多微秒级小型 RPC 的应用程序。nanoPU 的新颖之处在于">
 <meta property="og:type" content="article">
-<meta property="og:title" content="OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters">
+<meta property="og:title" content="OSDI’21 The nanoPU-A Nanosecond Network Stack for Datacenters">
 <meta property="og:url" content="http://example.com/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="OSDI’21 The nanoPU: A Nanosecond Network Stack for Datacenters论文链接：https:&#x2F;&#x2F;www.usenix.org&#x2F;conference&#x2F;osdi21&#x2F;presentation&#x2F;ibanez 摘要nanoPUnanoPU 是一种新的 NIC-CPU 协同设计，用于加速使用了很多微秒级小型 RPC 的应用程序。nanoPU 的新颖之处在">
+<meta property="og:description" content="OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters论文链接：https:&#x2F;&#x2F;www.usenix.org&#x2F;conference&#x2F;osdi21&#x2F;presentation&#x2F;ibanez 摘要nanoPUnanoPU 是一种新的 NIC-CPU 协同设计，用于加速使用了很多微秒级小型 RPC 的应用程序。nanoPU 的新颖之处在于">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/images/hpc-zwc/OSDI">
 <meta property="og:image" content="http://example.com/images/hpc-zwc/OSDI">
 <meta property="og:image" content="http://example.com/images/hpc-zwc/OSDI">
 <meta property="og:image" content="http://example.com/images/hpc-zwc/OSDI">
 <meta property="article:published_time" content="2022-12-13T13:14:27.758Z">
-<meta property="article:modified_time" content="2022-12-13T13:16:59.473Z">
+<meta property="article:modified_time" content="2023-01-25T11:19:09.109Z">
 <meta property="article:author" content="John Doe">
 <meta property="article:tag" content="hpc">
 <meta name="twitter:card" content="summary">
@@ -224,7 +224,7 @@
   <div class="widget">
     <h3 class="widget-title">分类</h3>
     <div class="widget-body">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">7</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">10</span></li></ul>
     </div>
   </div>
 
@@ -234,7 +234,7 @@
   <div class="widget">
     <h3 class="widget-title">标签</h3>
     <div class="widget-body">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">9</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hpc/" rel="tag">hpc</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/InfiniBand/" rel="tag">InfiniBand</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RDMA/" rel="tag">RDMA</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Unikernel/" rel="tag">Unikernel</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hpc/" rel="tag">hpc</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -244,7 +244,7 @@
   <div class="widget">
     <h3 class="widget-title">标签云</h3>
     <div class="widget-body tagcloud">
-      <a href="/tags/HPC/" style="font-size: 13.17px;">HPC</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.83px;">Plat</a> <a href="/tags/Serverless/" style="font-size: 13.33px;">Serverless</a> <a href="/tags/hpc/" style="font-size: 13.17px;">hpc</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.67px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.5px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.17px;">系统调用</a>
+      <a href="/tags/HPC/" style="font-size: 13.43px;">HPC</a> <a href="/tags/InfiniBand/" style="font-size: 13.57px;">InfiniBand</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.86px;">Plat</a> <a href="/tags/RDMA/" style="font-size: 13.57px;">RDMA</a> <a href="/tags/Serverless/" style="font-size: 13.29px;">Serverless</a> <a href="/tags/Unikernel/" style="font-size: 13px;">Unikernel</a> <a href="/tags/hpc/" style="font-size: 13.14px;">hpc</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.71px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.57px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.14px;">系统调用</a>
     </div>
   </div>
 
@@ -253,7 +253,7 @@
   <div class="widget">
     <h3 class="widget-title">归档</h3>
     <div class="widget-body">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/01/">一月 2023</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
     </div>
   </div>
 
@@ -269,13 +269,13 @@
             
             <div class="item-inner">
               <p class="item-category">
-                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
               </p>
               <p class="item-title">
-                <a href="/2022/12/13/TJS%E2%80%9922%20Toward%20low%20CPU%20usage%20and%20efficient%20DPDK%20communication%20in%20a%20cluster/" class="title">TJS’22 Toward low CPU usage and efficient DPDK communication in a cluster</a>
+                <a href="/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/" class="title">用户与unikraft的参数传递</a>
               </p>
               <p class="item-date">
-                <time datetime="2022-12-13T13:14:27.772Z" itemprop="datePublished">2022-12-13</time>
+                <time datetime="2023-01-25T11:20:55.962Z" itemprop="datePublished">2023-01-25</time>
               </p>
             </div>
           </li>
@@ -287,10 +287,25 @@
                 <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
               </p>
               <p class="item-title">
-                <a href="/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/" class="title">OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters</a>
+                <a href="/2023/01/25/OSDI'22%20XRP/" class="title">OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF</a>
               </p>
               <p class="item-date">
-                <time datetime="2022-12-13T13:14:27.758Z" itemprop="datePublished">2022-12-13</time>
+                <time datetime="2023-01-25T11:20:55.850Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" class="title">OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.849Z" itemprop="datePublished">2023-01-25</time>
               </p>
             </div>
           </li>
@@ -302,10 +317,10 @@
                 <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
               </p>
               <p class="item-title">
-                <a href="/2022/12/13/dpdk%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81/" class="title">dpdk 实验代码</a>
+                <a href="/2023/01/25/InfiniBand%E8%B0%83%E7%A0%94/" class="title">InfiniBand调研</a>
               </p>
               <p class="item-date">
-                <time datetime="2022-12-13T13:14:27.735Z" itemprop="datePublished">2022-12-13</time>
+                <time datetime="2023-01-25T11:20:55.826Z" itemprop="datePublished">2023-01-25</time>
               </p>
             </div>
           </li>
@@ -314,28 +329,13 @@
             
             <div class="item-inner">
               <p class="item-category">
-                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
               </p>
               <p class="item-title">
-                <a href="/2022/12/13/SIGCOMM22_SPRIGHT/" class="title">SIGCOMM&#39;22 SPRIGHT Extracting the Server from Serverless Computing! High-performance eBPF-based Event-driven, Shared-memory Processing</a>
+                <a href="/2023/01/25/InfiniBand-LinuxIB/" class="title">Linux InfiniBand</a>
               </p>
               <p class="item-date">
-                <time datetime="2022-12-13T12:26:49.929Z" itemprop="datePublished">2022-12-13</time>
-              </p>
-            </div>
-          </li>
-          
-          <li>
-            
-            <div class="item-inner">
-              <p class="item-category">
-                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
-              </p>
-              <p class="item-title">
-                <a href="/2022/12/13/Memory%20Deduplication%20for%20Serverless%20Computing%20with%20Medes/" class="title">EuroSys&#39;22 Memory Deduplication for Serverless Computing with Medes</a>
-              </p>
-              <p class="item-date">
-                <time datetime="2022-12-13T12:26:49.918Z" itemprop="datePublished">2022-12-13</time>
+                <time datetime="2023-01-25T11:20:55.824Z" itemprop="datePublished">2023-01-25</time>
               </p>
             </div>
           </li>
@@ -355,7 +355,7 @@
   <div class="slimContent">
     <nav id="toc" class="article-toc">
       <h3 class="toc-title">文章目录</h3>
-      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#OSDI%E2%80%9921-The-nanoPU-A-Nanosecond-Network-Stack-for-Datacenters"><span class="toc-number">1.</span> <span class="toc-text">OSDI’21 The nanoPU: A Nanosecond Network Stack for Datacenters</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%91%98%E8%A6%81"><span class="toc-number">2.</span> <span class="toc-text">摘要</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#nanoPU"><span class="toc-number">2.1.</span> <span class="toc-text">nanoPU</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%A7%E8%83%BD"><span class="toc-number">2.2.</span> <span class="toc-text">性能</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">3.</span> <span class="toc-text">简介</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9D%80%E6%89%8B%E5%9B%9E%E7%AD%94%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">3.1.</span> <span class="toc-text">着手回答的问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%84%E7%90%86-nanoRequest-%E5%8F%AF%E4%BB%A5%E8%BE%BE%E5%88%B0%E7%9A%84%E7%BB%9D%E5%AF%B9%E6%9C%80%E5%B0%8F%E5%BC%80%E9%94%80%E6%98%AF%E5%A4%9A%E5%B0%91%EF%BC%9F"><span class="toc-number">3.1.1.</span> <span class="toc-text">处理 nanoRequest 可以达到的绝对最小开销是多少？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%83%BD%E5%90%A6%E9%80%9A%E8%BF%87%E5%9C%A8%E7%A1%AE%E5%AE%9A%E7%9A%84%E6%97%B6%E9%97%B4%E5%86%85%E5%A4%84%E7%90%86-nanoRequests-%E6%9D%A5%E6%9C%80%E5%B0%8F%E5%8C%96%E5%B0%BE%E9%83%A8%E5%93%8D%E5%BA%94%E6%97%B6%E9%97%B4%EF%BC%9F"><span class="toc-number">3.1.2.</span> <span class="toc-text">能否通过在确定的时间内处理 nanoRequests 来最小化尾部响应时间？</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#nanoPU-%E7%9A%84%E8%AE%BE%E8%AE%A1"><span class="toc-number">4.</span> <span class="toc-text">nanoPU 的设计</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BD%91%E7%BB%9C%E8%B7%AF%E5%BE%84"><span class="toc-number">4.1.</span> <span class="toc-text">网络路径</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%A0%E7%BB%9F%E7%9A%84-DMA-%E8%B7%AF%E5%BE%84"><span class="toc-number">4.1.1.</span> <span class="toc-text">传统的 DMA 路径</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8A%A0%E9%80%9F%E8%B7%AF%E5%BE%84"><span class="toc-number">4.1.2.</span> <span class="toc-text">加速路径</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E5%AF%84%E5%AD%98%E5%99%A8%E6%96%87%E4%BB%B6%E6%8E%A5%E5%8F%A3"><span class="toc-number">4.2.</span> <span class="toc-text">线程安全的寄存器文件接口</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%97%9B%E7%82%B9"><span class="toc-number">4.2.1.</span> <span class="toc-text">痛点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">4.2.2.</span> <span class="toc-text">解决方案</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="toc-number">4.2.3.</span> <span class="toc-text">工作原理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A1%AC%E4%BB%B6%E4%B8%AD%E7%9A%84%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6"><span class="toc-number">4.3.</span> <span class="toc-text">硬件中的线程调度</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%97%9B%E7%82%B9-1"><span class="toc-number">4.3.1.</span> <span class="toc-text">痛点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88-1"><span class="toc-number">4.3.2.</span> <span class="toc-text">解决方案</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86-1"><span class="toc-number">4.3.3.</span> <span class="toc-text">工作原理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#nanoPU-%E4%B8%AD%E7%9A%84-NIC-%E7%AE%A1%E7%BA%BF"><span class="toc-number">4.4.</span> <span class="toc-text">nanoPU 中的 NIC 管线</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86-2"><span class="toc-number">4.4.1.</span> <span class="toc-text">工作原理</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AF%84%E4%BC%B0"><span class="toc-number">5.</span> <span class="toc-text">评估</span></a></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#OSDI%E2%80%9921-The-nanoPU-A-Nanosecond-Network-Stack-for-Datacenters"><span class="toc-number">1.</span> <span class="toc-text">OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%91%98%E8%A6%81"><span class="toc-number">2.</span> <span class="toc-text">摘要</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#nanoPU"><span class="toc-number">2.1.</span> <span class="toc-text">nanoPU</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%A7%E8%83%BD"><span class="toc-number">2.2.</span> <span class="toc-text">性能</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">3.</span> <span class="toc-text">简介</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9D%80%E6%89%8B%E5%9B%9E%E7%AD%94%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">3.1.</span> <span class="toc-text">着手回答的问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%84%E7%90%86-nanoRequest-%E5%8F%AF%E4%BB%A5%E8%BE%BE%E5%88%B0%E7%9A%84%E7%BB%9D%E5%AF%B9%E6%9C%80%E5%B0%8F%E5%BC%80%E9%94%80%E6%98%AF%E5%A4%9A%E5%B0%91%EF%BC%9F"><span class="toc-number">3.1.1.</span> <span class="toc-text">处理 nanoRequest 可以达到的绝对最小开销是多少？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%83%BD%E5%90%A6%E9%80%9A%E8%BF%87%E5%9C%A8%E7%A1%AE%E5%AE%9A%E7%9A%84%E6%97%B6%E9%97%B4%E5%86%85%E5%A4%84%E7%90%86-nanoRequests-%E6%9D%A5%E6%9C%80%E5%B0%8F%E5%8C%96%E5%B0%BE%E9%83%A8%E5%93%8D%E5%BA%94%E6%97%B6%E9%97%B4%EF%BC%9F"><span class="toc-number">3.1.2.</span> <span class="toc-text">能否通过在确定的时间内处理 nanoRequests 来最小化尾部响应时间？</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#nanoPU-%E7%9A%84%E8%AE%BE%E8%AE%A1"><span class="toc-number">4.</span> <span class="toc-text">nanoPU 的设计</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BD%91%E7%BB%9C%E8%B7%AF%E5%BE%84"><span class="toc-number">4.1.</span> <span class="toc-text">网络路径</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%A0%E7%BB%9F%E7%9A%84-DMA-%E8%B7%AF%E5%BE%84"><span class="toc-number">4.1.1.</span> <span class="toc-text">传统的 DMA 路径</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8A%A0%E9%80%9F%E8%B7%AF%E5%BE%84"><span class="toc-number">4.1.2.</span> <span class="toc-text">加速路径</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E5%AF%84%E5%AD%98%E5%99%A8%E6%96%87%E4%BB%B6%E6%8E%A5%E5%8F%A3"><span class="toc-number">4.2.</span> <span class="toc-text">线程安全的寄存器文件接口</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%97%9B%E7%82%B9"><span class="toc-number">4.2.1.</span> <span class="toc-text">痛点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">4.2.2.</span> <span class="toc-text">解决方案</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="toc-number">4.2.3.</span> <span class="toc-text">工作原理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A1%AC%E4%BB%B6%E4%B8%AD%E7%9A%84%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6"><span class="toc-number">4.3.</span> <span class="toc-text">硬件中的线程调度</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%97%9B%E7%82%B9-1"><span class="toc-number">4.3.1.</span> <span class="toc-text">痛点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88-1"><span class="toc-number">4.3.2.</span> <span class="toc-text">解决方案</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86-1"><span class="toc-number">4.3.3.</span> <span class="toc-text">工作原理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#nanoPU-%E4%B8%AD%E7%9A%84-NIC-%E7%AE%A1%E7%BA%BF"><span class="toc-number">4.4.</span> <span class="toc-text">nanoPU 中的 NIC 管线</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86-2"><span class="toc-number">4.4.1.</span> <span class="toc-text">工作原理</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AF%84%E4%BC%B0"><span class="toc-number">5.</span> <span class="toc-text">评估</span></a></li></ol>
     </nav>
   </div>
 </aside>
@@ -369,7 +369,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters
+      OSDI’21 The nanoPU-A Nanosecond Network Stack for Datacenters
     </h1>
   
 
@@ -402,7 +402,7 @@
     </div>
     <div class="article-entry marked-body" itemprop="articleBody">
       
-        <h1 id="OSDI’21-The-nanoPU-A-Nanosecond-Network-Stack-for-Datacenters"><a href="#OSDI’21-The-nanoPU-A-Nanosecond-Network-Stack-for-Datacenters" class="headerlink" title="OSDI’21 The nanoPU: A Nanosecond Network Stack for Datacenters"></a>OSDI’21 The nanoPU: A Nanosecond Network Stack for Datacenters</h1><p>论文链接：<a target="_blank" rel="noopener" href="https://www.usenix.org/conference/osdi21/presentation/ibanez">https://www.usenix.org/conference/osdi21/presentation/ibanez</a></p>
+        <h1 id="OSDI’21-The-nanoPU-A-Nanosecond-Network-Stack-for-Datacenters"><a href="#OSDI’21-The-nanoPU-A-Nanosecond-Network-Stack-for-Datacenters" class="headerlink" title="OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters"></a>OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters</h1><p>论文链接：<a target="_blank" rel="noopener" href="https://www.usenix.org/conference/osdi21/presentation/ibanez">https://www.usenix.org/conference/osdi21/presentation/ibanez</a></p>
 <h1 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h1><h2 id="nanoPU"><a href="#nanoPU" class="headerlink" title="nanoPU"></a>nanoPU</h2><p>nanoPU 是一种新的 NIC-CPU 协同设计，用于加速使用了很多微秒级小型 RPC 的应用程序。nanoPU 的新颖之处在于设计了网络和应用程序之间的快速路径——绕过高速缓存和内存层次结构，并将到达的消息直接放入 CPU寄存器文件中。这条快速路径包含对低延迟传输和拥塞控制的可编程硬件支持，以及对 RPC 到核心的高效负载平衡的硬件支持。</p>
 <h2 id="性能"><a href="#性能" class="headerlink" title="性能"></a>性能</h2><ul>
 <li>通过 nanoPU 的线对线 RPC 响应时间仅为 69ns，比同类最佳的低延迟商用 NIC 快一个数量级。</li>
@@ -479,7 +479,7 @@
     
     <li class="post-copyright-link hidden-xs">
       <strong>本文链接：</strong>
-      <a href="http://example.com/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/" title="OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters" target="_blank" rel="external">http://example.com/2022/12/13/OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters/</a>
+      <a href="http://example.com/2022/12/13/OSDI%E2%80%9921%20The%20nanoPU%20A%20Nanosecond%20Network%20Stack%20for%20Datacenters/" title="OSDI’21 The nanoPU-A Nanosecond Network Stack for Datacenters" target="_blank" rel="external">http://example.com/2022/12/13/OSDI’21 The nanoPU A Nanosecond Network Stack for Datacenters/</a>
     </li>
     
     <li class="post-copyright-license">

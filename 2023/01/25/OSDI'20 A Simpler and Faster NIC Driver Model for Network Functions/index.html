@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions | TenonOS-unikraft-learning</title>
+  <meta name="description" content="作者：Solal Pirelli and George Candea，洛桑联邦理工学院开源代码：https:&#x2F;&#x2F;github.com&#x2F;dslab-epfl&#x2F;tinynf论文链接：https:&#x2F;&#x2F;www.usenix.org&#x2F;conference&#x2F;osdi20&#x2F;presentation&#x2F;pirelli  背景 软件网络功能的出现要求在堆栈的每一层都提供更强大的正确性保证和更高的性能。当前的网络堆栈">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions">
+<meta property="og:url" content="http://example.com/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="作者：Solal Pirelli and George Candea，洛桑联邦理工学院开源代码：https:&#x2F;&#x2F;github.com&#x2F;dslab-epfl&#x2F;tinynf论文链接：https:&#x2F;&#x2F;www.usenix.org&#x2F;conference&#x2F;osdi20&#x2F;presentation&#x2F;pirelli  背景 软件网络功能的出现要求在堆栈的每一层都提供更强大的正确性保证和更高的性能。当前的网络堆栈">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/hpc-ymy/OSDI">
+<meta property="og:image" content="http://example.com/images/hpc-ymy/OSDI">
+<meta property="og:image" content="http://example.com/images/hpc-ymy/OSDI">
+<meta property="og:image" content="http://example.com/images/hpc-ymy/OSDI">
+<meta property="og:image" content="http://example.com/images/hpc-ymy/OSDI">
+<meta property="article:published_time" content="2023-01-25T11:20:55.849Z">
+<meta property="article:modified_time" content="2023-01-25T11:19:09.108Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="HPC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/hpc-ymy/OSDI">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">10</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/InfiniBand/" rel="tag">InfiniBand</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RDMA/" rel="tag">RDMA</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Unikernel/" rel="tag">Unikernel</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hpc/" rel="tag">hpc</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.43px;">HPC</a> <a href="/tags/InfiniBand/" style="font-size: 13.57px;">InfiniBand</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.86px;">Plat</a> <a href="/tags/RDMA/" style="font-size: 13.57px;">RDMA</a> <a href="/tags/Serverless/" style="font-size: 13.29px;">Serverless</a> <a href="/tags/Unikernel/" style="font-size: 13px;">Unikernel</a> <a href="/tags/hpc/" style="font-size: 13.14px;">hpc</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.71px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.57px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.14px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/01/">一月 2023</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/" class="title">用户与unikraft的参数传递</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.962Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'22%20XRP/" class="title">OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.850Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" class="title">OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.849Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand%E8%B0%83%E7%A0%94/" class="title">InfiniBand调研</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.826Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand-LinuxIB/" class="title">Linux InfiniBand</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.824Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#NIC"><span class="toc-number">1.1.</span> <span class="toc-text">NIC</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%9F%E6%9C%89%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9E%8B"><span class="toc-number">2.</span> <span class="toc-text">原有驱动模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%BA%E6%96%87%E4%B8%AD%E7%9A%84%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9E%8B"><span class="toc-number">3.</span> <span class="toc-text">论文中的驱动模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#TinyNF"><span class="toc-number">4.</span> <span class="toc-text">TinyNF</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E9%AA%8C"><span class="toc-number">5.</span> <span class="toc-text">实验</span></a></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" class="article-date">
+	  <time datetime="2023-01-25T11:20:55.849Z" itemprop="datePublished">2023-01-25</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/HPC/" rel="tag">HPC</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <blockquote>
+<p>作者：Solal Pirelli and George Candea，洛桑联邦理工学院<br>开源代码：<a target="_blank" rel="noopener" href="https://github.com/dslab-epfl/tinynf">https://github.com/dslab-epfl/tinynf</a><br>论文链接：<a target="_blank" rel="noopener" href="https://www.usenix.org/conference/osdi20/presentation/pirelli">https://www.usenix.org/conference/osdi20/presentation/pirelli</a></p>
+</blockquote>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><hr>
+<p>软件网络功能的出现要求在堆栈的每一层都提供更强大的正确性保证和更高的性能。当前的网络堆栈以简单性换取性能和灵活性，尤其是在它们的驱动程序模型中。<br>作者展示了性能和简单性可以共存，以牺牲一些灵活性为代价，使用针对网络功能量身定制的新 NIC 驱动程序模型。</p>
+<p>作者用 550 行代码实现了 Intel 82599 网卡的驱动程序。通过仅用文中的驱动程序替换最先进的驱动程序，整个软件堆栈的形式验证完成时间减少了 7 倍，而经过验证的函数的吞吐量提高了 160%。由于其低可变性和资源使用，文中的驱动程序在实际工作负载上也击败了尚未正式验证的驱动程序的吞吐量。</p>
+<h3 id="NIC"><a href="#NIC" class="headerlink" title="NIC"></a>NIC</h3><p>接收数据包：</p>
+<ol>
+<li>CPU 将描述符提供给 NIC，指示数据包在内存中的位置</li>
+<li>接收数据包后，NIC 就会返回描述符<ul>
+<li>描述符元数据由CPU设定</li>
+</ul>
+</li>
+</ol>
+<p>发送数据包：</p>
+<ol>
+<li>CPU 将描述符提供给 NIC，指示数据包存放在内存中的位置</li>
+<li>传输数据包后，NIC 就会返回描述符<ul>
+<li>描述符元数据由NIC设定</li>
+</ul>
+</li>
+</ol>
+<p>NIC队列： descriptor ring+配置信息<br><img src="/images/hpc-ymy/OSDI'20-tinyNF/descriptor-ring.png" alt="image"> </p>
+<h2 id="原有驱动模型"><a href="#原有驱动模型" class="headerlink" title="原有驱动模型"></a>原有驱动模型</h2><hr>
+<p>在 DPDK 等现代框架中，基于重复使用一组固定的数据包缓冲区，以避免内存分配的开销<br><img src="/images/hpc-ymy/OSDI'20-tinyNF/DPDK%E7%AD%89%E6%A1%86%E6%9E%B6%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BC%93%E5%86%B2%E6%A8%A1%E5%9E%8B.png" alt="image"><br>其中整个系统是一组先进先出的缓冲队列。</p>
+<p>组成：网卡NIC + 驱动程序Driver + 网络功能NF</p>
+<p>流程：</p>
+<ul>
+<li>在初始状态下，所有缓冲区都处于“Free”状态，这表示缓冲池中未使用的缓冲区。</li>
+<li>接收数据包：<ol>
+<li>从池中“分配”缓冲区并将它们提供给 NIC 进行接收<ul>
+<li>分配的缓冲区处于“receiving”状态</li>
+<li>这种“分配”是指从缓冲池中获取缓冲区，而不是创建新缓冲区</li>
+</ul>
+</li>
+<li>从网络获取数据，NIC将接收缓冲区转换为“received”状态</li>
+<li>NF运行轮询循环以将缓冲区移动到“processing”步骤</li>
+</ol>
+</li>
+<li>发送数据包：<ol>
+<li>NF传输缓冲区</li>
+<li>NIC 将缓冲区内容发送到网络，并将缓冲区移动到“transmitted”状态</li>
+<li>驱动程序将标明要进行空闲的传输缓冲区移回“free”状态</li>
+</ol>
+</li>
+<li>NF对于缓冲区的管理：<ul>
+<li>当剩余的空闲缓冲区太少时，NF可以选择保留缓冲区供以后使用</li>
+<li>可以直接将缓冲区丢进空闲缓冲池</li>
+<li>可以直接从缓冲池中分配缓冲区</li>
+</ul>
+</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>参与者不能从外部插入缓冲区<ul>
+<li>是一个封闭系统<ul>
+<li>缓冲区分配和释放是昂贵的<ul>
+<li>操作系统对相关缓冲区的的更改，网卡无法感知</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>驱动和NF对于缓冲区的分配和释放路径复杂化</li>
+<li>NF的灵活性(有时会保留缓冲区)有时是不需要的，造成了简单性换灵活性的问题</li>
+</ul>
+<p>优点：</p>
+<ul>
+<li>为NF提高了灵活性<ul>
+<li>可以将缓冲区放在一边，重新组合来自协议栈的消息</li>
+</ul>
+</li>
+<li>可以进行并发操作<ul>
+<li>NF可以从多个NIC接收和传输数据包</li>
+</ul>
+</li>
+</ul>
+<h2 id="论文中的驱动模型"><a href="#论文中的驱动模型" class="headerlink" title="论文中的驱动模型"></a>论文中的驱动模型</h2><hr>
+<ul>
+<li>专为无需灵活性、而需简单性而设计<ul>
+<li>人话：包不会出现乱序的情况，NF不用保留缓冲池</li>
+</ul>
+</li>
+<li>核心：删除缓冲池<br><img src="/images/hpc-ymy/OSDI'20-tinyNF/%E7%AE%80%E6%98%93NIC%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9E%8B.png" alt="image"> </li>
+<li>驱动程序将传输缓冲区直接移动到接收队列</li>
+<li>NF所拥有的发送缓冲区可以直接drop，成为接收缓冲区</li>
+</ul>
+<p>驱动的工作：</p>
+<ul>
+<li>当NF请求数据包时，将缓冲区从“received”队列移动到“processing”队列</li>
+<li>当NF发送或丢弃数据包时，将缓冲区从“processing”队列移动到“transmitting”队列传输<ul>
+<li>丢弃包与原有方式不同的是：与传送数据包进行了统一，丢弃时发送metadata为0的缓冲区，走发送数据包相同路线</li>
+</ul>
+</li>
+<li>将缓冲区从“transmitted”队列回收到“receiving”队列，以确保“接收”队列永远不会为空（定时收回）</li>
+</ul>
+<p>特点：</p>
+<ul>
+<li>支持多个输出(发送数据包)<ul>
+<li>建立多个传输ring<ul>
+<li>当一个ring指向该缓冲区的描述符，其余ring的相应位置置为空</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>可以同时处理多个输入(接收数据包)<ul>
+<li>每个输入关联一个接收队列，一个处理队列</li>
+</ul>
+</li>
+<li>支持并行操作</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>NF无法保留缓冲区供以后使用<ul>
+<li>如对于TCP协议的包乱序，无法修复</li>
+</ul>
+</li>
+</ul>
+<h2 id="TinyNF"><a href="#TinyNF" class="headerlink" title="TinyNF"></a>TinyNF</h2><hr>
+<ul>
+<li><p>Tiny Network Function</p>
+</li>
+<li><p>一次处理一个缓冲区</p>
+<ul>
+<li>处理队列中始终最多有一个缓冲区</li>
+</ul>
+</li>
+<li><p>完全在用户模式下运行，没有内核依赖<br><img src="/images/hpc-ymy/OSDI'20-tinyNF/tinyNF-ring.png" alt="image"><br>灵感来源：实际的定界符比理论的定界符少</p>
+</li>
+<li><p>“transmitted”头和尾分别是“receiving”尾和“transmitting”头</p>
+</li>
+<li><p>“received”头和尾是“processing”尾和“receiving”头</p>
+</li>
+<li><p>虽然不存在的“processed”队列，但其头部和尾部分别是“transmitting”尾部和“processing”头部</p>
+</li>
+<li><p>“processing”尾部不需要跟踪</p>
+<ul>
+<li>由于一次一个数据包的约束，它总是在头部之前或等于头部的一个缓冲区</li>
+</ul>
+</li>
+<li><p>TinyNF只需要更新receive(receiving、received)和transmit(transmitted、transmitting)尾部</p>
+<ul>
+<li>在NIC 寄存器中</li>
+<li>每隔几次传输完成一次更新</li>
+</ul>
+</li>
+<li><p>调度策略：最小化软件和硬件之间的通信量，改善整体延迟并减少了用于元数据的 PCIe 吞吐量</p>
+<ul>
+<li>请求NIC更新传输的尾部并检查此类更新以回收缓冲区（64个数据包进行一次该操作）<ul>
+<li>请求是用传输元数据中的一个位(bitmap)发出的</li>
+<li>检查是通过读取 NIC 通过 DMA 写入 RAM 的值来进行的</li>
+</ul>
+</li>
+<li>更新传输尾部：<ul>
+<li>每隔几个传输的数据包（或有空闲时间时）更新一次传输尾部</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><hr>
+<ul>
+<li>tinyNF在代码数量和代码复杂度方面更较少，开发人员更容易进行网络功能的验证 </li>
+<li>TinyNF优于完整优化的DPDK<ul>
+<li>采用traffic policer流量监管方式：<br><img src="/images/hpc-ymy/OSDI'20-tinyNF/DPDK%E5%92%8CtinyNF%E6%B5%81%E9%87%8F%E7%9B%91%E7%AE%A1%E5%AF%B9%E6%AF%94.png" alt="image"> </li>
+<li>unbatched DPDK：Vigor使用的简单版本</li>
+<li>batched DPDK：DPDK的标准方式</li>
+</ul>
+</li>
+<li>支持很多网络功能：负载平衡、DPI、NAT、防火墙、隧道、多播、BRAS、监控、DDoS防范、IP代理、拥塞控制、IDS、IPS、以太网桥接器、ARP客户端和服务器、DNS代理、统计收集器、交通监管器和谷歌的Maglev负载平衡器</li>
+</ul>
+<p>实验收获：作者在实验对比时多次采用自动化验证工具验证。他认为采用自动化验证工具验证，更容易发现系统中存在的优秀结果，并可以移除不需要的结构，提升系统性能</p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" title="OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions" target="_blank" rel="external">http://example.com/2023/01/25/OSDI'20 A Simpler and Faster NIC Driver Model for Network Functions/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2023/01/25/OSDI'22%20XRP/" title="OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2023/01/25/InfiniBand%E8%B0%83%E7%A0%94/" title="InfiniBand调研"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

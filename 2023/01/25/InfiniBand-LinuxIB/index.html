@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>Linux InfiniBand | TenonOS-unikraft-learning</title>
+  <meta name="description" content="Linux InfiniBandIB网络是RDMA的一种硬件实现，Infiniband是一种专为RDMA设计的网络，从硬件级别保证可靠传输。Infiniband，支持RDMA的新一代网络协议。 由于这是一种新的网络技术，因此需要支持该技术的NIC和交换机。因此，如果需要了解Linux下InfiniBand的使用方式，需要先了解RDMA的工作工程。 Linux RDMA core仓库地址 : Lin">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux InfiniBand">
+<meta property="og:url" content="http://example.com/2023/01/25/InfiniBand-LinuxIB/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Linux InfiniBandIB网络是RDMA的一种硬件实现，Infiniband是一种专为RDMA设计的网络，从硬件级别保证可靠传输。Infiniband，支持RDMA的新一代网络协议。 由于这是一种新的网络技术，因此需要支持该技术的NIC和交换机。因此，如果需要了解Linux下InfiniBand的使用方式，需要先了解RDMA的工作工程。 Linux RDMA core仓库地址 : Lin">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-LinuxIB/%E8%BF%9E%E6%8E%A5%E5%BB%BA%E7%AB%8B.png">
+<meta property="og:image" content="http://example.com/images/Images-Infiniband-LinuxIB/RDMA%E7%A1%AC%E4%BB%B6%E5%AE%9E%E7%8E%B0.png">
+<meta property="article:published_time" content="2023-01-25T11:20:55.824Z">
+<meta property="article:modified_time" content="2023-01-25T11:19:09.107Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="RDMA">
+<meta property="article:tag" content="InfiniBand">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/Images-Infiniband-LinuxIB/%E8%BF%9E%E6%8E%A5%E5%BB%BA%E7%AB%8B.png">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2023/01/25/InfiniBand-LinuxIB/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">10</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/InfiniBand/" rel="tag">InfiniBand</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RDMA/" rel="tag">RDMA</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Unikernel/" rel="tag">Unikernel</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hpc/" rel="tag">hpc</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.43px;">HPC</a> <a href="/tags/InfiniBand/" style="font-size: 13.57px;">InfiniBand</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.86px;">Plat</a> <a href="/tags/RDMA/" style="font-size: 13.57px;">RDMA</a> <a href="/tags/Serverless/" style="font-size: 13.29px;">Serverless</a> <a href="/tags/Unikernel/" style="font-size: 13px;">Unikernel</a> <a href="/tags/hpc/" style="font-size: 13.14px;">hpc</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.71px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.57px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.14px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/01/">一月 2023</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/" class="title">用户与unikraft的参数传递</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.962Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'22%20XRP/" class="title">OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.850Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" class="title">OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.849Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand%E8%B0%83%E7%A0%94/" class="title">InfiniBand调研</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.826Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand-LinuxIB/" class="title">Linux InfiniBand</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.824Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Linux-InfiniBand"><span class="toc-number">1.</span> <span class="toc-text">Linux InfiniBand</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Linux-RDMA-core"><span class="toc-number">1.1.</span> <span class="toc-text">Linux RDMA core</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#libibverbs"><span class="toc-number">1.1.1.</span> <span class="toc-text">libibverbs</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#librdmacm"><span class="toc-number">1.1.2.</span> <span class="toc-text">librdmacm</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#rc-pingpong%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB"><span class="toc-number">1.1.3.</span> <span class="toc-text">rc_pingpong源码阅读</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%A8%8B%E5%BA%8F%E6%B5%81%E7%A8%8B"><span class="toc-number">1.1.3.1.</span> <span class="toc-text">程序流程</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E5%87%BD%E6%95%B0%E8%AF%B4%E6%98%8E"><span class="toc-number">1.1.3.2.</span> <span class="toc-text">相关函数说明</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#main%E5%87%BD%E6%95%B0%E8%BF%87%E7%A8%8B"><span class="toc-number">1.1.3.3.</span> <span class="toc-text">main函数过程</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E5%AE%9A%E4%B9%89%E5%92%8C%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">1.1.3.3.1.</span> <span class="toc-text">变量的定义和初始化</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%8F%82%E6%95%B0%E8%A7%A3%E6%9E%90"><span class="toc-number">1.1.3.3.2.</span> <span class="toc-text">参数解析</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="toc-number">1.1.3.3.3.</span> <span class="toc-text">初始化上下文</span></a><ol class="toc-child"><li class="toc-item toc-level-6"><a class="toc-link" href="#pp-init-ctx%E5%B7%A5%E4%BD%9C%E8%BF%87%E7%A8%8B"><span class="toc-number">1.1.3.3.3.1.</span> <span class="toc-text">pp_init_ctx工作过程</span></a></li><li class="toc-item toc-level-6"><a class="toc-link" href="#%E6%80%BB%E7%BB%93pp-init-ctx"><span class="toc-number">1.1.3.3.3.2.</span> <span class="toc-text">总结pp_init_ctx</span></a></li></ol></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E8%BF%9E%E6%8E%A5"><span class="toc-number">1.1.3.3.4.</span> <span class="toc-text">连接</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%8F%91%E9%80%81%E6%95%B0%E6%8D%AE"><span class="toc-number">1.1.3.3.5.</span> <span class="toc-text">发送数据</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%8E%E7%BB%AD%E5%B7%A5%E4%BD%9C"><span class="toc-number">1.2.</span> <span class="toc-text">后续工作</span></a></li></ol></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-InfiniBand-LinuxIB" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Linux InfiniBand
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2023/01/25/InfiniBand-LinuxIB/" class="article-date">
+	  <time datetime="2023-01-25T11:20:55.824Z" itemprop="datePublished">2023-01-25</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/InfiniBand/" rel="tag">InfiniBand</a>, <a class="article-tag-link-link" href="/tags/RDMA/" rel="tag">RDMA</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2023/01/25/InfiniBand-LinuxIB/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="Linux-InfiniBand"><a href="#Linux-InfiniBand" class="headerlink" title="Linux InfiniBand"></a>Linux InfiniBand</h1><p>IB网络是RDMA的一种硬件实现，Infiniband是一种专为RDMA设计的网络，从硬件级别保证可靠传输。<br>Infiniband，支持RDMA的新一代网络协议。 由于这是一种新的网络技术，因此需要支持该技术的NIC和交换机。<br>因此，如果需要了解Linux下InfiniBand的使用方式，需要先了解RDMA的工作工程。</p>
+<h2 id="Linux-RDMA-core"><a href="#Linux-RDMA-core" class="headerlink" title="Linux RDMA core"></a>Linux RDMA core</h2><p>仓库地址 : <a target="_blank" rel="noopener" href="https://github.com/linux-rdma/rdma-core">Linux RDMA core</a></p>
+<h3 id="libibverbs"><a href="#libibverbs" class="headerlink" title="libibverbs"></a>libibverbs</h3><p>可以从构词中发现 lib-ib-verbs，该库是为IB网络定义了RDMA行为。通过IBM提供的手册可以看到对该库的介绍。<br>Libibverbs库使用户空间进程能够使用远程直接内存访问 (RDMA) 动词。<br>Libibverbs库在InfiniBand体系结构规范和 RDMA 协议动词规范中进行了描述。</p>
+<h3 id="librdmacm"><a href="#librdmacm" class="headerlink" title="librdmacm"></a>librdmacm</h3><p>以下是IBM手册对librdmacm的介绍。<br>librdmacm库提供通信管理器 (CM) 功能和一组通用的远程直接内存访问 (RDMA) CM 接口，这些接口在不同的结构上运行，例如 InfiniBand (IB)、RDMA over Converged Ethernet (RoCE) 或互联网广域网RDMA 协议 (iWARP)。</p>
+<h3 id="rc-pingpong源码阅读"><a href="#rc-pingpong源码阅读" class="headerlink" title="rc_pingpong源码阅读"></a>rc_pingpong源码阅读</h3><p>rc_pingpong是linux rdma core项目中，libibverbs中的一个案例。基本阐述了InfiniBand Verbs API的使用方法。</p>
+<h4 id="程序流程"><a href="#程序流程" class="headerlink" title="程序流程"></a>程序流程</h4><ul>
+<li>在操作系统中申请资源</li>
+<li>从Verbs API申请资源</li>
+<li>使用TCP交换IB连接信息</li>
+<li>在两个IB端口中创建一个连接</li>
+<li>在连接上传输数据</li>
+<li>传输成功<h4 id="相关函数说明"><a href="#相关函数说明" class="headerlink" title="相关函数说明"></a>相关函数说明</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//InfiniBand Devices</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ibv_device</span>;</span> </span><br><span class="line"><span class="comment">// ibv_get_device_list会返回一个可用的IB设备列表。</span></span><br><span class="line"><span class="keyword">struct</span> ibv_device **<span class="title function_">ibv_get_device_list</span><span class="params">(<span class="type">int</span> *num_devices)</span>;</span><br><span class="line"><span class="comment">// 打开一个HCA</span></span><br><span class="line"><span class="keyword">struct</span> ibv_context *<span class="title function_">ibv_open_device</span><span class="params">(<span class="keyword">struct</span> ibv_device *device)</span>;</span><br><span class="line"><span class="comment">// 初始化上下文</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">struct</span> pingpong_context *<span class="title function_">pp_init_ctx</span><span class="params">(<span class="keyword">struct</span> ibv_device *ib_dev, <span class="type">int</span> size, <span class="type">int</span> rx_depth, <span class="type">int</span> port,<span class="type">int</span> use_event)</span>;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h4 id="main函数过程"><a href="#main函数过程" class="headerlink" title="main函数过程"></a>main函数过程</h4><h5 id="变量的定义和初始化"><a href="#变量的定义和初始化" class="headerlink" title="变量的定义和初始化"></a>变量的定义和初始化</h5><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ibv_device</span>      **<span class="title">dev_list</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ibv_device</span>   *<span class="title">ib_dev</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pingpong_context</span> *<span class="title">ctx</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pingpong_dest</span>     <span class="title">my_dest</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pingpong_dest</span>    *<span class="title">rem_dest</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span>           <span class="title">start</span>, <span class="title">end</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">char</span>                    *ib_devname = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">char</span>                    *servername = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span>             port = <span class="number">18515</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>                      ib_port = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span>             size = <span class="number">4096</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">enum</span> <span class="title">ibv_mtu</span>         <span class="title">mtu</span> =</span> IBV_MTU_1024;</span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span>             rx_depth = <span class="number">500</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span>             iters = <span class="number">1000</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>                      use_event = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>                      routs;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>                      rcnt, scnt;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>                      num_cq_events = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>                      sl = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>          gidx = <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">char</span>             gid[<span class="number">33</span>];</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ts_params</span>     <span class="title">ts</span>;</span></span><br></pre></td></tr></table></figure>
+<h5 id="参数解析"><a href="#参数解析" class="headerlink" title="参数解析"></a>参数解析</h5>对命令行输入的参数进行解析<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="type">int</span> c;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">option</span> <span class="title">long_options</span>[] =</span> &#123;</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;port&quot;</span>,     .has_arg = <span class="number">1</span>, .val = <span class="string">&#x27;p&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;ib-dev&quot;</span>,   .has_arg = <span class="number">1</span>, .val = <span class="string">&#x27;d&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;ib-port&quot;</span>,  .has_arg = <span class="number">1</span>, .val = <span class="string">&#x27;i&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;size&quot;</span>,     .has_arg = <span class="number">1</span>, .val = <span class="string">&#x27;s&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;mtu&quot;</span>,      .has_arg = <span class="number">1</span>, .val = <span class="string">&#x27;m&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;rx-depth&quot;</span>, .has_arg = <span class="number">1</span>, .val = <span class="string">&#x27;r&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;iters&quot;</span>,    .has_arg = <span class="number">1</span>, .val = <span class="string">&#x27;n&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;sl&quot;</span>,       .has_arg = <span class="number">1</span>, .val = <span class="string">&#x27;l&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;events&quot;</span>,   .has_arg = <span class="number">0</span>, .val = <span class="string">&#x27;e&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;gid-idx&quot;</span>,  .has_arg = <span class="number">1</span>, .val = <span class="string">&#x27;g&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;odp&quot;</span>,      .has_arg = <span class="number">0</span>, .val = <span class="string">&#x27;o&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;iodp&quot;</span>,     .has_arg = <span class="number">0</span>, .val = <span class="string">&#x27;O&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;prefetch&quot;</span>, .has_arg = <span class="number">0</span>, .val = <span class="string">&#x27;P&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;ts&quot;</span>,       .has_arg = <span class="number">0</span>, .val = <span class="string">&#x27;t&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;chk&quot;</span>,      .has_arg = <span class="number">0</span>, .val = <span class="string">&#x27;c&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;dm&quot;</span>,       .has_arg = <span class="number">0</span>, .val = <span class="string">&#x27;j&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123; .name = <span class="string">&quot;new_send&quot;</span>, .has_arg = <span class="number">0</span>, .val = <span class="string">&#x27;N&#x27;</span> &#125;,</span><br><span class="line"></span><br><span class="line">            &#123;&#125;</span><br><span class="line"></span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        c = getopt_long(argc, argv, <span class="string">&quot;p:d:i:s:m:r:n:l:eg:oOPtcjN&quot;</span>,</span><br><span class="line"></span><br><span class="line">                long_options, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (c == <span class="number">-1</span>)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">switch</span> (c) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;p&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            port = strtoul(optarg, <span class="literal">NULL</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (port &gt; <span class="number">65535</span>) &#123;</span><br><span class="line"></span><br><span class="line">                usage(argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">                <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;d&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            ib_devname = strdupa(optarg);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;i&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            ib_port = strtol(optarg, <span class="literal">NULL</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (ib_port &lt; <span class="number">1</span>) &#123;</span><br><span class="line"></span><br><span class="line">                usage(argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">                <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;s&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            size = strtoul(optarg, <span class="literal">NULL</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;m&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            mtu = pp_mtu_to_enum(strtol(optarg, <span class="literal">NULL</span>, <span class="number">0</span>));</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (mtu == <span class="number">0</span>) &#123;</span><br><span class="line"></span><br><span class="line">                usage(argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">                <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;r&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            rx_depth = strtoul(optarg, <span class="literal">NULL</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;n&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            iters = strtoul(optarg, <span class="literal">NULL</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;l&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            sl = strtol(optarg, <span class="literal">NULL</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;e&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            ++use_event;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;g&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            gidx = strtol(optarg, <span class="literal">NULL</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;o&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            use_odp = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;P&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            prefetch_mr = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;O&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            use_odp = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            implicit_odp = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;t&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            use_ts = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;c&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            validate_buf = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;j&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            use_dm = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;N&#x27;</span>:</span><br><span class="line"></span><br><span class="line">            use_new_send = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line"></span><br><span class="line">            usage(argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h5 id="初始化上下文"><a href="#初始化上下文" class="headerlink" title="初始化上下文"></a>初始化上下文</h5><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">    page_size = sysconf(_SC_PAGESIZE);</span><br><span class="line">    dev_list = ibv_get_device_list(<span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">if</span> (!dev_list) &#123;</span><br><span class="line"></span><br><span class="line">        perror(<span class="string">&quot;Failed to get IB devices list&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">    ctx = pp_init_ctx(ib_dev, size, rx_depth, ib_port, use_event);</span><br></pre></td></tr></table></figure>
+<h6 id="pp-init-ctx工作过程"><a href="#pp-init-ctx工作过程" class="headerlink" title="pp_init_ctx工作过程"></a>pp_init_ctx工作过程</h6>在进行这一步之前，已经找到了所需要的IB设备。<br>pp_init_ctx函数原型<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">struct</span> pingpong_context *<span class="title function_">pp_init_ctx</span><span class="params">(<span class="keyword">struct</span> ibv_device *ib_dev, <span class="type">int</span> size, <span class="type">int</span> rx_depth, <span class="type">int</span> port,<span class="type">int</span> use_event)</span>;</span><br></pre></td></tr></table></figure>
+分配工作缓冲区<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">    ctx-&gt;buf = memalign(page_size, size);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!ctx-&gt;buf) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;Couldn&#x27;t allocate work buf.\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> clean_ctx;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+打开设备,且创建设备上下文。<br>设备上下文包含了设备驱动及相关操作。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">    ctx-&gt;context = ibv_open_device(ib_dev);  <span class="comment">// 打开设备</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!ctx-&gt;context) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;Couldn&#x27;t get context for %s\n&quot;</span>,</span><br><span class="line"></span><br><span class="line">            ibv_get_device_name(ib_dev));</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> clean_buffer;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+分配保护域(PD, Protection Domain)<br>根据InfiniBand规范，保护域允许客户端在InfiniBand发送和接收期间控制哪些远程计算机可以访问其内存区域。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">    ctx-&gt;pd = ibv_alloc_pd(ctx-&gt;context);   <span class="comment">// 分配</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!ctx-&gt;pd) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;Couldn&#x27;t allocate PD\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> clean_comp_channel;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+分配内存区域（MR，Memory Region），该区域将被硬件访问。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">if</span> (implicit_odp) &#123;</span><br><span class="line"></span><br><span class="line">        ctx-&gt;mr = ibv_reg_mr(ctx-&gt;pd, <span class="literal">NULL</span>, SIZE_MAX, access_flags);</span><br><span class="line"></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">        ctx-&gt;mr = use_dm ? ibv_reg_dm_mr(ctx-&gt;pd, ctx-&gt;dm, <span class="number">0</span>,</span><br><span class="line"></span><br><span class="line">                         size, access_flags) :</span><br><span class="line"></span><br><span class="line">            ibv_reg_mr(ctx-&gt;pd, ctx-&gt;buf, size, access_flags);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!ctx-&gt;mr) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;Couldn&#x27;t register MR\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> clean_dm;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+创建CQ<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">if</span> (use_ts) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">ibv_cq_init_attr_ex</span> <span class="title">attr_ex</span> =</span> &#123;</span><br><span class="line"></span><br><span class="line">            .cqe = rx_depth + <span class="number">1</span>,</span><br><span class="line"></span><br><span class="line">            .cq_context = <span class="literal">NULL</span>,</span><br><span class="line"></span><br><span class="line">            .channel = ctx-&gt;channel,</span><br><span class="line"></span><br><span class="line">            .comp_vector = <span class="number">0</span>,</span><br><span class="line"></span><br><span class="line">            .wc_flags = IBV_WC_EX_WITH_COMPLETION_TIMESTAMP</span><br><span class="line"></span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        ctx-&gt;cq_s.cq_ex = ibv_create_cq_ex(ctx-&gt;context, &amp;attr_ex);</span><br><span class="line"></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">        ctx-&gt;cq_s.cq = ibv_create_cq(ctx-&gt;context, rx_depth + <span class="number">1</span>, <span class="literal">NULL</span>,</span><br><span class="line"></span><br><span class="line">                         ctx-&gt;channel, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!pp_cq(ctx)) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;Couldn&#x27;t create CQ\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">goto</span> clean_mr;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+创建QP<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">  ctx-&gt;qp = ibv_create_qp_ex(ctx-&gt;context, &amp;init_attr_ex);</span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">            ctx-&gt;qp = ibv_create_qp(ctx-&gt;pd, &amp;init_attr);</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!ctx-&gt;qp)  &#123;</span><br><span class="line"></span><br><span class="line">            <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;Couldn&#x27;t create QP\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">goto</span> clean_cq;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
+<h6 id="总结pp-init-ctx"><a href="#总结pp-init-ctx" class="headerlink" title="总结pp_init_ctx"></a>总结pp_init_ctx</h6>就是对连接所需的配置，资源进行一个初始化。<h5 id="连接"><a href="#连接" class="headerlink" title="连接"></a>连接</h5>这部分参考了网上的一些资料，主要是对在远程和本地，对以下三个参数进行配置。</li>
+<li>QPN : QP number，用于标记QB</li>
+<li>LID : Local ID，在Link Layer中被使用，类似于本地的局域网IP地址。</li>
+<li>PSN : Packet Sequence Number，包序列号。用于保证可靠连接。<br>在main开头，定义了两个结构体<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">	<span class="comment">// </span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">pingpong_dest</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> lid;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> qpn;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> psn;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">union</span> <span class="title">ibv_gid</span> <span class="title">gid</span>;</span></span><br><span class="line"></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// local</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pingpong_dest</span>     <span class="title">my_dest</span>;</span></span><br><span class="line">	<span class="comment">// remote</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pingpong_dest</span>    *<span class="title">rem_dest</span>;</span></span><br></pre></td></tr></table></figure>
+具体细节还未整理清楚，但是总体上是完成了下图所示内容。<br>且根据函数中细节可以认为，这段配置是通过TCP/IP完成的。<br><img src="/images/Images-Infiniband-LinuxIB/%E8%BF%9E%E6%8E%A5%E5%BB%BA%E7%AB%8B.png" alt="建立连接"><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//...</span></span><br><span class="line">	<span class="comment">// 将my_dest传递给remote</span></span><br><span class="line">	<span class="comment">// 似乎是采用了TCP先建立连接。</span></span><br><span class="line">    <span class="keyword">if</span> (servername)</span><br><span class="line"></span><br><span class="line">        rem_dest = pp_client_exch_dest(servername, port, &amp;my_dest);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line"></span><br><span class="line">        rem_dest = pp_server_exch_dest(ctx, ib_port, mtu, port, sl,</span><br><span class="line"></span><br><span class="line">                                &amp;my_dest, gidx);</span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line">	<span class="comment">// 根据前文的rem_dest配置本地信息</span></span><br><span class="line">    <span class="keyword">if</span> (servername)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (pp_connect_ctx(ctx, ib_port, my_dest.psn, mtu, sl, rem_dest,</span><br><span class="line"></span><br><span class="line">                    gidx))</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<h5 id="发送数据"><a href="#发送数据" class="headerlink" title="发送数据"></a>发送数据</h5>发送数据主要是通过对QP的访问完成的。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">        <span class="keyword">if</span> (pp_post_send(ctx)) &#123;</span><br><span class="line"></span><br><span class="line">            <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;Couldn&#x27;t post send\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
+而pp_post_send最后是通过ibv_post_send函数完成，ibv_post_send在libibverbs/verbs.h中被定义。<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">ibv_post_send</span><span class="params">(<span class="keyword">struct</span> ibv_qp *qp, <span class="keyword">struct</span> ibv_send_wr *wr,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">                <span class="keyword">struct</span> ibv_send_wr **bad_wr)</span></span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> qp-&gt;context-&gt;ops.post_send(qp, wr, bad_wr);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+而这个ops.post_send可能与RDMA的硬件实现有关。<h2 id="后续工作"><a href="#后续工作" class="headerlink" title="后续工作"></a>后续工作</h2></li>
+<li>本周就是对Linux RDMA core项目做了一定的认识。通过对案例rc_pingpong的分析，对Libibverbs API的使用有了一定的了解。</li>
+<li>在阅读了<a target="_blank" rel="noopener" href="https://tjcug.github.io/blog/2018/06/04/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%E5%85%A8%E9%9D%A2%E8%A7%A3%E6%9E%90RDMA/">深入浅出RDMA</a>博客以后，了解到InfiniBand只是RDMA的一种硬件实现，而实现RDMA还有iWARP和RoCE两种方式。如下所示。<br><img src="/images/Images-Infiniband-LinuxIB/RDMA%E7%A1%AC%E4%BB%B6%E5%AE%9E%E7%8E%B0.png" alt="RDMA硬件实现"></li>
+</ul>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2023/01/25/InfiniBand-LinuxIB/" title="Linux InfiniBand" target="_blank" rel="external">http://example.com/2023/01/25/InfiniBand-LinuxIB/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2023/01/25/InfiniBand%E8%B0%83%E7%A0%94/" title="InfiniBand调研"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2023/01/25/Infiniband-Kernel%20RDMA%20Subsystem/" title="InfiniBand Kernel RDMA Subsystem"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

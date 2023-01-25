@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF | TenonOS-unikraft-learning</title>
+  <meta name="description" content="作者：Yuhong Zhong，Haoyu Li等，哥伦比亚大学与谷歌合作完成会议：OSDI2022开源代码：https:&#x2F;&#x2F;github.com&#x2F;xrp-project&#x2F;XRP  介绍随着微秒级 NVMe 存储设备的出现，Linux 内核存储堆栈开销占比变高，访问时间几乎翻倍。 作者依靠 BPF让应用程序将简单功能卸载到 Linux 内核。  与内核旁路类似，通过将应用程序逻辑深入内核堆栈，B">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF">
+<meta property="og:url" content="http://example.com/2023/01/25/OSDI'22%20XRP/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="作者：Yuhong Zhong，Haoyu Li等，哥伦比亚大学与谷歌合作完成会议：OSDI2022开源代码：https:&#x2F;&#x2F;github.com&#x2F;xrp-project&#x2F;XRP  介绍随着微秒级 NVMe 存储设备的出现，Linux 内核存储堆栈开销占比变高，访问时间几乎翻倍。 作者依靠 BPF让应用程序将简单功能卸载到 Linux 内核。  与内核旁路类似，通过将应用程序逻辑深入内核堆栈，B">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/hpc-ymy/OSDI">
+<meta property="og:image" content="http://example.com/images/hpc-ymy/OSDI">
+<meta property="og:image" content="http://example.com/images/hpc-ymy/OSDI">
+<meta property="og:image" content="http://example.com/images/hpc-ymy/OSDI">
+<meta property="og:image" content="http://example.com/images/hpc-ymy/OSDI">
+<meta property="article:published_time" content="2023-01-25T11:20:55.850Z">
+<meta property="article:modified_time" content="2023-01-25T11:19:09.108Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="HPC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/hpc-ymy/OSDI">
+  <!-- Canonical links -->
+  <link rel="canonical" href="http://example.com/2023/01/25/OSDI'22%20XRP/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body class="main-center" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/TenonOS" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">TenonOS</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">unikraft-learning</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Zhejiang, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">书单</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">友链</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">关于</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%86%85%E5%AD%98/">内存</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%AD%98%E5%82%A8/">文件系统与存储</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">系统调用</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BA%BF%E7%A8%8B/">线程</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a><span class="category-list-count">10</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HPC/" rel="tag">HPC</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/InfiniBand/" rel="tag">InfiniBand</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Lib/" rel="tag">Lib</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Plat/" rel="tag">Plat</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RDMA/" rel="tag">RDMA</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Serverless/" rel="tag">Serverless</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Unikernel/" rel="tag">Unikernel</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hpc/" rel="tag">hpc</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="tag">函数调用</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="tag">基础知识</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" rel="tag">外部库</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="tag">系统调用</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/HPC/" style="font-size: 13.43px;">HPC</a> <a href="/tags/InfiniBand/" style="font-size: 13.57px;">InfiniBand</a> <a href="/tags/Lib/" style="font-size: 14px;">Lib</a> <a href="/tags/Plat/" style="font-size: 13.86px;">Plat</a> <a href="/tags/RDMA/" style="font-size: 13.57px;">RDMA</a> <a href="/tags/Serverless/" style="font-size: 13.29px;">Serverless</a> <a href="/tags/Unikernel/" style="font-size: 13px;">Unikernel</a> <a href="/tags/hpc/" style="font-size: 13.14px;">hpc</a> <a href="/tags/%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" style="font-size: 13px;">函数调用</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" style="font-size: 13.71px;">基础知识</a> <a href="/tags/%E5%A4%96%E9%83%A8%E5%BA%93/" style="font-size: 13.57px;">外部库</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" style="font-size: 13.14px;">系统调用</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/01/">一月 2023</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/12/">十二月 2022</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">十一月 2022</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/10/">十月 2022</a><span class="archive-list-count">19</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/KVM%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96/">KVM与虚拟化</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/" class="title">用户与unikraft的参数传递</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.962Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'22%20XRP/" class="title">OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.850Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" class="title">OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.849Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand%E8%B0%83%E7%A0%94/" class="title">InfiniBand调研</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.826Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a>
+              </p>
+              <p class="item-title">
+                <a href="/2023/01/25/InfiniBand-LinuxIB/" class="title">Linux InfiniBand</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2023-01-25T11:20:55.824Z" itemprop="datePublished">2023-01-25</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+  <aside class="sidebar sidebar-toc collapse   in  " id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <nav id="toc" class="article-toc">
+      <h3 class="toc-title">文章目录</h3>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%8B%E7%BB%8D"><span class="toc-number">1.</span> <span class="toc-text">介绍</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">2.</span> <span class="toc-text">背景</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BD%AF%E4%BB%B6%E5%BC%80%E9%94%80%E6%88%90%E4%B8%BA%E5%AD%98%E5%82%A8%E7%93%B6%E9%A2%88"><span class="toc-number">2.1.</span> <span class="toc-text">软件开销成为存储瓶颈</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#BPF%E5%85%A5%E9%97%A8%E7%9F%A5%E8%AF%86"><span class="toc-number">2.2.</span> <span class="toc-text">BPF入门知识</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%BE%E8%AE%A1%E6%8C%91%E6%88%98%E5%8F%8A%E5%8E%9F%E5%88%99"><span class="toc-number">3.</span> <span class="toc-text">设计挑战及原则</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#XRP-%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0"><span class="toc-number">4.</span> <span class="toc-text">XRP 设计与实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#I-O-resubmission"><span class="toc-number">4.1.</span> <span class="toc-text">I&#x2F;O resubmission</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#BPF-Hook"><span class="toc-number">4.1.1.</span> <span class="toc-text">BPF Hook</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#BPF%E9%AA%8C%E8%AF%81%E5%99%A8"><span class="toc-number">4.1.2.</span> <span class="toc-text">BPF验证器</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%85%83%E6%95%B0%E6%8D%AE%E6%91%98%E8%A6%81"><span class="toc-number">4.1.3.</span> <span class="toc-text">元数据摘要</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%87%8D%E6%96%B0%E6%8F%90%E4%BA%A4-NVMe-%E8%AF%B7%E6%B1%82"><span class="toc-number">4.1.4.</span> <span class="toc-text">重新提交 NVMe 请求</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%8C%E6%AD%A5%E9%99%90%E5%88%B6"><span class="toc-number">4.2.</span> <span class="toc-text">同步限制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8E-Linux-%E8%B0%83%E5%BA%A6%E7%A8%8B%E5%BA%8F%E4%BA%A4%E4%BA%92"><span class="toc-number">4.3.</span> <span class="toc-text">与 Linux 调度程序交互</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Evaluation"><span class="toc-number">5.</span> <span class="toc-text">Evaluation</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Related-Work"><span class="toc-number">6.</span> <span class="toc-text">Related Work</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Conclusions-and-Future-Work"><span class="toc-number">7.</span> <span class="toc-text">Conclusions and Future Work</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%9D%E8%80%83"><span class="toc-number">8.</span> <span class="toc-text">思考</span></a></li></ol>
+    </nav>
+  </div>
+</aside>
+
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-OSDI&#39;22 XRP" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2023/01/25/OSDI'22%20XRP/" class="article-date">
+	  <time datetime="2023-01-25T11:20:55.850Z" itemprop="datePublished">2023-01-25</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">论文笔记</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/HPC/" rel="tag">HPC</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2023/01/25/OSDI'22%20XRP/#comments" class="article-comment-link">评论</a></span>
+        
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <blockquote>
+<p>作者：Yuhong Zhong，Haoyu Li等，哥伦比亚大学与谷歌合作完成<br>会议：OSDI2022<br>开源代码：<a target="_blank" rel="noopener" href="https://github.com/xrp-project/XRP">https://github.com/xrp-project/XRP</a></p>
+</blockquote>
+<h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>随着微秒级 NVMe 存储设备的出现，Linux 内核存储堆栈开销占比变高，访问时间几乎翻倍。</p>
+<p>作者依靠 BPF让应用程序将简单功能卸载到 Linux 内核。</p>
+<ul>
+<li>与内核旁路类似，通过将应用程序逻辑深入内核堆栈，BPF 可以消除与内核用户交互和相关上下文切换相关的开销。</li>
+<li>与内核旁路不同，BPF是OS支持的机制，保证了隔离性，不会因为轮询忙等导致core利用率低下，允许大量线程或进程共享同一个core，整体利用率更好。<br>但是使用 BPF 来加速存储会带来几个独特的挑战。I/O resubmission可能会延迟较大。</li>
+</ul>
+<p><strong>I/O resubmission</strong>： I/O 的重新提交，应用当前请求需要进行多次I/O查找。同步与其他并发应用程序级操作或需要多个函数调用来遍历大型磁盘数据结构。</p>
+<p>作者设计并实施了 XRP（eXpress Resubmission Path），这是一种使用 Linux eBPF 的高性能存储数据路径。XRP 在 NVMe 驱动程序的中断处理程序中使用了一个挂钩，绕过了内核的块、文件系统和系统调用层。这允许 XRP 在每个 I/O 完成时直接从 NVMe 驱动程序触发 BPF 功能，从而能够快速重新提交遍历存储设备上其他块的 I/O。同时为了保留文件系统语义，XRP 将少量内核状态传播到其NVMe 驱动程序</p>
+<p>作者在文中做出的贡献：</p>
+<ol>
+<li>新数据路径。 XRP 是第一个支持使用 BPF 将存储功能卸载到内核的数据路径。 </li>
+<li>性能。与普通系统调用相比，XRP 将 B 树查找的吞吐量提高了 2.5 倍。 </li>
+<li>利用性。 XRP提供接近内核旁路的延迟，但与内核旁路不同的是，它允许内核被相同的线程和进程有效地共享。</li>
+<li>可扩展性。 XRP支持不同的存储用例，包括不同的数据结构和存储操作（例如，索引遍历、范围查询、聚合）。</li>
+</ol>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><h3 id="软件开销成为存储瓶颈"><a href="#软件开销成为存储瓶颈" class="headerlink" title="软件开销成为存储瓶颈"></a>软件开销成为存储瓶颈</h3><p>作者展示了最新一代设备软件开销约占一半每个读取请求的延迟。随着存储设备变得更快，内核的相对开销只会变得更糟。<br>同时，文中测试了发出随机512 B读取时在不同存储层中花费的时间，实验表明，最昂贵的层是文件系统（ext4），其次是块层（bio）和内核用户交互，总软件开销占平均延迟的 48.6%。<br><img src="/images/hpc-ymy/OSDI'22-XRP/%E5%86%85%E6%A0%B8%E5%AD%98%E5%82%A8%E7%9A%84%E5%B9%B3%E5%9D%87%E5%BB%B6%E8%BF%9F.png" alt="image"><br>为什么不直接绕过内核呢？<br>SPDK是完全绕过内核，应用直接和设备通信，只留下向 NVMe 驱动程序发布请求的成本和设备的延迟。然而：</p>
+<ul>
+<li>绕过内核需要用户构建自己的用户空间文件系统。</li>
+<li>应用程序必须直接轮询设备完成队列以获得高性能，需要占用一个core。导致严重的利用率不足和 CPU 浪费。</li>
+<li>当多个轮询线程共享同一个处理器时，它们之间的 CPU 争用加上缺乏同步会导致所有轮询线程的尾部延迟降低并显着降低整体吞吐量。</li>
+</ul>
+<h3 id="BPF入门知识"><a href="#BPF入门知识" class="headerlink" title="BPF入门知识"></a>BPF入门知识</h3><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/444454862">BPF参考博客</a><br>BPF（Berkeley Packet Filter）是一个接口，允许用户卸载由内核执行的简单功能。<br>Linux 的 BPF 框架称为eBPF（extended BPF）。 Linux eBPF 通常用于过滤数据包（例如 TCPdump）、负载平衡和数据包转发、跟踪、数据包转向、网络调度和网络安全检查。</p>
+<p>在数据查找需要 I/O请求的情况下， BPF可以是用于避免内核与用户空间之间的数据移动的机制，所述I/O请求生成应用不直接需要的中间数据。例如要遍历 B 树索引，每个级别的查找都会遍历内核的整个存储堆栈，一旦应用程序获得指向树中下一个子节点的指针，它就会被丢弃。每个中间指针查找都可以由 BPF 函数执行，而不是来自用户空间的一系列系统调用，该函数将解析 B 树节点以找到指向相关子节点的指针。然后内核将提交I/O以获取下一个节点。 链接一系列这样的 BPF 函数可以避免遍历内核层和将数据移动到用户空间的成本。<br>BPF函数可以放置在内核的任何层。下图显示了用户系统调用和采用BPF挂钩的I/O路径。</p>
+<ul>
+<li>橙线：左半部分是应用第一次发出IO请求，右半部分是所有I/O请求完成后对应用的响应。</li>
+<li>蓝线：I/O resubmission时，采用系统调用的方式的I/O路径。</li>
+<li>蓝线：I/O resubmission时，采用BPF挂钩的方式的I/O路径。<br><img src="/images/hpc-ymy/OSDI'22-XRP/%E7%A9%BA%E9%97%B4%E8%B0%83%E5%BA%A6%E5%92%8CBPF%E9%87%8D%E6%96%B0%E6%8F%90%E4%BA%A4%E6%8C%82%E9%92%A9%E7%9A%84%E4%B8%A4%E4%B8%AA%E5%8F%AF%E8%83%BD%E4%BD%8D%E7%BD%AE%E7%9A%84IO%E8%B7%AF%E5%BE%84.png" alt="image"></li>
+</ul>
+<p>在内核中的任何位置放置一个eBPF钩子可以将吞吐量提高1.2–2.5倍。<br>然而，将 I/O 调度推到尽可能靠近存储设备的位置可以显着提高性能。因此，XRP 的I/O resubmission挂钩放在 NVMe 驱动程序中。</p>
+<p>io_uring： io_uring 是一个新的 Linux 系统调用框架，它允许进程提交成批的异步 I/O 请求，从而分摊用户-内核上下文。但是，每个使用 io_uring 提交的 I/O 仍会通过表 1 中显示的所有层，因此每个单独的 I/O 仍会产生完整的存储堆栈开销。事实上，BPF I/O 重新提交在很大程度上是对 io_uring 的补充：io_uring 可以高效地提交批次的 I/O，这些 I/O 会触发内核中由 BPF 管理的不同 I/O 链</p>
+<h2 id="设计挑战及原则"><a href="#设计挑战及原则" class="headerlink" title="设计挑战及原则"></a>设计挑战及原则</h2><p>I/O重新提交会靠近NVMe中断处理程序。 然而从NVMe中断处理序中执行时会缺乏文件系统层的上下文，引入了两个主要挑战：</p>
+<ul>
+<li>挑战1：解决翻译和安全问题。 NVMe驱动程序无法访问文件系统元数据。 比如在索引遍历的示例中，XRP发布了一个读取I/O到特定块，并执行一个BPF函数，该函数将提取它想要查询的下一个块的偏移量。 然而这种偏移对NVMe层毫无意义，因为它无法判断偏移对应于哪个物理块，而无法访问文件的元数据和范围。 </li>
+<li>挑战2：并发和缓存。从文件系统发出的写入只会反映在页面缓存中，这对 XRP 是不可见的。此外，与读取请求同时发出的任何修改数据结构布局的写入（例如，修改指向下一个块的指针）都可能导致 XRP 意外获取错误数据。这两个问题都可以通过锁来解决，但是从 NVMe 中断处理程序中访问锁可能代价高昂。</li>
+</ul>
+<p>设计原则：</p>
+<ul>
+<li><strong>一次一个文件</strong>。我们最初限制 XRP 仅在单个文件上发布链式重新提交。 这大大简化了地址转换和访问控制，并最小化了我们需要向下推送到NVMe驱动程序的元数据（元数据摘要，后续讲到）。</li>
+<li><strong>稳定的数据结构</strong>。XRP针对数据结构，其布局（即指针）在长时间内（即秒或更长时间）保持不变。 此类数据结构包括在许多流行的商业存储引擎中使用的指数，如RocksDB、LevelDB、TokuDB和WiredTiger。 由于在NVMe层中实现锁的成本较高，我们最初也不计划支持在数据结构的遍历或迭代期间需要锁的操作。</li>
+<li><strong>用户管理的缓存</strong>。 XRP和页面缓存没有接口，因此如果块 缓冲在内核页面缓存中，则 XRP 函数无法安全地并发运行。这种约束是可以接受的，因为流行的存储引擎通常会实现自己的用户空间缓存；通常这样做是为了微调缓存和预取策略，并以对应用程序有意义的方式缓存数据（例如，缓存键值对或数据库行而不是物理块）。</li>
+<li><strong>慢路径回退</strong>。 XRP 是尽力而为的；如果由于某种原因遍历失败（例如，范围映射变得陈旧），应用程序必须重试或回退到使用用户空间系统调用分派 I/O 请求。</li>
+</ul>
+<h2 id="XRP-设计与实现"><a href="#XRP-设计与实现" class="headerlink" title="XRP 设计与实现"></a>XRP 设计与实现</h2><h3 id="I-O-resubmission"><a href="#I-O-resubmission" class="headerlink" title="I/O resubmission"></a>I/O resubmission</h3><p>XRP 的核心通过I/O重新提交增强了 NVMe 中断处理程序，该逻辑由 BPF的hook、文件系统转换步骤以及在新物理偏移上构建和重新提交下一个 NVMe 请求组成。<br><img src="/images/hpc-ymy/OSDI'22-XRP/XRP%E6%9E%B6%E6%9E%84.png" alt="image"><br>当 NVMe 请求完成时，设备会生成一个中断，导致内核上下文切换到中断处理程序。对于在中断上下文中完成的每个 NVMe 请求，XRP 调用其关联的 BPF 函数（图中的 bpf_func_0），其指针存储在内核 I/O 请求结构（即 struct bio）的一个字段中。在调用 BPF 函数后，XRP 调用元数据摘要，这通常是文件系统状态的摘要，使 XRP 能够转换下一次重新提交的逻辑地址。最后，XRP 通过设置 NVMe 请求中的相应字段来准备下一个 NVMe 命令重新提交，并将请求附加到该核心的 NVMe 提交队列 (SQ)。<br>对于特定的 NVMe 请求，重新提交逻辑将被调用多次（由在 NVMe 请求中注册的特定 BPF 函数确定）。例如，对于树状数据结构的遍历，BPF 函数会重新提交分支节点的 I/O 请求，并在找到叶节点时结束重新提交。<br> BPF 函数上下文是每个请求的，而元数据摘要在所有内核的中断处理程序的所有调用之间共享。对元数据摘要的安全并发访问依赖于读取-拷贝-更新机制（RCU，Linux 内核中的同步机制，对于共享数据，想要修改会先创建副本修改）</p>
+<h4 id="BPF-Hook"><a href="#BPF-Hook" class="headerlink" title="BPF Hook"></a>BPF Hook</h4><p>XRP 引入了一种新的BPF类型（BPF_PROG_TYPE_XRP），任何与该标签匹配的 BPF 函数都可以从钩子中调用。<br>BPF_PROG_TYPE_XRP 程序需要一个包含五个字段的上下文</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">bpf_xrp</span> &#123;</span></span><br><span class="line"><span class="comment">// Fields inspected outside BPF</span></span><br><span class="line"><span class="type">char</span> *data;  <span class="comment">// 缓冲从磁盘读取的数据。例如等待 BPF 函数解析的 B 树页面</span></span><br><span class="line"><span class="type">int</span> done;  <span class="comment">// 布尔值，通知重新提交逻辑是返回给用户还是继续重新提交 I/O 请求</span></span><br><span class="line"><span class="type">uint64_t</span> next_addr[<span class="number">16</span>];   <span class="comment">// 逻辑地址数组</span></span><br><span class="line"><span class="type">uint64_t</span> size[<span class="number">16</span>];   <span class="comment">// 逻辑地址对应的大小</span></span><br><span class="line"><span class="comment">// Field for BPF function use only</span></span><br><span class="line"><span class="type">char</span> *scratch;   <span class="comment">// 下一个要重新提交的逻辑地址</span></span><br><span class="line">&#125;;</span><br><span class="line"><span class="type">uint32_t</span> <span class="title function_">BPF_PROG_TYPE_XRP</span><span class="params">(<span class="keyword">struct</span> bpf_xrp *ctxt)</span>;</span><br></pre></td></tr></table></figure>
+<p>为了支持扇出(指该模块直接调用的下级模块的个数)的数据结构，可以提供多个 next_addr 值。默认情况下，我们将扇出限制为 16。<br>scratch 是用户和 BPF 函数私有的暂存空间。它可用于将参数从用户传递到 BPF 函数。此外，BPF 函数可以使用它来存储 I/O 重新提交之间的中间数据，并将数据返回给用户。<br>每个 BPF 上下文对于一个 NVMe 请求都是私有的，因此在使用 BPF 上下文状态时不需要锁定。让用户提供临时缓冲区（而不是使用 BPF 映射）避免了必须调用 bpf_map_lookup_elem 来访问临时缓冲区的进程和函数的开销。</p>
+<h4 id="BPF验证器"><a href="#BPF验证器" class="headerlink" title="BPF验证器"></a>BPF验证器</h4><p>BPF 验证器通过跟踪存储在每个寄存器中的值的语义来确保内存安全。</p>
+<h4 id="元数据摘要"><a href="#元数据摘要" class="headerlink" title="元数据摘要"></a>元数据摘要</h4><p>在传统的存储堆栈中，磁盘数据结构中的逻辑块偏移量由文件系统转换，以便识别要读取的下一个物理块。此转换步骤还强制执行访问控制和安全性，防止读取未映射到打开文件的区域。在 XRP 中，查找的下一个逻辑地址由 BPF 调用后的 next_addr 字段给出。然而中断处理程序没有文件的概念并且不执行物理地址转换。<br>为了解决这个问题，作者实现了元数据摘要，这是文件系统和中断处理程序之间的一个薄接口，它允许文件系统与中断处理程序共享其逻辑到物理块的映射，从而实现基于 eBPF 的安全磁盘重新提交。元数据摘要由两个函数组成：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">update_mapping</span><span class="params">(<span class="keyword">struct</span> inode *inode)</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">lookup_mapping</span><span class="params">(<span class="keyword">struct</span> inode *inode,<span class="type">off_t</span> offset, <span class="type">size_t</span> len,<span class="keyword">struct</span> mapping *result)</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>更新函数：在文件系统中调用，更新逻辑到物理映射。</li>
+<li>查找函数：中断处理程序中调用；它返回给定偏移量和长度的映射。还通过防止 BPF 函数请求重新提交打开文件之外的块来强制执行访问控制。打开文件的 inode 地址被传递给中断处理程序以查询元数据摘要。</li>
+</ul>
+<p>这两个功能是特定于每个文件系统的，即使对于特定的文件系统，也可能有多种方法来实现元数据摘要。例如，在 ext4 实现中，元数据摘要包含扩展状态树的缓存版本，它存储物理到逻辑块映射。该缓存树由接口的更新和查找功能访问，并使用读取-复制-更新（RCU）进行并发控制。</p>
+<h4 id="重新提交-NVMe-请求"><a href="#重新提交-NVMe-请求" class="headerlink" title="重新提交 NVMe 请求"></a>重新提交 NVMe 请求</h4><p>查找物理块偏移量后，XRP 准备下一个 NVMe 请求。因为这个逻辑发生在中断处理程序中，为了避免准备 NVMe 请求所需的（缓慢的）kmalloc 调用，XRP 重用了刚刚完成请求的现有 NVMe 请求结构（即 struct nvme_command）。 XRP 只是将现有 NVMe 请求的物理扇区和块地址更新为从映射查找中导出的新偏移量。重用 NVMe 请求结构以立即重新提交是安全的，因为用户空间和 XRP BPF 程序都无法访问原始 NVMe 请求结构。<br>虽然 struct bpf_xrp 支持最大扇出 16，但在当前实现中，重新提交的 I/O 请求只能获取与初始 NVMe 请求一样多的物理段，因为延用初始NVMe的请求。</p>
+<h3 id="同步限制"><a href="#同步限制" class="headerlink" title="同步限制"></a>同步限制</h3><p>BPF 目前只支持有限的自旋锁进行同步。验证器一次只允许 BPF 程序获取一个锁，并且在返回之前必须释放锁。<br>此外，用户空间应用程序无法直接访问这些 BPF 自旋锁。相反，他们必须调用 bpf() 系统调用；系统调用可以读取或写入受锁保护的结构，同时在该操作期间持有锁。因此，需要在多个读写之间进行同步的复杂修改无法在用户空间中完成。<br>用户可以使用 BPF 原子操作实现自定义自旋锁。这允许 BPF 函数和用户空间程序直接获取任何自旋锁。但是，终止约束禁止 BPF 函数自旋以无限等待自旋锁。另一个同步选项是 RCU。由于 XRP BPF 程序在 NVMe 中断处理程序中运行，无法被抢占，事实上它们已经在 RCU 读取端临界区中。</p>
+<h3 id="与-Linux-调度程序交互"><a href="#与-Linux-调度程序交互" class="headerlink" title="与 Linux 调度程序交互"></a>与 Linux 调度程序交互</h3><p>进程调度器：当多个进程共享同一个核心时，微秒级低延迟存储设备会干扰 Linux 的 CFS(完全公平调度算法)，即使所有 I/O 都是从用户空间发出的。我们实验验证了在使用速度较慢的存储设备时不会发生这种情况，该设备生成中断的频率要低得多。虽然 XRP 通过生成中断链加剧了这个问题，但这个问题并不是 eBPF 特有的，也可能是由网络驱动的中断引起的。我们把这个问题留给以后的工作。<br>I/O 调度程序： XRP 绕过了位于块层的 Linux 的 I/O 调度程序。但是，noop调度程序已经是 NVMe 设备的默认 I/O 调度程序，如果需要公平性，NVMe 标准支持在硬件队列上进行仲裁</p>
+<h2 id="Evaluation"><a href="#Evaluation" class="headerlink" title="Evaluation"></a>Evaluation</h2><p>作者采用XRP修改了两种键值存储应用程序：</p>
+<ul>
+<li>BPF-KV：作者构建，一种基于 B+ 树的键值存储，专门为支持 BPF 功能而设计</li>
+<li>WiredTiger：日志结构合并树，用作 MongoDB 的存储引擎之一。</li>
+</ul>
+<p>在实验中，作者回答以下问题：</p>
+<ul>
+<li>使用 BPF 进行存储的开销情况</li>
+<li>XRP 如何扩展到多线程</li>
+<li>XRP 支持哪些类型的操作</li>
+<li>XRP 能否加速现实世界的键值存储</li>
+</ul>
+<p><strong>延迟</strong>：可以看出，线程数较少时，XRP的延迟略高于SPDK。但是，XRP 无需借助轮询即可实现这一点。这意味着与 SPDK 不同，XRP的进程可以继续高效地使用 CPU 内核来完成其他工作。<br><img src="/images/hpc-ymy/OSDI'22-XRP/%E5%BB%B6%E8%BF%9F%E5%AF%B9%E6%AF%94.png" alt="image"><br><strong>吞吐量</strong>：与 SPDK 相比，线程数越高，XRP 吞吐量越高。但是线程数较少时会弱于SPDK。<br><strong>多线程</strong>：线程数少于核数时，SPDK与XRP类似。超过时，SPDK性能急剧下降。<br><strong>范围请求</strong>：与read()系统调用对比，XRP的延迟较低，吞吐量较高。<br><img src="/images/hpc-ymy/OSDI'22-XRP/%E8%8C%83%E5%9B%B4%E6%9F%A5%E8%AF%A2.png" alt="image"><br><strong>WiredTiger有无对比</strong>：测评XRP是否能让现有的数据库受益。结果表明，与用pread ()来读取Btree页面baseline相比，XRP 将大多数工作负载持续加速高达 1.25 倍。但XRP在WiredTiger上的速度比在BPF-KV上的速度要低，因为WiredTiger的非I/O操作占用率较高。</p>
+<h2 id="Related-Work"><a href="#Related-Work" class="headerlink" title="Related Work"></a>Related Work</h2><ul>
+<li><strong>使用 BPF 加速 I/O</strong>：主要集中在网络和跟踪用例。其中XDP与 XRP 关系最密切，它通过在 NIC 驱动程序的 RX 路径中添加挂钩来加速网络 I/O。然后它为 eBPF 程序提供一个接口，用于过滤、重定向或反弹数据包。</li>
+<li><strong>内核旁路</strong>：为了减少内核在处理 I/O 时的开销，设计库和操作系统来让用户直接访问 I/O 设备。其中英特尔的 SPDK与XRP最相关。一般来说，允许用户直接访问 I/O 的缺点是应用程序必须直接轮询 I/O 以获得高性能。这意味着内核不能在进程之间共享，当 I/O 不是瓶颈时会导致严重的未充分利用。</li>
+<li><strong>近存储计算</strong>：有几种系统允许应用程序将其存储功能卸载到嵌入或连接到存储设备的处理器。这种方法的缺点是它需要专门的存储设备和/或专用硬件。</li>
+<li><strong>可扩展操作系统和库文件系统</strong>：可扩展操作系统允许通过用户定义的函数扩展内核功能。例如，客户端可以编写内核扩展，从磁盘读取和解压缩视频帧。另一种相关方法是库文件系统，例如 XN。与 XRP 类似，XN 允许用户空间库文件系统将不受信任的元数据转换功能加载到内核中，同时在不了解文件系统数据结构的情况下保证磁盘块保护。这些方法需要使用专用的操作系统和文件系统，而 XRP 与 Linux 及其标准文件系统兼容。</li>
+</ul>
+<h2 id="Conclusions-and-Future-Work"><a href="#Conclusions-and-Future-Work" class="headerlink" title="Conclusions and Future Work"></a>Conclusions and Future Work</h2><p>BPF 有可能通过将计算移近设备来加速使用快速 NVMe 设备的应用程序。 XRP 允许应用程序编写可以重新提交相关存储请求的函数，以实现接近内核旁路的加速，同时保留操作系统集成的优势。除了快速查找之外，我们设想 XRP 可用于许多类型的功能，例如压缩、压缩和重复数据删除。<br>此外，未来的 XRP 可以开发为其他需要将计算移近存储的用例的通用接口，例如可编程存储设备和网络存储系统。例如，XRP 可以用作动态支持内核卸载以及将功能卸载到智能存储设备或 FPGA 的接口。我们计划探索的另一个方向是网络存储。 XRP 存储功能可以与 XDP 网络功能链接，以创建绕过内核网络和存储路径的数据路径。</p>
+<h2 id="思考"><a href="#思考" class="headerlink" title="思考"></a>思考</h2><ol>
+<li>因为xrp进行存储加速不需要像SPDK那样占用一个core，所以像unikernel这种单核操作系统，可以尝试借鉴xrp的存储方式</li>
+<li>在网络计算方面也可以借鉴xrp这种功能卸载方式，看看能否进行DPDK的优化</li>
+</ol>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="http://example.com/2023/01/25/OSDI'22%20XRP/" title="OSDI&#39;22 XRP_In-Kernel Storage Functions with eBPF" target="_blank" rel="external">http://example.com/2023/01/25/OSDI'22 XRP/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/TenonOS" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/TenonOS" target="_blank"><span class="text-dark">TenonOS</span><small class="ml-1x">unikraft-learning</small></a></h3>
+        <div>个人简介。</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2023/01/25/%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92/" title="用户与unikraft的参数传递"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;上一篇</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2023/01/25/OSDI'20%20A%20Simpler%20and%20Faster%20NIC%20Driver%20Model%20for%20Network%20Functions/" title="OSDI&#39;20 A Simpler and Faster NIC Driver Model for Network Functions"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+    <li class="toggle-toc">
+      <a class="toggle-btn " data-toggle="collapse" href="#collapseToc" aria-expanded="false" title="文章目录" role="button">    <span>[&nbsp;</span><span>文章目录</span>
+        <i class="text-collapsed icon icon-anchor"></i>
+        <i class="text-in icon icon-close"></i>
+        <span>]</span>
+      </a>
+    </li>
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/TenonOS" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Twitter" data-toggle=tooltip data-placement=top><i class="icon icon-twitter"></i></a></li>
+        
+        <li><a href="/null" target="_blank" title="Behance" data-toggle=tooltip data-placement=top><i class="icon icon-behance"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>
